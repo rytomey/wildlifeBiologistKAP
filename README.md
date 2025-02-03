@@ -6,8 +6,12 @@
 ---
 
 ALWildBioKAP/
+
 ├── 📂 Analyses/      # R Scripts, inputs, outputs
+
 ├── 📂 Management/    # Meeting, planning, and approval records
+
 ├── 📂 Products/      # Figures, tables, statistical summaries
+
 └── 📂 Qualtrics/     # Survey responses & reports
 
