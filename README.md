@@ -1,10 +1,7 @@
 ## **Alabama Wildlife Biologists' Knowledge, Attitudes, and Practices on Wildlife Health & Zoonoses**  
 
 🌎 Understanding how wildlife professionals perceive and handle zoonotic diseases informs better **disease management strategies** and enhances **One Health approaches** to wildlife conservation. 
-
 💡 Survey results will help identify **gaps in training, preparedness, and risk perception** among Alabama's wildlife professionals.  
-
-	💭🧠🌎🧭🏛️🌇🌃⏳⏱️🌡️🌪️☀️🎯🎰🖼️💡🔎📰📝📆🔒	🧫🔬⚠️💲☑️✔️🔹◽🔺🔲🚩🔓🗝️
 ---
 
 <!-- Table of Contents -->
