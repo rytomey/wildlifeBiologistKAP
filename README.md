@@ -28,15 +28,15 @@
 ---
 
 <!-- AI -->
-## ♻️ Additional Information
+## ♻️ FAQ
 
-- 🗃️ **Literature Repository:** [SciWheel: ALWildBioKAP](https://sciwheel.com/work/#/items?collection=970339)
+- 🗃️ **References** [SciWheel Repository](https://sciwheel.com/work/#/items?collection=970339)
 - 🏞️ **Affiliation**: [Auburn University’s College of Forestry, Wildlife and Environment](https://cfwe.auburn.edu/)
 - 🏛️ **Funding:** [Alabama Department of Conservation and Natural Resources](https://alabama-department-of-conservation-natural-resources-algeohub.hub.arcgis.com/) *NO: FWS-SA2022000923*
 - 🕵️‍♂️ **Privacy:** survey responses were anonymous, and no identifying factors were collected.
   
 <!-- Stack -->
-## 🛠️ Project Stack
+## 🛠️ Tech & Terms Stack
 
 <details>
   <summary>Programs</summary>
