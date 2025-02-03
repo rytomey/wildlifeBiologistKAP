@@ -1,4 +1,4 @@
-# **ALWildBioKAP: Alabama Wildlife Biologists' Knowledge, Attitudes, and Practices on Wildlife Health & Zoonoses**  
+## **Alabama Wildlife Biologists' Knowledge, Attitudes, and Practices on Wildlife Health & Zoonoses**  
 
 🌎 Understanding how wildlife professionals perceive and handle zoonotic diseases informs better **disease management strategies** and enhances **One Health approaches** to wildlife conservation. 
 
