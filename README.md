@@ -8,7 +8,7 @@
 <!-- Contributing -->
 ## Collaborators
 
-<a href="https://github.com/Louis3797/awesome-readme-template/graphs/contributors">
+<a href="https://github.com/anyadoc">
   <img src="https://contrib.rocks/image?repo=Louis3797/awesome-readme-template" />
 </a>
   
