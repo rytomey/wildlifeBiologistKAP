@@ -1,0 +1,1319 @@
+---
+title: "Descriptive Statistics"
+output: html_notebook
+---
+#### Packages & Data
+```{r}
+
+require(dplyr)
+require(sf)
+require(sp)
+require(tidyverse)
+require(tidyterra)
+require(terra)
+require(ggplot2)
+
+# completed/ full responses = 154
+surv = read.csv("C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/Descriptive/hsurvcomplete.csv")
+
+# partial responses = 126
+survp = read.csv("C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/Descriptive/hsurvpart.csv")
+
+```
+
+#### Processing Responses
+```{r}
+
+# Removing rows where survey population requirements are not met (age/residency)
+survp = survp %>%
+  filter(DOB != "" & RESIDENT != "") # 70 responses remaining 
+
+survp = survp %>%
+  filter(`COMPLETE` >= 50) # 9 Observations remaining 
+
+# calculating age (complete and partial)
+survp$AGE = 2024 - survp$DOB
+surv$AGE = 2024 - surv$DOB
+
+# combining datasets = 163 total
+surv = rbind(surv, survp)
+
+```
+
+# DESCRIPTIVE STATISTICS
+
+# Spatial Proximity 
+#### ZIPCODE
+**What is the zip code of your current residence? (5-digit zip code)**
+```{r}
+```
+
+#### COUNTIES
+**In which counties do you regularly come into contact with wildlife in Alabama? **
+*Number of Respondents Selected / Options*
+```{r}
+
+splitCOUNTIES = surv %>%
+  separate_rows(COUNTIES, sep = ",") %>%
+  mutate(COUNTIES = trimws(COUNTIES))
+
+totCOUNTIES = nrow(splitCOUNTIES)
+
+responseCOUNTIES = splitCOUNTIES %>%
+    count(COUNTIES) %>%
+    rename(count = n) %>%
+  mutate(proportion = count / totCOUNTIES)
+
+sum(responseCOUNTIES$proportion)
+responseCOUNTIES
+
+```
+
+*Number of Response Options Selected / Respondent*
+```{r}
+
+splitCOUNTIES = surv %>%
+  mutate(optionsCOUNTIES = str_count(COUNTIES, ",") + 1)
+
+COUNTIES = surv$COUNTIES
+COUNTIES = na.omit(COUNTIES)
+COUNTIES = COUNTIES[COUNTIES != ""]
+
+optionsCOUNTIES = splitCOUNTIES %>%
+  count(optionsCOUNTIES) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COUNTIES))
+
+sum(optionsCOUNTIES$proportion)
+optionsCOUNTIES
+
+optionssumCOUNTIES = optionsCOUNTIES %>%
+  summarise(
+    mean = mean(optionsCOUNTIES, na.rm = TRUE),
+    sd = sd(optionsCOUNTIES, na.rm = TRUE),
+    median = median(optionsCOUNTIES, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(optionsCOUNTIES), decreasing = TRUE)[1])))
+
+optionssumCOUNTIES
+
+```
+
+
+# Demographics 
+#### AGE & GENDER
+```{r}
+
+responsesumAGE = surv %>%
+  summarise(
+    mean = mean(AGE, na.rm = TRUE),
+    sd = sd(AGE, na.rm = TRUE),
+    median = median(AGE, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(AGE), decreasing = TRUE)[1])),
+    min = min(AGE, na.rm = TRUE),
+    max = max(AGE, na.rm = TRUE))
+
+responsesumAGE
+
+
+###############################################################################
+
+GENDER = surv$GENDER
+GENDER = na.omit(GENDER)
+GENDER = GENDER[GENDER != ""]
+
+
+optionsGENDER = surv %>%
+  count(surv$GENDER) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(GENDER))
+
+sum(optionsGENDER$proportion)
+optionsGENDER
+
+```
+
+#### RACE & ETHNICITY
+```{r}
+
+RACE = surv$RACE
+RACE = na.omit(RACE)
+RACE = RACE[RACE != ""]
+
+optionsRACE = surv %>%
+  count(surv$RACE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(RACE))
+
+sum(optionsRACE$proportion)
+optionsRACE
+
+###############################################################################
+
+ETHNICITY = surv$ETHNICITY
+ETHNICITY = na.omit(ETHNICITY)
+ETHNICITY = ETHNICITY[ETHNICITY != ""]
+
+optionsETHNICITY = surv %>%
+  count(surv$ETHNICITY) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(ETHNICITY))
+
+sum(optionsETHNICITY$proportion)
+optionsETHNICITY
+
+
+```
+
+#### INCOME
+**What was your approximate household income in 2023?**
+```{r}
+
+INCOME = surv$INCOME
+INCOME = na.omit(INCOME)
+INCOME = INCOME[INCOME != ""]
+
+optionsINCOME = surv %>%
+  count(surv$INCOME) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(INCOME))
+
+sum(optionsINCOME$proportion)
+optionsINCOME
+
+
+```
+
+
+#### AFFILIATE
+**What is your primary affiliation in the field of wildlife biology?**
+```{r}
+
+AFFILIATE = surv$AFFILIATE
+AFFILIATE = na.omit(AFFILIATE)
+AFFILIATE = AFFILIATE[AFFILIATE != ""]
+
+optionsAFFILIATE = surv %>%
+  count(surv$AFFILIATE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(AFFILIATE))
+
+sum(optionsAFFILIATE$proportion)
+optionsAFFILIATE
+
+```
+
+
+#### ACTIVITY
+**Which type of activities best describe the primary focus of your work in wildlife biology?**
+```{r}
+
+ACTIVITY = surv$ACTIVITY
+ACTIVITY = na.omit(ACTIVITY)
+ACTIVITY = ACTIVITY[ACTIVITY != ""]
+
+optionsACTIVITY = surv %>%
+  count(surv$ACTIVITY) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(ACTIVITY))
+
+sum(optionsACTIVITY$proportion)
+optionsACTIVITY
+
+```
+
+#### SOURCE
+**What is your preferred source to obtain information regarding wildlife health in Alabama? **
+*Number of Respondents Selected / Options*
+```{r}
+
+splitSOURCE = surv  %>%
+  separate_rows(SOURCE, sep = ",") %>%
+  mutate(SOURCE = trimws(SOURCE))
+
+responseSOURCE = splitSOURCE %>%
+    count(SOURCE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / nrow(splitSOURCE))
+
+sum(responseSOURCE$proportion)
+responseSOURCE
+
+```
+
+*Number of Response Options Selected / Respondent*
+```{r}
+
+splitSOURCE = surv %>%
+  mutate(optionsSOURCE = str_count(SOURCE, ",") + 1)
+
+SOURCE = surv$SOURCE
+SOURCE = na.omit(SOURCE)
+SOURCE = SOURCE[SOURCE != ""]
+
+optionsSOURCE = splitSOURCE %>%
+  count(optionsSOURCE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(SOURCE))
+
+sum(optionsSOURCE$proportion)
+optionsSOURCE
+
+optionssumSOURCE = optionsSOURCE %>%
+  summarise(
+    mean = mean(optionsSOURCE, na.rm = TRUE),
+    sd = sd(optionsSOURCE, na.rm = TRUE),
+    median = median(optionsSOURCE, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(optionsSOURCE), decreasing = TRUE)[1])))
+
+optionssumSOURCE
+
+```
+
+
+# AU Wildlife Health Outreach - Symposium/Course
+#### ACCESS
+**Is the information you need regarding wildlife health in Alabama easily accessible to you?**
+```{r}
+
+ACCESS = surv$ACCESS
+ACCESS = na.omit(ACCESS)
+ACCESS = ACCESS[ACCESS != ""]
+
+optionsACCESS = surv %>%
+  count(surv$ACCESS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(ACCESS))
+
+sum(optionsACCESS$proportion)
+optionsACCESS
+
+
+```
+
+
+#### INTEREST
+**Would you be interested in learning more about wildlife health in Alabama?**
+```{r}
+
+INTEREST = surv$INTEREST
+INTEREST = na.omit(INTEREST)
+INTEREST = INTEREST[INTEREST != ""]
+
+optionsINTEREST = surv %>%
+  count(surv$INTEREST) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(INTEREST))
+
+sum(optionsINTEREST$proportion)
+optionsINTEREST
+
+```
+
+
+#### FREEINFO
+**If there was a free course on wildlife health in Alabama, how would you like to participate? **
+*Number of Respondents Selected / Options*
+```{r}
+
+splitFREEINFO = surv  %>%
+  separate_rows(FREEINFO, sep = ",") %>%
+  mutate(FREEINFO = trimws(FREEINFO))
+
+responseFREEINFO = splitFREEINFO %>%
+    count(FREEINFO) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / nrow(splitFREEINFO))
+
+sum(responseFREEINFO$proportion)
+responseFREEINFO
+
+```
+
+*Number of Response Options Selected / Respondent*
+```{r}
+
+splitFREEINFO = surv %>%
+  mutate(optionsFREEINFO = str_count(FREEINFO, ",") + 1)
+
+FREEINFO = surv$FREEINFO
+FREEINFO = na.omit(FREEINFO)
+FREEINFO = FREEINFO[FREEINFO != ""]
+
+optionsFREEINFO = splitFREEINFO %>%
+  count(optionsFREEINFO) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(FREEINFO))
+
+sum(optionsFREEINFO$proportion)
+optionsFREEINFO
+
+optionssumFREEINFO = optionsFREEINFO %>%
+  summarise(
+    mean = mean(optionsFREEINFO, na.rm = TRUE),
+    sd = sd(optionsFREEINFO, na.rm = TRUE),
+    median = median(optionsFREEINFO, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(optionsFREEINFO), decreasing = TRUE)[1])))
+
+optionssumFREEINFO
+
+```
+
+
+#### TOPICS
+**What TOPICS would you like to obtain more information regarding wildlife health in Alabama?**
+*Number of Respondents Selected / Options*
+```{r}
+
+splitTOPICS = surv  %>%
+  separate_rows(TOPICS, sep = ",") %>%
+  mutate(TOPICS = trimws(TOPICS))
+
+TOPICS = na.omit(splitTOPICS)
+totTOPICS = length(TOPICS)
+
+responseTOPICS = splitTOPICS %>%
+    count(TOPICS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / nrow(splitTOPICS))
+
+sum(responseTOPICS$proportion)
+responseTOPICS
+
+```
+
+*Number of Response Options Selected / Respondent*
+```{r}
+
+splitTOPICS = surv %>%
+  mutate(optionsTOPICS = str_count(TOPICS, ",") + 1)
+
+TOPICS = surv$TOPICS
+TOPICS = na.omit(TOPICS)
+TOPICS = TOPICS[TOPICS != ""]
+
+optionsTOPICS = splitTOPICS %>%
+  count(optionsTOPICS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(TOPICS))
+
+sum(optionsTOPICS$proportion)
+optionsTOPICS
+
+optionssumTOPICS = optionsTOPICS %>%
+  summarise(
+    mean = mean(optionsTOPICS, na.rm = TRUE),
+    sd = sd(optionsTOPICS, na.rm = TRUE),
+    median = median(optionsTOPICS, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(optionsTOPICS), decreasing = TRUE)[1])))
+
+optionssumTOPICS
+
+```
+
+
+
+
+# Education & Experience
+#### EDUCATION
+**What is the highest degree or level of education you have completed?**
+```{r}
+
+EDUCATION = surv$EDUCATION
+EDUCATION = na.omit(EDUCATION)
+EDUCATION = EDUCATION[EDUCATION != ""]
+
+optionsEDUCATION = surv %>%
+  count(surv$EDUCATION) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(EDUCATION))
+
+sum(optionsEDUCATION$proportion)
+optionsEDUCATION
+
+```
+
+
+#### DEGREE
+**Do you have a degree in wildlife biology, ecology, or management or related field?**
+```{r}
+
+DEGREE = surv$DEGREE
+DEGREE = na.omit(DEGREE)
+DEGREE = DEGREE[DEGREE != ""]
+
+optionsDEGREE = surv %>%
+  count(surv$DEGREE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(DEGREE))
+
+sum(optionsDEGREE$proportion)
+optionsDEGREE
+
+```
+
+
+#### COURSE & COURSETIME
+**Have you had a formal course on wildlife health? - When did you take a formal course on wildlife health?**
+```{r}
+
+COURSE = surv$COURSE
+COURSE = na.omit(COURSE)
+COURSETIME = COURSE[COURSE != ""]
+
+optionsCOURSE = surv %>%
+  count(surv$COURSE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COURSE))
+
+sum(optionsCOURSE$proportion)
+optionsCOURSE
+
+###############################################################################
+
+COURSETIME = surv$COURSETIME
+COURSETIME = na.omit(COURSETIME)
+COURSETIME = COURSETIME[COURSETIME != ""]
+
+optionsCOURSETIME = surv %>%
+  count(surv$COURSETIME) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COURSETIME))
+
+sum(optionsCOURSETIME$proportion)
+optionsCOURSETIME
+
+
+```
+
+
+#### BIOTIME
+**For how many years have you been employed as a wildlife biologist?**
+```{r}
+
+BIOTIME = surv$BIOTIME
+BIOTIME = na.omit(BIOTIME)
+BIOTIME = BIOTIME[BIOTIME != ""]
+
+optionsBIOTIME = surv %>%
+  count(surv$BIOTIME) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(BIOTIME))
+
+sum(optionsBIOTIME$proportion)
+optionsBIOTIME
+
+
+```
+
+
+
+# Titles 
+#### TWS
+**Are you certified by The Wildlife Society (TWS) as a wildlife biologist?**
+```{r}
+
+TWS = surv$TWS
+TWS = na.omit(TWS)
+TWS = TWS[TWS != ""]
+
+optionsTWS = surv %>%
+  count(surv$TWS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(TWS))
+
+sum(optionsTWS$proportion)
+optionsTWS
+
+```
+
+
+#### SELFTITLE
+**Do you consider yourself to be a wildlife biologist?**
+```{r}
+
+SELFTITLE = surv$SELFTITLE
+SELFTITLE = na.omit(SELFTITLE)
+SELFTITLE = SELFTITLE[SELFTITLE != ""]
+
+optionsSELFTITLE = surv %>%
+  count(surv$SELFTITLE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(SELFTITLE))
+
+sum(optionsSELFTITLE$proportion)
+optionsSELFTITLE
+
+```
+
+
+#### LICENSE
+**Did you have a hunting/trapping license for the state of Alabama in the past three years (2020-2023)?**
+```{r}
+
+LICENSE = surv$LICENSE
+LICENSE = na.omit(LICENSE)
+LICENSE = LICENSE[LICENSE != ""]
+
+optionsLICENSE = surv %>%
+  count(surv$LICENSE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(LICENSE))
+
+sum(optionsLICENSE$proportion)
+optionsLICENSE
+
+```
+
+
+
+
+# Practices 
+
+## Direct & Indirect Contact
+#### CONTACT
+**How frequently do you come into direct physical contact with wildlife in Alabama as part of your employment duties?**
+```{r}
+
+CONTACT = surv$CONTACT
+CONTACT = na.omit(CONTACT)
+CONTACT = CONTACT[CONTACT != ""]
+
+optionsCONTACT = surv %>%
+  count(surv$CONTACT) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(CONTACT))
+
+sum(optionsCONTACT$proportion)
+optionsCONTACT
+
+
+```
+
+#### FIELD
+**What percentage of the time do you spend in the field as part of your employment duties?**
+```{r}
+
+FIELD = surv$FIELD
+FIELD = na.omit(FIELD)
+FIELD = FIELD[FIELD != ""]
+
+optionsFIELD = surv %>%
+  count(surv$FIELD) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(FIELD))
+
+sum(optionsFIELD$proportion)
+optionsFIELD
+
+
+
+responsesumFIELD = surv %>%
+  summarise(
+    mean = mean(FIELD, na.rm = TRUE),
+    sd = sd(FIELD, na.rm = TRUE),
+    median = median(FIELD, na.rm = TRUE),
+    mode = as.numeric(names(sort(table(FIELD), decreasing = TRUE)[1])))
+
+responsesumFIELD
+
+```
+
+
+#### COLLECT
+**Do you regularly collect samples in the field from wildlife in Alabama?**
+```{r}
+
+COLLECT = surv$COLLECT
+COLLECT = na.omit(COLLECT)
+COLLECT = COLLECT[COLLECT != ""]
+
+optionsCOLLECT = surv %>%
+  count(surv$COLLECT) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COLLECT))
+
+sum(optionsCOLLECT$proportion)
+optionsCOLLECT
+
+
+```
+
+
+#### HANDLE & STATE
+**Do you regularly handle samples in the laboratory or field that have been collected from wildlife in Alabama? - At collection of samples, the animal is? **
+```{r}
+
+HANDLE = surv$HANDLE
+HANDLE = na.omit(HANDLE)
+HANDLE = HANDLE[HANDLE != ""]
+
+optionsHANDLE = surv %>%
+  count(surv$HANDLE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(HANDLE))
+
+sum(optionsHANDLE$proportion)
+optionsHANDLE
+
+###############################################################################
+
+STATE = surv$STATE
+STATE = na.omit(STATE)
+STATE = STATE[STATE != ""]
+
+optionsSTATE = surv %>%
+  count(surv$STATE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(STATE))
+
+sum(optionsSTATE$proportion)
+optionsSTATE
+
+
+```
+
+
+## Precautions
+#### PPE & PPETIME
+**If you handle or collect samples from wildlife in Alabama, do you utilize personal protective equipment (PPE)? - How often do you use PPE when handling or collecting samples?**
+```{r}
+
+PPE = surv$PPE
+PPE = na.omit(PPE)
+PPE = PPE[PPE != ""]
+
+optionsPPE = surv %>%
+  count(surv$PPE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(PPE))
+
+sum(optionsPPE$proportion)
+optionsPPE
+
+###############################################################################
+
+PPETIME = surv$PPETIME
+PPETIME = na.omit(PPETIME)
+PPETIME = PPETIME[PPETIME != ""]
+
+optionsPPETIME = surv %>%
+  count(surv$PPETIME) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(PPETIME))
+
+sum(optionsPPETIME$proportion)
+optionsPPETIME
+
+
+```
+
+
+
+# Knowledge
+
+## Transmission
+#### PIGS
+**Wild pigs may serve as a source of infectious disease transmission to both humans and domestic animals in Alabama**
+```{r}
+
+PIGS = surv$PIGS
+PIGS = na.omit(PIGS)
+PIGS = PIGS[PIGS != ""]
+
+optionsPIGS = surv %>%
+  count(surv$PIGS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(PIGS))
+
+sum(optionsPIGS$proportion)
+optionsPIGS
+
+```
+
+
+#### CWD
+**Chronic Wasting Disease (CWD) is primarily transmitted among cervids (deer/elk) through ticks**
+```{r}
+
+CWD = surv$CWD
+CWD = na.omit(CWD)
+CWD = CWD[CWD != ""]
+
+optionsCWD = surv %>%
+  count(surv$CWD) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(CWD))
+
+sum(optionsCWD$proportion)
+optionsCWD
+
+
+```
+
+
+#### COVID
+**SARS CoV2 (COVID) can infect deer**
+```{r}
+
+COVID = surv$COVID
+COVID = na.omit(COVID)
+COVID = COVID[COVID != ""]
+
+optionsCOVID = surv %>%
+  count(surv$COVID) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COVID))
+
+sum(optionsCOVID$proportion)
+optionsCOVID
+
+
+```
+
+
+#### COVIDSPILL
+**SARS CoV2 (COVID) from wildlife can infect humans**
+```{r}
+
+COVIDSPILL = surv$COVIDSPILL
+COVIDSPILL = na.omit(COVIDSPILL)
+COVIDSPILL = COVIDSPILL[COVIDSPILL != ""]
+
+optionsCOVIDSPILL = surv %>%
+  count(surv$COVIDSPILL) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(COVIDSPILL))
+
+sum(optionsCOVIDSPILL$proportion)
+optionsCOVIDSPILL
+
+
+```
+
+
+#### RABIES 
+**How is rabies transmitted?**
+```{r}
+
+RABIES = surv$RABIES
+RABIES = na.omit(RABIES)
+RABIES = RABIES[RABIES != ""]
+
+optionsRABIES = surv %>%
+  count(surv$RABIES) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(RABIES))
+
+sum(optionsRABIES$proportion)
+optionsRABIES
+
+```
+
+
+## Etiology
+#### BRUCE
+**Brucellosis affects reproduction in domestic animals but is not a concern for wildlife**
+```{r}
+
+BRUCE = surv$BRUCE
+BRUCE = na.omit(BRUCE)
+BRUCE = BRUCE[BRUCE != ""]
+
+optionsBRUCE = surv %>%
+  count(surv$BRUCE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(BRUCE))
+
+sum(optionsBRUCE$proportion)
+optionsBRUCE
+
+```
+
+#### FLU
+**Avian influenza does not kill wildlife**
+```{r}
+
+FLU = surv$FLU
+FLU = na.omit(FLU)
+FLU = FLU[FLU != ""]
+
+optionsFLU = surv %>%
+  count(surv$FLU) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(FLU))
+
+sum(optionsFLU$proportion)
+optionsFLU
+
+
+```
+
+
+## Epidemiology
+#### FLUAL
+**Avian influenza has been found in wild and domestic birds in Alabama**
+```{r}
+
+FLUAL = surv$FLUAL
+FLUAL = na.omit(FLUAL)
+FLUAL = FLUAL[FLUAL != ""]
+
+optionsFLUAL = surv %>%
+  count(surv$FLUAL) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(FLUAL))
+
+sum(optionsFLUAL$proportion)
+optionsFLUAL
+
+
+```
+
+
+#### RABIESAL
+**Rabies has been found in ALL states that border Alabama**
+```{r}
+
+RABIESAL = surv$RABIESAL
+RABIESAL = na.omit(RABIESAL)
+RABIESAL = RABIESAL[RABIESAL != ""]
+
+optionsRABIESAL = surv %>%
+  count(surv$RABIESAL) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(RABIESAL))
+
+sum(optionsRABIESAL$proportion)
+optionsRABIESAL
+
+
+```
+
+
+## Exposure Response
+#### TURKEY
+**How should you dispose of a fresh wild turkey carcass that was found in Alabama?**
+```{r}
+
+TURKEY = surv$TURKEY
+TURKEY = na.omit(TURKEY)
+TURKEY = TURKEY[TURKEY != ""]
+
+optionsTURKEY = surv %>%
+  count(surv$TURKEY) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(TURKEY))
+
+sum(optionsTURKEY$proportion)
+optionsTURKEY
+
+
+```
+
+
+
+# Attitudes 
+
+## Perception of Risks
+#### CWDAL
+**CWD was present in Alabama before the 21st century**
+```{r}
+
+CWDAL = surv$CWDAL
+CWDAL = na.omit(CWDAL)
+CWDAL = CWDAL[CWDAL != ""]
+
+optionsCWDAL = surv %>%
+  count(surv$CWDAL) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(CWDAL))
+
+sum(optionsCWDAL$proportion)
+optionsCWDAL
+
+
+```
+
+
+#### BATS 
+**Bats are significant carriers of many infectious diseases in Alabama**
+```{r}
+
+BATS = surv$BATS
+BATS = na.omit(BATS)
+BATS = BATS[BATS != ""]
+
+optionsBATS = surv %>%
+  count(surv$BATS) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(BATS))
+
+sum(optionsBATS$proportion)
+optionsBATS
+
+
+```
+
+
+#### PPEREQ
+**Personal Protective Equipment (PPE) is necessary when conducting fieldwork that does not directly involve zoonotic diseases**
+```{r}
+
+PPEREQ = surv$PPEREQ
+PPEREQ = na.omit(PPEREQ)
+PPEREQ = PPEREQ[PPEREQ != ""]
+
+optionsPPEREQ = surv %>%
+  count(surv$PPEREQ) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(PPEREQ))
+
+sum(optionsPPEREQ$proportion)
+optionsPPEREQ
+
+
+```
+
+
+#### EHD
+**Epizootic Hemorrhagic Disease (EHD) is a major threat to human health.**
+```{r}
+
+EHD = surv$EHD
+EHD = na.omit(EHD)
+EHD = EHD[EHD != ""]
+
+optionsEHD = surv %>%
+  count(surv$EHD) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(EHD))
+
+sum(optionsEHD$proportion)
+optionsEHD
+
+
+```
+
+
+## Disease Management
+#### DARWIN
+**The only way to deal with zoonotic diseases in wildlife (such as rabies) is to let nature take its course**
+```{r}
+
+DARWIN = surv$DARWIN
+DARWIN = na.omit(DARWIN)
+DARWIN = DARWIN[DARWIN != ""]
+
+optionsDARWIN = surv %>%
+  count(surv$DARWIN) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(DARWIN))
+
+sum(optionsDARWIN$proportion)
+optionsDARWIN
+
+
+```
+
+
+#### POPRED
+**Reducing the population of certain wild species in affected areas will eliminate infectious diseases in Alabama**
+```{r}
+
+POPRED = surv$POPRED
+POPRED = na.omit(POPRED)
+POPRED = POPRED[POPRED != ""]
+
+optionsPOPRED = surv %>%
+  count(surv$POPRED) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(POPRED))
+
+sum(optionsPOPRED$proportion)
+optionsPOPRED
+
+
+```
+
+
+#### POPPLAN
+**Current plans to manage wildlife populations in Alabama will be effective in controlling infectious diseases**
+```{r}
+
+POPPLAN = surv$POPPLAN
+POPPLAN = na.omit(POPPLAN)
+POPPLAN = POPPLAN[POPPLAN != ""]
+
+optionsPOPPLAN = surv %>%
+  count(surv$POPPLAN) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(POPPLAN))
+
+sum(optionsPOPPLAN$proportion)
+optionsPOPPLAN
+
+
+```
+
+
+#### SURVEY
+**Surveillance is essential to successful infectious disease management**
+```{r}
+
+SURVEY = surv$SURVEY
+SURVEY = na.omit(SURVEY)
+SURVEY = SURVEY[SURVEY != ""]
+
+optionsSURVEY = surv %>%
+  count(surv$SURVEY) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(SURVEY))
+
+sum(optionsSURVEY$proportion)
+optionsSURVEY
+
+```
+
+
+#### VACCINE
+**The vaccination of wildlife, such as for rabies, should be considered for other diseases**
+```{r}
+
+VACCINE = surv$VACCINE
+VACCINE = na.omit(VACCINE)
+VACCINE = VACCINE[VACCINE != ""]
+
+optionsVACCINE = surv %>%
+  count(surv$VACCINE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(VACCINE))
+
+sum(optionsVACCINE$proportion)
+optionsVACCINE
+
+
+```
+
+
+## Impacted Health
+#### PREVAL
+**about the current prevalence of wildlife diseases in Alabama**
+```{r}
+
+PREVAL = surv$PREVAL
+PREVAL = na.omit(PREVAL)
+PREVAL = PREVAL[PREVAL != ""]
+
+optionsPREVAL = surv %>%
+  count(surv$PREVAL) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(PREVAL))
+
+sum(optionsPREVAL$proportion)
+optionsPREVAL
+
+
+```
+
+
+#### DIVERSE
+**that infectious diseases will affect Alabama’s biodiversity**
+```{r}
+
+DIVERSE = surv$DIVERSE
+DIVERSE = na.omit(DIVERSE)
+DIVERSE = DIVERSE[DIVERSE != ""]
+
+optionsDIVERSE = surv %>%
+  count(surv$DIVERSE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(DIVERSE))
+
+sum(optionsDIVERSE$proportion)
+optionsDIVERSE
+
+
+```
+
+
+#### CONSEQ
+**that wildlife diseases in my region will affect my health or my family’s health today**
+```{r}
+
+CONSEQ = surv$CONSEQ
+CONSEQ = na.omit(CONSEQ)
+CONSEQ = CONSEQ[CONSEQ != ""]
+
+optionsCONSEQ = surv %>%
+  count(surv$CONSEQ) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(CONSEQ))
+
+sum(optionsCONSEQ$proportion)
+optionsCONSEQ
+
+
+```
+
+
+#### CLIMATE
+**that climate change will impact wildlife health in Alabama.**
+```{r}
+
+CLIMATE = surv$CLIMATE
+CLIMATE = na.omit(CLIMATE)
+CLIMATE = CLIMATE[CLIMATE != ""]
+
+optionsCLIMATE = surv %>%
+  count(surv$CLIMATE) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(CLIMATE))
+
+sum(optionsCLIMATE$proportion)
+optionsCLIMATE
+
+
+```
+
+
+## Health Education
+#### EDREQ
+**A course on wildlife health should be required for a major in wildlife biology**
+```{r}
+
+EDREQ = surv$EDREQ
+EDREQ = na.omit(EDREQ)
+EDREQ = EDREQ[EDREQ != ""]
+
+optionsEDREQ = surv %>%
+  count(surv$EDREQ) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(EDREQ))
+
+sum(optionsEDREQ$proportion)
+optionsEDREQ
+
+
+```
+
+
+#### INFO
+**Information on wildlife health can be acquired through continuing education rather than in undergraduate courses**
+```{r}
+
+INFO = surv$INFO
+INFO = na.omit(INFO)
+INFO = INFO[INFO != ""]
+
+optionsINFO = surv %>%
+  count(surv$INFO) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(INFO))
+
+sum(optionsINFO$proportion)
+optionsINFO
+
+
+```
+
+
+#### HANDSON
+**All critical elements (including aspects of wildlife health) can be acquired through on-the-job training and experience**
+```{r}
+
+HANDSON = surv$HANDSON
+HANDSON = na.omit(HANDSON)
+HANDSON = HANDSON[HANDSON != ""]
+
+optionsHANDSON = surv %>%
+  count(surv$HANDSON) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / length(HANDSON))
+
+sum(optionsHANDSON$proportion)
+optionsHANDSON
+
+
+```
+#TABLES 
+```{r}
+
+# library(purrr)
+# 
+# response_tables = list(
+#       responsesumAGE = responsesumAGE,
+#       responseSOURCE = responseSOURCE,
+#       responseFREEINFO = responseFREEINFO,
+#       responseTOPICS = responseTOPICS,
+#    responseFIELD = responsesumFIELD,
+#    responseCOUNTIES = responseCOUNTIES)
+# 
+# option_tables = list(
+#   optionsCOUNTIES = optionsCOUNTIES,
+#   optionssumCOUNTIES = optionssumCOUNTIES,
+#   optionsGENDER = optionsGENDER,
+#   optionsRACE = optionsRACE,
+#   optionsETHNICITY = optionsETHNICITY,
+#   optionsINCOME = optionsINCOME,
+#   optionsAFFILIATE = optionsAFFILIATE,
+#   optionsACTIVITY = optionsACTIVITY,
+#   optionsSOURCE = optionsSOURCE,
+#   optionssumSOURCE = optionssumSOURCE,
+#   optionsACCESS = optionsACCESS,
+#   optionsINTEREST = optionsINTEREST,
+#   optionsFREEINFO = optionsFREEINFO,
+#   optionssumFREEINFO = optionssumFREEINFO,
+#   optionsTOPICS = optionsTOPICS,
+#   optionssumTOPICS = optionssumTOPICS,
+#   optionsEDUCATION = optionsEDUCATION,
+#   optionsDEGREE = optionsDEGREE,
+#   optionsCOURSE = optionsCOURSE,
+#   optionsCOURSETIME = optionsCOURSETIME,
+#   optionsBIOTIME = optionsBIOTIME,
+#   optionsTWS = optionsTWS,
+#   optionsSELFTITLE = optionsSELFTITLE,
+#   optionsLICENSE = optionsLICENSE,
+#   optionsCONTACT = optionsCONTACT,
+#   optionsFIELD = optionsFIELD,
+#   optionsCOLLECT = optionsCOLLECT,
+#   optionsHANDLE = optionsHANDLE,
+#   optionsSTATE = optionsSTATE,
+#   optionsPPE = optionsPPE,
+#   optionsPPETIME = optionsPPETIME,
+#   optionsPIGS = optionsPIGS,
+#   optionsCWD = optionsCWD,
+#   optionsCOVID = optionsCOVID,
+#   optionsCOVIDSPILL = optionsCOVIDSPILL,
+#   optionsRABIES = optionsRABIES,
+#   optionsBRUCE = optionsBRUCE,
+#   optionsFLU = optionsFLU,
+#   optionsFLUAL = optionsFLUAL,
+#   optionsRABIESAL = optionsRABIESAL,
+#   optionsTURKEY = optionsTURKEY,
+#   optionsCWDAL = optionsCWDAL,
+#   optionsBATS = optionsBATS,
+#   optionsPPEREQ = optionsPPEREQ,
+#   optionsEHD = optionsEHD,
+#   optionsDARWIN = optionsDARWIN,
+#   optionsPOPRED = optionsPOPRED,
+#   optionsPOPPLAN = optionsPOPPLAN,
+#   optionsSURVEY = optionsSURVEY,
+#   optionsVACCINE = optionsVACCINE,
+#   optionsPREVAL = optionsPREVAL,
+#   optionsDIVERSE = optionsDIVERSE,
+#   optionsCONSEQ = optionsCONSEQ,
+#   optionsCLIMATE = optionsCLIMATE,
+#   optionsEDREQ = optionsEDREQ,
+#   optionsINFO = optionsINFO,
+#   optionsHANDSON = optionsHANDSON)
+# 
+# save_tables_as_csv = function(tables, prefix) {
+#   walk2(tables, names(tables), ~write.csv(.x, paste0(prefix, "_", .y, ".csv"), row.names = FALSE))
+# }
+# 
+# save_tables_as_csv(response_tables, "response")
+# save_tables_as_csv(option_tables, "option")
+
+
+```
+

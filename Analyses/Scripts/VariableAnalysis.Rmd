@@ -1,0 +1,69 @@
+---
+title: "Descriptive Statistics"
+output: html_notebook
+---
+
+#### Packages & Data
+```{r}
+
+require(dplyr)
+require(sf)
+require(sp)
+require(tidyverse)
+require(tidyterra)
+require(terra)
+require(ggplot2)
+
+bsurv = read.csv("C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/Binary/BINcombined.csv")
+
+
+```
+
+
+
+# ACTUAL/PERCIEVED KNOWLEDGE
+
+#### Knowledge: Correct
+```{r}
+
+bsurv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")] = 
+  lapply(bsurv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES",
+  "TURKEY")], as.numeric)
+
+bsurv$CORRECT = rowSums(bsurv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")],, na.rm = TRUE)
+
+# median # correct answers = 7 
+medcorrect = median(bsurv$CORRECT)
+medcorrect
+
+# More knowledgeable = 1 ~ less knowledgeable = 0 
+bsurv$CORRECTmed = ifelse(bsurv$CorrectAnswers >= 7, 1, 0)
+bsurv$CORRECT50 = ifelse(bsurv$CorrectAnswers > 5, 1, 0)
+
+
+```
+
+#### Knowledge: Certainty 
+```{r}
+
+bsurv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")] = lapply(bsurv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")], as.numeric)
+
+bsurv$CERTAINTY = rowSums(bsurv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")])
+
+# median # certain answers = 9
+certainmed = median(bsurv$CERTAINTY)
+certainmed
+
+# More certain = 1 ~ less certain = 0 
+bsurv$CERTAINmed = ifelse(bsurv$CERTAINTY >= 9, 1, 0)
+bsurv$CERTAIN50 = ifelse(bsurv$CERTAINTY > 5, 1, 0)
+
+```
+
+## Exporting CSV
+```{r}
+
+write.csv(bsurv, "C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/OUTr/analysisvariables.csv")
+
+```
+

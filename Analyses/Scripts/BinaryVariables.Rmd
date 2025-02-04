@@ -1,0 +1,941 @@
+---
+title: "Binary Variables"
+output: html_notebook
+---
+
+
+#### Packages & Data
+```{r}
+
+require(dplyr)
+require(sf)
+require(sp)
+require(tidyverse)
+require(tidyterra)
+require(terra)
+require(ggplot2)
+
+# completed/ full responses = 154
+binsurv = read.csv("C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/Descriptive/hsurvcomplete.csv")
+
+```
+
+# Groups 
+### Demographic
+
+```{r}
+
+# Median = 35 
+# 1 = older, 0 = younger
+binsurv = binsurv %>%
+  mutate(AGE = ifelse(AGE > 35, "1", "0"))
+
+unique(binsurv$AGE)
+
+###############################################################################
+
+unique(binsurv$GENDER)
+# Female = 0, Male = 1
+# Other/ I prefer not to answer = NA
+
+binsurv$GENDERb[binsurv$GENDER == "Female"] = 0
+binsurv$GENDERb[binsurv$GENDER == "Male"] = 1
+binsurv$GENDERb[binsurv$GENDER == "I prefer not to answer"] = NA
+binsurv$GENDERb[binsurv$GENDER == "Other"] = NA
+
+unique(binsurv$GENDERb)
+
+
+###############################################################################
+
+unique(binsurv$INCOME)
+# CUMULATIVE PROPORTION = 0.51533741 at $70,001-80,000
+# 1 = higher, 0 = lower 
+
+binsurv = binsurv %>%
+  mutate(INCOME = na_if(INCOME, ""))
+
+binsurv = binsurv %>%
+  mutate(INCOME = case_when(
+    INCOME %in% c("$0-20,000", "$20,001-30,000", "$30,001-40,000", 
+                  "$40,001-50,000", "$50,001-60,000","$60,001-70,000") ~ 0,
+    INCOME %in% c("$70,001-80,000", "$80,001-90,000", "$90,001-100,000", "$100,001+") ~ 1,
+    TRUE ~ NA_real_ ))
+
+unique(binsurv$INCOME)
+
+###############################################################################
+
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(COURSE = na_if(COURSE, ""))
+
+binsurv$COURSE[binsurv$COURSE == "No"] = 0
+binsurv$COURSE[binsurv$COURSE == "Yes"] = 1
+
+
+#################################################################################
+
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(TWS = na_if(TWS, ""))
+
+binsurv$TWS[binsurv$TWS == "No"] = 0
+binsurv$TWS[binsurv$TWS == "Yes"] = 1
+
+unique(binsurv$TWS)
+
+###############################################################################
+
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(SELFTITLE = na_if(SELFTITLE, ""))
+
+binsurv$SELFTITLE[binsurv$SELFTITLE == "No"] = 0
+binsurv$SELFTITLE[binsurv$SELFTITLE == "Yes"] = 1
+
+unique(binsurv$SELFTITLE)
+
+###############################################################################
+
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(LICENSE = na_if(LICENSE, ""))
+
+binsurv$LICENSE[binsurv$LICENSE == "No"] = 0
+binsurv$LICENSE[binsurv$LICENSE == "Yes"] = 1
+
+unique(binsurv$LICENSE)
+
+
+```
+
+#### Willingness to Learn
+```{r}
+
+# number of response options selected by participant
+# Median selected = 3.5 
+
+unique(binsurv$FREEINFO)
+
+
+# responses selected
+binsurv$FREEINFOcount = sapply(strsplit(binsurv$FREEINFO, ","), length)
+
+# more/less than median/mean/middle
+binsurv$FREEINFO = ifelse(binsurv$FREEINFOcount >= 3.5, 1, 0)
+
+
+unique(binsurv$FREEINFO)
+unique(binsurv$FREEINFOcount)
+
+###############################################################################
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(ACCESS = na_if(ACCESS, ""))
+
+binsurv$ACCESS[binsurv$ACCESS == "No"] = 0
+binsurv$ACCESS[binsurv$ACCESS == "Yes"] = 1
+
+unique(binsurv$ACCESS)
+
+###############################################################################
+
+# unsure / no = 0 
+# yes = 1 
+
+unique(binsurv$INTEREST)
+
+binsurv = binsurv %>%
+  mutate(INTEREST = na_if(INTEREST, ""))
+
+binsurv$INTEREST[binsurv$INTEREST == "Yes"] = 1
+binsurv$INTEREST[binsurv$INTEREST == "No"] = 0
+binsurv$INTEREST[binsurv$INTEREST == "Unsure"] = 0
+
+unique(binsurv$INTEREST)
+
+###############################################################################
+
+# TOPICS selected by each participant
+# median 5 - above/below
+# TOPICS2
+
+# responses selected
+binsurv$TOPICScount = sapply(strsplit(binsurv$TOPICS, ","), length)
+
+# more/less than median/mean/middle
+binsurv$TOPICS = ifelse(binsurv$TOPICScount >= 5, 1, 0)
+
+unique(binsurv$TOPICS)
+unique(binsurv$TOPICScount)
+
+###############################################################################
+
+# SOURCE selected by each participant
+# median 3,5- above/below
+# SOURCE2
+
+# responses selected
+binsurv$SOURCEcount = sapply(strsplit(binsurv$SOURCE, ","), length)
+
+# more/less than median/mean/middle
+binsurv$SOURCE = ifelse(binsurv$SOURCEcount >= 3.5, 1, 0)
+
+unique(binsurv$SOURCE)
+unique(binsurv$SOURCEcount)
+
+
+```
+
+
+#### Expertise 
+```{r}
+
+# CUMULATIVE PROPORTION =  0.19018405 for Some College/AA or AS (2-year degree) and 0.613496933	at College Graduate/BA or BS (4-year degree)
+# logical = D, E, F / A, B, C
+# 1 = more educated / 0 = less educated 
+unique(binsurv$EDUCATION)
+
+binsurv = binsurv %>%
+  mutate(EDUCATION = na_if(EDUCATION, ""))
+
+binsurv$EDUCATION[binsurv$EDUCATION == "Did not graduate high school/no GED"] = 0
+binsurv$EDUCATION[binsurv$EDUCATION == "High school graduate/GED"] = 0
+binsurv$EDUCATION[binsurv$EDUCATION == "Technical/Vocational School"] = 0
+binsurv$EDUCATION[binsurv$EDUCATION == "Some College/AA or AS (2-year degree)"] = 1
+binsurv$EDUCATION[binsurv$EDUCATION == "College Graduate/BA or BS (4-year degree)"] = 1
+binsurv$EDUCATION[binsurv$EDUCATION == "Graduate or Professional School"] = 1
+
+unique(binsurv$EDUCATION)
+
+###############################################################################
+
+unique(surv$DEGREE)
+# yes = 1 / no = 0 
+
+binsurv = binsurv %>%
+  mutate(DEGREE = na_if(DEGREE, ""))
+
+binsurv$DEGREE[binsurv$DEGREE == "No"] = 0
+binsurv$DEGREE[binsurv$DEGREE == "Yes"] = 1
+
+unique(binsurv$DEGREE)
+
+###############################################################################
+
+unique(surv$COURSE)
+# Yes = 1 , No = 0
+
+binsurv = binsurv %>%
+  mutate(COURSE = na_if(COURSE, ""))
+
+binsurv$COURSE[binsurv$COURSE == "No"] = 0
+binsurv$COURSE[binsurv$COURSE == "Yes"] = 1
+
+unique(binsurv$COURSE)
+
+###############################################################################
+
+# CUMULATIVE PROPORTION OF < 5 years & 5-10 years = 0.5555556
+# > 10 years = 0 , <5 - 10 = 1 
+
+unique(surv$COURSETIME)
+
+binsurv$COURSETIME[binsurv$COURSETIME == ">10 years"] = 0
+binsurv$COURSETIME[binsurv$COURSETIME == "5-10 years"] = 1
+binsurv$COURSETIME[binsurv$COURSETIME == "<5 years"] = 1
+
+unique(binsurv$COURSETIME)
+
+###############################################################################
+
+# CUMULATIVE PROPORTION = 0.4907975 for 1-5 years and 0.6748466 5-10 years
+unique(BIOTIME) # 5 options - logic - "5-10" year cutoff
+
+# >10 years = 1 / <5 years = 0 
+
+binsurv$BIOTIME[binsurv$BIOTIME == "<1 year"] = 0
+binsurv$BIOTIME[binsurv$BIOTIME == "1-5 years"] = 0
+binsurv$BIOTIME[binsurv$BIOTIME == "5-10 years"] = 1
+binsurv$BIOTIME[binsurv$BIOTIME == "10-20 years"] = 1
+binsurv$BIOTIME[binsurv$BIOTIME == ">20 years"] = 1
+
+unique(binsurv$BIOTIME)
+
+```
+# Knowledge
+#### Correct
+```{r}
+
+# Correct Answer = 1, I Don't Know and incorrect = 0 
+binsurv$PIGSp = binsurv$PIGS
+unique(binsurv$PIGS)
+# TRUE = 1
+# FALSE = 0
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(PIGS = na_if(PIGS, ""))
+
+binsurv$PIGS[binsurv$PIGS ==         "TRUE"] = 1
+binsurv$PIGS[binsurv$PIGS ==        "FALSE"] = 0
+binsurv$PIGS[binsurv$PIGS == "I don't know"] = 0
+
+unique(binsurv$PIGS)
+
+###############################################################################
+
+binsurv$BRUCEp = binsurv$BRUCE
+
+# TRUE = 0
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(BRUCE = na_if(BRUCE, ""))
+
+binsurv$BRUCE[binsurv$BRUCE ==         "TRUE"] = 0
+binsurv$BRUCE[binsurv$BRUCE ==        "FALSE"] = 1
+binsurv$BRUCE[binsurv$BRUCE == "I don't know"] = 0
+
+unique(binsurv$BRUCE)
+
+###############################################################################
+
+binsurv$CWDp = binsurv$CWD
+unique(binsurv$CWD)
+# TRUE = 0
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(CWD = na_if(CWD, ""))
+
+binsurv$CWD[binsurv$CWD ==         "TRUE"] = 0
+binsurv$CWD[binsurv$CWD ==        "FALSE"] = 1
+binsurv$CWD[binsurv$CWD == "I don't know"] = 0
+
+unique(binsurv$CWD)
+
+###############################################################################
+
+binsurv$FLUALp = binsurv$FLUAL
+# TRUE = 1
+# FALSE = 0
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(FLUAL = na_if(FLUAL, ""))
+
+binsurv$FLUAL[binsurv$FLUAL ==         "TRUE"] = 1
+binsurv$FLUAL[binsurv$FLUAL ==        "FALSE"] = 0
+binsurv$FLUAL[binsurv$FLUAL == "I don't know"] = 0
+
+unique(binsurv$FLUAL)
+
+###############################################################################
+
+binsurv$FLUp = binsurv$FLU
+# TRUE = 0
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(FLU = na_if(FLU, ""))
+
+binsurv$FLU[binsurv$FLU ==         "TRUE"] = 0
+binsurv$FLU[binsurv$FLU ==        "FALSE"] = 1
+binsurv$FLU[binsurv$FLU == "I don't know"] = 0
+
+unique(binsurv$FLU)
+
+###############################################################################
+
+binsurv$COVIDp = binsurv$COVID
+# TRUE = 1
+# FALSE = 0
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(COVID = na_if(COVID, ""))
+
+binsurv$COVID[binsurv$COVID ==         "TRUE"] = 1
+binsurv$COVID[binsurv$COVID ==        "FALSE"] = 0
+binsurv$COVID[binsurv$COVID == "I don't know"] = 0
+
+unique(binsurv$COVID)
+
+###############################################################################
+
+binsurv$COVIDSPILLp = binsurv$COVIDSPILL
+# TRUE = 0
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(COVIDSPILL = na_if(COVIDSPILL, ""))
+
+binsurv$COVIDSPILL[binsurv$COVIDSPILL ==         "TRUE"] = 0
+binsurv$COVIDSPILL[binsurv$COVIDSPILL ==        "FALSE"] = 1
+binsurv$COVIDSPILL[binsurv$COVIDSPILL == "I don't know"] = 0
+
+unique(binsurv$COVIDSPILL)
+
+###############################################################################
+
+binsurv$RABIESALp = binsurv$RABIESAL
+# TRUE = 0
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(RABIESAL = na_if(RABIESAL, ""))
+
+binsurv$RABIESAL[binsurv$RABIESAL ==         "TRUE"] = 0
+binsurv$RABIESAL[binsurv$RABIESAL ==        "FALSE"] = 1
+binsurv$RABIESAL[binsurv$RABIESAL == "I don't know"] = 0
+
+unique(binsurv$RABIESAL)
+
+
+###############################################################################
+
+binsurv$RABIESp = binsurv$RABIES
+# Bites = 1
+# Blood, Arthropods, Urine, Feces, I don't Know = 0 
+
+binsurv = binsurv %>%
+  mutate(RABIES = na_if(RABIES, ""))
+
+binsurv$RABIES[binsurv$RABIES ==        "Bites"] = 1
+binsurv$RABIES[binsurv$RABIES ==        "Blood"] = 0
+binsurv$RABIES[binsurv$RABIES == "I don't know"] = 0
+binsurv$RABIES[binsurv$RABIES ==   "Anthropods"] = 0
+binsurv$RABIES[binsurv$RABIES ==        "Urine"] = 0
+binsurv$RABIES[binsurv$RABIES ==        "Feces"] = 0
+
+unique(binsurv$RABIES)
+
+###############################################################################
+
+binsurv$TURKEYp = binsurv$TURKEY
+# Incinerate = 1
+
+binsurv = binsurv %>%
+  mutate(TURKEY = na_if(TURKEY, ""))
+
+binsurv$TURKEY[binsurv$TURKEY ==     "Incinerate"] = 1
+binsurv$TURKEY[binsurv$TURKEY ==      "Bury"] = 0
+binsurv$TURKEY[binsurv$TURKEY =="Field dress and consumption"] = 0
+binsurv$TURKEY[binsurv$TURKEY ==   "I don't know"] = 0
+binsurv$TURKEY[binsurv$TURKEY == "Place in a dumpster"] = 0
+binsurv$TURKEY[binsurv$TURKEY ==       "Ignore"] = 0
+
+unique(binsurv$TURKEY)
+
+
+###############################################################################
+
+
+```
+### Perceived ~ Certainty
+```{r}
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(PIGSp = na_if(PIGSp, ""))
+
+binsurv$PIGSp[binsurv$PIGSp ==         "TRUE"] = 1
+binsurv$PIGSp[binsurv$PIGSp ==        "FALSE"] = 1
+binsurv$PIGSp[binsurv$PIGSp == "I don't know"] = 0
+
+unique(binsurv$PIGSp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(BRUCEp = na_if(BRUCEp, ""))
+
+binsurv$BRUCEp[binsurv$BRUCEp ==         "TRUE"] = 1
+binsurv$BRUCEp[binsurv$BRUCEp ==        "FALSE"] = 1
+binsurv$BRUCEp[binsurv$BRUCEp == "I don't know"] = 0
+
+unique(binsurv$BRUCEp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(CWDp = na_if(CWDp, ""))
+
+binsurv$CWDp[binsurv$CWDp ==         "TRUE"] = 1
+binsurv$CWDp[binsurv$CWDp ==        "FALSE"] = 1
+binsurv$CWDp[binsurv$CWDp == "I don't know"] = 0
+
+unique(binsurv$CWDp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(FLUALp = na_if(FLUALp, ""))
+
+binsurv$FLUALp[binsurv$FLUALp ==         "TRUE"] = 1
+binsurv$FLUALp[binsurv$FLUALp ==        "FALSE"] = 1
+binsurv$FLUALp[binsurv$FLUALp == "I don't know"] = 0
+
+unique(binsurv$FLUALp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(FLUp = na_if(FLUp, ""))
+
+binsurv$FLUp[binsurv$FLUp ==         "TRUE"] = 1
+binsurv$FLUp[binsurv$FLUp ==        "FALSE"] = 1
+binsurv$FLUp[binsurv$FLUp == "I don't know"] = 0
+unique(binsurv$FLUp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(COVIDp = na_if(COVIDp, ""))
+
+binsurv$COVIDp[binsurv$COVIDp ==         "TRUE"] = 1
+binsurv$COVIDp[binsurv$COVIDp ==        "FALSE"] = 1
+binsurv$COVIDp[binsurv$COVIDp == "I don't know"] = 0
+
+unique(binsurv$COVIDp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(COVIDSPILLp = na_if(COVIDSPILLp, ""))
+
+binsurv$COVIDSPILLp[binsurv$COVIDSPILLp ==         "TRUE"] = 1
+binsurv$COVIDSPILLp[binsurv$COVIDSPILLp ==        "FALSE"] = 1
+binsurv$COVIDSPILLp[binsurv$COVIDSPILLp == "I don't know"] = 0
+
+unique(binsurv$COVIDSPILLp)
+
+###############################################################################
+# TRUE = 1
+# FALSE = 1
+# I don't know = 0
+
+binsurv = binsurv %>%
+  mutate(RABIESALp = na_if(RABIESALp, ""))
+
+binsurv$RABIESALp[binsurv$RABIESALp ==         "TRUE"] = 1
+binsurv$RABIESALp[binsurv$RABIESALp ==        "FALSE"] = 1
+binsurv$RABIESALp[binsurv$RABIESALp == "I don't know"] = 0
+
+unique(binsurv$RABIESALp)
+
+
+###############################################################################
+# Bites, Blood, Arthropods, Urine, Feces = 1
+# I don't Know = 0 
+
+binsurv = binsurv %>%
+  mutate(RABIESp = na_if(RABIESp, ""))
+
+binsurv$RABIESp[binsurv$RABIESp ==        "Bites"] = 1
+binsurv$RABIESp[binsurv$RABIESp ==        "Blood"] = 1
+binsurv$RABIESp[binsurv$RABIESp == "I don't know"] = 0
+binsurv$RABIESp[binsurv$RABIESp ==   "Anthropods"] = 1
+binsurv$RABIESp[binsurv$RABIESp ==        "Urine"] = 1
+binsurv$RABIESp[binsurv$RABIESp ==        "Feces"] = 1
+
+unique(binsurv$RABIESp)
+
+###############################################################################
+# Incinerate, bury, field dress and consumption, place in dumpster, ignore = 1
+# I don't know = 0 
+
+binsurv = binsurv %>%
+  mutate(TURKEYp = na_if(TURKEYp, ""))
+
+binsurv$TURKEYp[binsurv$TURKEYp ==     "Incinerate"] = 1
+binsurv$TURKEYp[binsurv$TURKEYp ==      "Bury"] = 1
+binsurv$TURKEYp[binsurv$TURKEYp =="Field dress and consumption"] = 1
+binsurv$TURKEYp[binsurv$TURKEYp ==   "I don't know"] = 0
+binsurv$TURKEYp[binsurv$TURKEYp == "Place in a dumpster"] = 1
+binsurv$TURKEYp[binsurv$TURKEYp ==       "Ignore"] = 1
+
+unique(binsurv$TURKEYp)
+
+```
+## Attitudes 
+#### Agreement = more
+```{r}
+
+# Strongly agree, Agree = 1
+# Neutral , Disagree, Strongly disagree = 0
+
+binsurv = binsurv %>%
+  mutate(CWDAL = na_if(CWDAL, ""))
+
+binsurv$CWDAL[binsurv$CWDAL ==      "Strongly Agree"] = 1
+binsurv$CWDAL[binsurv$CWDAL ==               "Agree"] = 1
+binsurv$CWDAL[binsurv$CWDAL ==             "Neutral"] = 0
+binsurv$CWDAL[binsurv$CWDAL ==            "Disagree"] = 0
+binsurv$CWDAL[binsurv$CWDAL ==   "Strongly Disagree"] = 0
+
+unique(binsurv$CWDAL)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(BATS = na_if(BATS, ""))
+
+binsurv$BATS[binsurv$BATS ==      "Strongly Agree"] = 1
+binsurv$BATS[binsurv$BATS ==               "Agree"] = 1
+binsurv$BATS[binsurv$BATS ==             "Neutral"] = 0
+binsurv$BATS[binsurv$BATS ==            "Disagree"] = 0
+binsurv$BATS[binsurv$BATS ==   "Strongly Disagree"] = 0
+
+unique(binsurv$BATS)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(PPEREQ = na_if(PPEREQ, ""))
+
+binsurv$PPEREQ[binsurv$PPEREQ ==      "Strongly Agree"] = 1
+binsurv$PPEREQ[binsurv$PPEREQ ==               "Agree"] = 1
+binsurv$PPEREQ[binsurv$PPEREQ ==             "Neutral"] = 0
+binsurv$PPEREQ[binsurv$PPEREQ ==            "Disagree"] = 0
+binsurv$PPEREQ[binsurv$PPEREQ ==   "Strongly Disagree"] = 0
+
+unique(binsurv$PPEREQ)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(EHD = na_if(EHD, ""))
+
+binsurv$EHD[binsurv$EHD ==      "Strongly Agree"] = 1
+binsurv$EHD[binsurv$EHD ==               "Agree"] = 1
+binsurv$EHD[binsurv$EHD ==             "Neutral"] = 0
+binsurv$EHD[binsurv$EHD ==            "Disagree"] = 0
+binsurv$EHD[binsurv$EHD ==   "Strongly Disagree"] = 0
+
+unique(binsurv$EHD)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(SURVEY = na_if(SURVEY, ""))
+
+binsurv$SURVEY[binsurv$SURVEY ==      "Strongly Agree"] = 1
+binsurv$SURVEY[binsurv$SURVEY ==               "Agree"] = 1
+binsurv$SURVEY[binsurv$SURVEY ==             "Neutral"] = 0
+binsurv$SURVEY[binsurv$SURVEY ==            "Disagree"] = 0
+binsurv$SURVEY[binsurv$SURVEY ==   "Strongly Disagree"] = 0
+
+unique(binsurv$SURVEY)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(VACCINE = na_if(VACCINE, ""))
+
+binsurv$VACCINE[binsurv$VACCINE ==      "Strongly Agree"] = 1
+binsurv$VACCINE[binsurv$VACCINE ==               "Agree"] = 1
+binsurv$VACCINE[binsurv$VACCINE ==             "Neutral"] = 0
+binsurv$VACCINE[binsurv$VACCINE ==            "Disagree"] = 0
+binsurv$VACCINE[binsurv$VACCINE ==   "Strongly Disagree"] = 0
+
+unique(binsurv$VACCINE)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(PREVAL = na_if(PREVAL, ""))
+
+binsurv$PREVAL[binsurv$PREVAL ==      "Strongly Agree"] = 1
+binsurv$PREVAL[binsurv$PREVAL ==               "Agree"] = 1
+binsurv$PREVAL[binsurv$PREVAL ==             "Neutral"] = 0
+binsurv$PREVAL[binsurv$PREVAL ==            "Disagree"] = 0
+binsurv$PREVAL[binsurv$PREVAL ==   "Strongly Disagree"] = 0
+
+unique(binsurv$PREVAL)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(DIVERSE = na_if(DIVERSE, ""))
+
+binsurv$DIVERSE[binsurv$DIVERSE ==      "Strongly Agree"] = 1
+binsurv$DIVERSE[binsurv$DIVERSE ==               "Agree"] = 1
+binsurv$DIVERSE[binsurv$DIVERSE ==             "Neutral"] = 0
+binsurv$DIVERSE[binsurv$DIVERSE ==            "Disagree"] = 0
+binsurv$DIVERSE[binsurv$DIVERSE ==   "Strongly Disagree"] = 0
+
+unique(binsurv$DIVERSE)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(CONSEQ = na_if(CONSEQ, ""))
+
+binsurv$CONSEQ[binsurv$CONSEQ ==      "Strongly Agree"] = 1
+binsurv$CONSEQ[binsurv$CONSEQ ==               "Agree"] = 1
+binsurv$CONSEQ[binsurv$CONSEQ ==             "Neutral"] = 0
+binsurv$CONSEQ[binsurv$CONSEQ ==            "Disagree"] = 0
+binsurv$CONSEQ[binsurv$CONSEQ ==   "Strongly Disagree"] = 0
+
+unique(binsurv$CONSEQ)
+
+###############################################################################
+
+
+binsurv = binsurv %>%
+  mutate(CLIMATE = na_if(CLIMATE, ""))
+
+binsurv$CLIMATE[binsurv$CLIMATE ==      "Strongly Agree"] = 1
+binsurv$CLIMATE[binsurv$CLIMATE ==               "Agree"] = 1
+binsurv$CLIMATE[binsurv$CLIMATE ==             "Neutral"] = 0
+binsurv$CLIMATE[binsurv$CLIMATE ==            "Disagree"] = 0
+binsurv$CLIMATE[binsurv$CLIMATE ==   "Strongly Disagree"] = 0
+
+unique(binsurv$CLIMATE)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(EDREQ = na_if(EDREQ, ""))
+
+binsurv$EDREQ[binsurv$EDREQ ==      "Strongly Agree"] = 1
+binsurv$EDREQ[binsurv$EDREQ ==               "Agree"] = 1
+binsurv$EDREQ[binsurv$EDREQ ==             "Neutral"] = 0
+binsurv$EDREQ[binsurv$EDREQ ==            "Disagree"] = 0
+binsurv$EDREQ[binsurv$EDREQ ==   "Strongly Disagree"] = 0
+
+unique(binsurv$EDREQ)
+
+###############################################################################
+
+
+binsurv = binsurv %>%
+  mutate(INFO = na_if(INFO, ""))
+
+binsurv$INFO[binsurv$INFO ==      "Strongly Agree"] = 1
+binsurv$INFO[binsurv$INFO ==               "Agree"] = 1
+binsurv$INFO[binsurv$INFO ==             "Neutral"] = 0
+binsurv$INFO[binsurv$INFO ==            "Disagree"] = 0
+binsurv$INFO[binsurv$INFO ==   "Strongly Disagree"] = 0
+
+unique(binsurv$INFO)
+
+###############################################################################
+
+
+binsurv = binsurv %>%
+  mutate(HANDSON = na_if(HANDSON, ""))
+
+binsurv$HANDSON[binsurv$HANDSON ==      "Strongly Agree"] = 1
+binsurv$HANDSON[binsurv$HANDSON ==               "Agree"] = 1
+binsurv$HANDSON[binsurv$HANDSON ==             "Neutral"] = 0
+binsurv$HANDSON[binsurv$HANDSON ==            "Disagree"] = 0
+binsurv$HANDSON[binsurv$HANDSON ==   "Strongly Disagree"] = 0
+
+unique(binsurv$HANDSON)
+
+
+```
+#### Disagreement = more
+```{r}
+
+# Strongly agree, Agree = 0
+# Neutral , Disagree, Strongly disagree = 1
+
+binsurv = binsurv %>%
+  mutate(DARWIN = na_if(DARWIN, ""))
+
+binsurv$DARWIN[binsurv$DARWIN ==      "Strongly Agree"] = 0
+binsurv$DARWIN[binsurv$DARWIN ==               "Agree"] = 0
+binsurv$DARWIN[binsurv$DARWIN ==             "Neutral"] = 0
+binsurv$DARWIN[binsurv$DARWIN ==            "Disagree"] = 1
+binsurv$DARWIN[binsurv$DARWIN ==   "Strongly Disagree"] = 1
+
+unique(binsurv$DARWIN)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(POPRED = na_if(POPRED, ""))
+
+binsurv$POPRED[binsurv$POPRED ==       "Strongly Agree"] = 0
+binsurv$POPRED[binsurv$POPRED ==                "Agree"] = 0
+binsurv$POPRED[binsurv$POPRED ==              "Neutral"] = 0
+binsurv$POPRED[binsurv$POPRED ==             "Disagree"] = 1
+binsurv$POPRED[binsurv$POPRED ==    "Strongly Disagree"] = 1
+
+unique(binsurv$POPRED)
+
+###############################################################################
+
+binsurv = binsurv %>%
+  mutate(POPPLAN = na_if(POPPLAN, ""))
+
+binsurv$POPPLAN[binsurv$POPPLAN ==      "Strongly Agree"] = 0
+binsurv$POPPLAN[binsurv$POPPLAN ==               "Agree"] = 0
+binsurv$POPPLAN[binsurv$POPPLAN ==             "Neutral"] = 0
+binsurv$POPPLAN[binsurv$POPPLAN ==            "Disagree"] = 1
+binsurv$POPPLAN[binsurv$POPPLAN ==   "Strongly Disagree"] = 1
+
+unique(binsurv$POPPLAN)
+
+
+
+```
+
+## Practices 
+#### Risks
+```{r}
+
+# median = 12 
+# number of response options selected by participant
+
+# responses selected
+binsurv$COUNTIEScount = sapply(strsplit(binsurv$COUNTIES, ","), length)
+
+# more/less than median/mean/middle
+binsurv$COUNTIES = ifelse(binsurv$COUNTIEScount >= 12, 1, 0)
+
+unique(binsurv$COUNTIES)
+unique(binsurv$COUNTIEScount)
+
+
+###############################################################################
+# Daily, Weekly, Monthly = More Risk
+# Rarely, Never = Less Risk
+
+binsurv = binsurv %>%
+  mutate(CONTACT = na_if(CONTACT, ""))
+
+binsurv$CONTACT[binsurv$CONTACT ==      "Daily"] = 1
+binsurv$CONTACT[binsurv$CONTACT ==    "Weekly"] = 1
+binsurv$CONTACT[binsurv$CONTACT ==    "Monthly"] = 1
+binsurv$CONTACT[binsurv$CONTACT ==    "Rarely"] = 0
+binsurv$CONTACT[binsurv$CONTACT ==     "Never"] = 0
+
+unique(binsurv$CONTACT)
+
+###############################################################################
+
+# Yes = more
+# no = less
+
+binsurv = binsurv %>%
+  mutate(HANDLE = na_if(HANDLE, ""))
+
+binsurv$HANDLE[binsurv$HANDLE == "No"] = 0
+binsurv$HANDLE[binsurv$HANDLE == "Yes"] = 1
+
+unique(binsurv$HANDLE)
+
+###############################################################################
+
+unique(surv$COLLECT)
+# Yes = more
+# no = less
+
+binsurv = binsurv %>%
+  mutate(COLLECT = na_if(COLLECT, ""))
+
+binsurv$COLLECT[binsurv$COLLECT == "No"] = 0
+binsurv$COLLECT[binsurv$COLLECT == "Yes"] = 1
+
+unique(binsurv$COLLECT)
+
+###############################################################################
+# Alive - sedated / not sedated = more 
+# Dead - less
+
+binsurv = binsurv %>%
+  mutate(STATE = na_if(STATE, ""))
+
+binsurv$STATE[binsurv$STATE == "Dead"] = 0
+binsurv$STATE[binsurv$STATE == "Alive - Sedated"] = 1
+binsurv$STATE[binsurv$STATE == "Alive - Not Sedated"] = 1
+
+unique(binsurv$STATE)
+
+###############################################################################
+
+# Median = 50 
+# 1 = more, 0 = less
+
+binsurv = binsurv %>%
+  mutate(FIELD = ifelse(FIELD > 50, "1", "0"))
+
+unique(binsurv$FIELD)
+
+
+```
+
+#### Precaution
+```{r}
+
+# No = 1 - Yes - 0 (risk)
+
+binsurv = binsurv %>%
+  mutate(PPE = na_if(PPE, ""))
+
+binsurv$PPE[binsurv$PPE == "No"] = 1
+binsurv$PPE[binsurv$PPE == "Yes"] = 0
+
+unique(binsurv$PPE)
+
+
+################################################################################
+
+# logical split in responses ~ 75% (0) = less dangerous than 25% (1)
+
+binsurv = binsurv %>%
+  mutate(PPETIME = na_if(PPETIME, ""))
+
+binsurv$PPETIME[binsurv$PPETIME == "Rarely (<25%)"] = 1
+binsurv$PPETIME[binsurv$PPETIME == "Sometimes (25%-75%)"] = 1
+binsurv$PPETIME[binsurv$PPETIME == "Usually (>75%)"] = 0
+binsurv$PPETIME[binsurv$PPETIME == "Always (100%)"] = 0
+
+unique(binsurv$PPETIME)
+
+
+```
+
+# EXPORT CSV
+```{r}
+
+write.csv(binsurv, file = "C:/Users/rylee/Box/Wildlife Health Survey/Analysis/Data/OUTr/BINcombined.csv", row.names = FALSE)
+
+```
+
