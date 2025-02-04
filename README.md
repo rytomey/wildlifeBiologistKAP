@@ -8,7 +8,7 @@
 <!-- Contributing -->
 ## Collaborators
 
-<a href="https://github.com/anyadoc">
+<a href="https://github.com/rytomey">
   <img src="https://contrib.rocks/image?repo=Louis3797/awesome-readme-template" />
 </a>
   
