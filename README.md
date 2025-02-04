@@ -9,7 +9,7 @@
 ## Collaborators
 
 <a href="https://github.com/rytomey">
-  <img src="https://github.com/rytomey/ALWildBioKAP/blob/main/Management/Metadata/Icons/5.ICO" />
+  <img src="https://github.com/rytomey/ALWildBioKAP/blob/main/Management/Icons/icons8-literature-70.png" />
 </a>
   
 <!-- Stack -->
