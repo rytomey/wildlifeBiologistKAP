@@ -9,7 +9,7 @@
 ## Collaborators
 
 <a href="https://github.com/rytomey">
-  <img src="https://contrib.rocks/image?repo=Louis3797/awesome-readme-template" />
+  <img src="https://github.com/rytomey/ALWildBioKAP/blob/main/Management/Metadata/Icons/5.JPG" />
 </a>
   
 <!-- Stack -->
