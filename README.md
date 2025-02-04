@@ -4,7 +4,6 @@
 - **Affiliation**: [Auburn University’s College of Forestry, Wildlife and Environment](https://cfwe.auburn.edu/)
 - **Funding:** [Alabama Department of Conservation and Natural Resources](https://alabama-department-of-conservation-natural-resources-algeohub.hub.arcgis.com/) *NO: FWS-SA2022000923*
 
-  #E6E6E6
 ---
   
 <!-- Stack -->
