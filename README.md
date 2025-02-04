@@ -1,4 +1,9 @@
 ## **Alabama Wildlife Biologists' Knowledge, Attitudes, and Practices on Wildlife Health & Zoonoses**  
+
+- **Literature** [SciWheel Repository](https://sciwheel.com/work/#/items?collection=970339)
+- **Affiliation**: [Auburn University’s College of Forestry, Wildlife and Environment](https://cfwe.auburn.edu/)
+- **Funding:** [Alabama Department of Conservation and Natural Resources](https://alabama-department-of-conservation-natural-resources-algeohub.hub.arcgis.com/) *NO: FWS-SA2022000923*
+  
 ---
 <!-- Contributing -->
 ## Collaborators
@@ -6,14 +11,6 @@
 <a href="https://github.com/Louis3797/awesome-readme-template/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=Louis3797/awesome-readme-template" />
 </a>
-
----
-<!--  -->
-## FAQ
-
-- **Literature** [SciWheel Repository](https://sciwheel.com/work/#/items?collection=970339)
-- **Affiliation**: [Auburn University’s College of Forestry, Wildlife and Environment](https://cfwe.auburn.edu/)
-- **Funding:** [Alabama Department of Conservation and Natural Resources](https://alabama-department-of-conservation-natural-resources-algeohub.hub.arcgis.com/) *NO: FWS-SA2022000923*
   
 <!-- Stack -->
 ## Tech & Terms Stack
@@ -31,5 +28,6 @@
   <summary>Concepts</summary>
   <ul>
     <li><a href="https://doi.org/10.1177/025371762094611">KAP Surveys</a></li>
+    <li><a href="https://greatbrook.com/survey-glossary/">Glossary</a></li>
   </ul>
 </details>
