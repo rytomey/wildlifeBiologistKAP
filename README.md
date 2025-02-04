@@ -12,15 +12,19 @@
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/sales-channels.png" alt="sales-channels"/>
 </a>
+
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/literature.png" alt="literature"/>
 </a>
+
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/code--v1.png" alt="code--v1"/>
 </a>
+
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/combo-chart.png" alt="combo-chart"/>
 </a>
+
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/file.png" alt="file"/>
 </a>
