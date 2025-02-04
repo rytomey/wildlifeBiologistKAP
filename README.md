@@ -9,7 +9,7 @@
 ## Collaborators
 
 <a href="https://github.com/rytomey">
-  <img src="https://github.com/rytomey/ALWildBioKAP/blob/main/Management/Icons/icons8-germ-96.png" />
+  <img width="50" height="50" src="https://img.icons8.com/flat-round/50/bat--v1.png" alt="bat--v1"/>
 </a>
   
 <!-- Stack -->
