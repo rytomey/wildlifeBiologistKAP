@@ -7,7 +7,7 @@
   #E6E6E6
 ---
 <!-- Contributing -->
-## Collaborators
+## Contributors
 
 <a href="https://github.com/rytomey">
 <img width="100" height="100" src="https://img.icons8.com/plasticine/100/sales-channels.png" alt="sales-channels"/>
