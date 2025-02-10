@@ -1,0 +1,30 @@
+
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: serif;
+    font-size: 12pt;
+    color: black; /* Ensures all text is black */
+}
+.styled-table thead {
+    background-color: #ffffff;
+    font-weight: bold;
+    border-bottom: 2px solid black;
+    color: black; /* Ensures header text is black */
+}
+.styled-table th {
+    font-weight: bold; /* Ensures column names are bold */
+}
+.styled-table th, .styled-table td {
+    padding: 8px;
+    text-align: center;
+}
+.styled-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+.styled-table tbody tr:hover {
+    background-color: #ffffff;
+}
+.styled-table td {
+    border-bottom: 1px solid #ddd;
+}

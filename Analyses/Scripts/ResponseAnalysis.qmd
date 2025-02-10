@@ -1,0 +1,20 @@
+---
+title: "Analyzing Binary Response Data"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+    fig-cap-location: bottom
+    smooth-scroll: true
+    theme: cyborg
+    font-family: serif
+    font-size: 12px
+    line-height: 150%
+    css: styles.css
+---
+

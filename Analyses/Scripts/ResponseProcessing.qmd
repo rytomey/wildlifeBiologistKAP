@@ -3,6 +3,7 @@ title: "Processing, Summarizing, and Converting Responses"
 date: "`r Sys.Date()`"
 format: 
   html:
+    html-table-processing: none
     toc: true
     toc-depth: 4
     toc-location: left
@@ -11,13 +12,13 @@ format:
     code-summary: "Show Code"
     fig-cap-location: bottom
     smooth-scroll: true
-    theme: cyborg
+    theme: flatly
     font-family: serif
     font-size: 12px
     line-height: 150%
-    css: styles.css
-editor: visual
+    css: styles.css  # Reference your CSS file here
 ---
+
 
 # Initialization
 ```{r include=FALSE}
@@ -30,8 +31,48 @@ require(tidyterra)
 require(terra)
 require(ggplot2)
 require(rstudioapi)
+require(knitr)
 
 ```
+
+```{r}
+
+##### Create CSS file for scientific table format ####
+cat("
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: serif;
+    font-size: 12pt;
+    color: black; /* Ensures all text is black */
+}
+.styled-table thead {
+    background-color: #ffffff;
+    font-weight: bold;
+    border-bottom: 2px solid black;
+    color: black; /* Ensures header text is black */
+}
+.styled-table th {
+    font-weight: bold; /* Ensures column names are bold */
+}
+.styled-table th, .styled-table td {
+    padding: 8px;
+    text-align: center;
+}
+.styled-table tbody tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+.styled-table tbody tr:hover {
+    background-color: #ffffff;
+}
+.styled-table td {
+    border-bottom: 1px solid #ddd;
+}
+", file = "styles.css")
+
+```
+
+
 
 ### Importing Data
 ```{r include=FALSE}
@@ -55,7 +96,7 @@ psurv = psurv %>%
   filter(`COMPLETE` >= 50) # 9 additional responses
 
 
-surv = rbind(fsurv, psurv) # 163 responses when 100% complete and 50%+ combined
+surv = rbind(fsurv, psurv) # 163 responses when 100% complete and 50%+ comsurved
 
 ########## Remove responses if 'No' living/working in AL #########
 
@@ -184,7 +225,7 @@ SSACTIVITY
 
 ```
 
-# Stat + Binary Convert
+# Stat + survary Convert
 ## Demographics
 ### Age
 ```{r}
@@ -1290,6 +1331,24 @@ surv$TURKEY[surv$TURKEY ==       "Ignore"] = 0
 unique(surv$TURKEY)
 
 ```
+#### Accuracy: # Correct
+```{r}
+
+surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")] = 
+  lapply(surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES",
+  "TURKEY")], as.numeric)
+
+surv$CORRECT = rowSums(surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")],, na.rm = TRUE)
+
+# median # correct answers = 7 
+medcorrect = median(surv$CORRECT)
+medcorrect
+
+# More knowledgeable = 1 ~ less knowledgeable = 0 
+surv$CORRECTmed = ifelse(surv$CORRECT >= 7, 1, 0)
+surv$CORRECT50 = ifelse(surv$CORRECT > 5, 1, 0)
+
+```
 
 ### Certainty
 #### Pigs
@@ -1463,6 +1522,24 @@ surv$TURKEYp[surv$TURKEYp ==       "Ignore"] = 1
 unique(surv$TURKEYp)
 
 ```
+
+#### Perception: # Known
+```{r}
+
+surv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")] = lapply(surv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")], as.numeric)
+
+surv$CERTAINTY = rowSums(surv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")])
+
+# median # certain answers = 9
+certainmed = median(surv$CERTAINTY)
+certainmed
+
+# More certain = 1 ~ less certain = 0 
+surv$CERTAINmed = ifelse(surv$CERTAINTY >= 9, 1, 0)
+surv$CERTAIN50 = ifelse(surv$CERTAINTY > 5, 1, 0)
+
+```
+
 
 ## Attitudes 
 ### Agreement = more
@@ -1931,18 +2008,29 @@ unique(surv$POPPLAN)
 ```
 
 
-# Export
-## Binary Response CSV
+# Products
 ```{r}
+#| include: false
 
+###### Binary Response CSV ######
 oup = file.path(anp, "Outputs")
-write.csv(surv, file.path(oup, "BinaryFull.csv"), row.names = FALSE)
+write.csv(surv, file.path(oup, "BinaryCombined.csv"), row.names = FALSE)
+
+```
+
+```{r}
+#| echo: false
+
+##### CSS Tables #####
+# kable(RSCOUNTIES, format = "html", table.attr = "class='styled-table'", align = "c")
+
 
 ```
 
 
-## Packages Used
-```{r bib, include=FALSE}
+## Technical References
+```{r bib}
+#| echo: false
 
 #### To write a bib file
 # knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='pckg.bib')
