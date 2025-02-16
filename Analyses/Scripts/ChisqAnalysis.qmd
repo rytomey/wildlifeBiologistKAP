@@ -1,0 +1,88 @@
+---
+title: "Chi-Squared Analysis of Binary Variables"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    html-table-processing: none
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+    fig-cap-location: bottom
+    smooth-scroll: true
+    theme: flatly
+    font-family: serif
+    font-size: 12px
+    line-height: 150%
+    css: styles.css  # Reference your CSS file here
+---
+
+# Initialization
+```{r include=FALSE}
+
+require(dplyr)
+require(sf)
+require(sp)
+require(tidyverse)
+require(tidyterra)
+require(terra)
+require(ggplot2)
+require(knitr)
+require(rcompanion)
+```
+
+```{r include=FALSE}
+
+base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
+anp = file.path(base, "Analyses")
+oup = file.path(anp, "Outputs")
+
+survdata = read.csv(file.path(oup, "BinaryCombined.csv"))
+survdata 
+
+```
+
+## Function to compute chi-square and Cramer's V
+```{r}
+
+cramerschi = function(a, b) {
+  data.table = table(a, b) 
+  data.chi = chisq.test(data.table)
+  col_counts = colSums(data.table)
+  data.table_with_counts = rbind(data.table, Col_Counts = col_counts)
+  CramV = as.numeric(cramerV(data.table))
+    # outputs
+  chistat = as.numeric(data.chi$statistic)
+  chi.df = as.integer(data.chi$parameter)
+  chi.pvalue = data.chi$p.value
+  zero_zero = data.table_with_counts[1,1]
+  zero_one = data.table_with_counts[2,1]
+  one_zero = data.table_with_counts[1,2]
+  one_one = data.table_with_counts[2,2]
+  colzerotot = data.table_with_counts[3,1]
+  colonetot = data.table_with_counts[3,2]
+    # results
+  total.output = c(chistat, chi.df, chi.pvalue, CramV, zero_zero, zero_one, one_zero, one_one, colzerotot, colonetot)
+  return(total.output)
+}
+
+##### Labels for Output ####
+cramerschi.output.list = c("Chi-Statistic", "DF", "P-Value", "Cramér’s V", "0-0", "0-1", "1-0", "1-1", "Col Total 0", "Col Total 1")
+
+```
+
+# Applying FUN to Variables 
+```{r}
+
+contactXbruce = cramerschi(survdata$CONTACT, survdata$BRUCE)
+turkeyXbruce = cramerschi(survdata$TURKEY, survdata$BRUCE)
+
+chi_results = data.frame(Statistic = cramerschi.output.list, ContactXBruce = contactXbruce, TurkeyXBruce = turkeyXbruce)
+
+kable(chi_results, format = "html", caption = "Chi-Square and Cramer's V Results")
+
+```
+
+
