@@ -19,7 +19,6 @@ format:
     css: styles.css  # Reference your CSS file here
 ---
 
-
 # Initialization
 ```{r include=FALSE}
 
@@ -79,8 +78,8 @@ cat("
 
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-anp = file.path(base, "analyses")
-inp = file.path(anp, "inputs")
+R = file.path(base, "R")
+inp = file.path(R, "inputs")
 fsurv = read.csv(file.path(inp, "fullSurvey.csv"))
 fsurv # 155 full responses (100% of questions completed)
 psurv = read.csv(file.path(inp, "partialSurvey.csv"))
@@ -2013,7 +2012,7 @@ unique(surv$POPPLAN)
 #| include: false
 
 ###### Binary Response CSV ######
-oup = file.path(anp, "outputs")
+oup = file.path(R, "outputs")
 write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 
 ```
