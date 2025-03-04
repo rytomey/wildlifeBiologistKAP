@@ -19,7 +19,11 @@ format:
     css: styles.css  # Reference your CSS file here
 ---
 
+
+
 # Initialization
+
+
 ```{r include=FALSE}
 
 require(dplyr)
@@ -73,13 +77,17 @@ cat("
 
 
 
+
+
 ### Importing Data
+
+
 ```{r include=FALSE}
 
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-R = file.path(base, "R")
-inp = file.path(R, "inputs")
+analyses = file.path(base, "analyses")
+inp = file.path(analyses, "inputs")
 fsurv = read.csv(file.path(inp, "fullSurvey.csv"))
 fsurv # 155 full responses (100% of questions completed)
 psurv = read.csv(file.path(inp, "partialSurvey.csv"))
@@ -87,7 +95,11 @@ psurv # 126 partial responses
 
 ```
 
+
+
 ### Filtering Data
+
+
 ```{r include=FALSE}
 
 ##### Removing partial responses with <50% of questions completed ####
@@ -112,7 +124,11 @@ surv$AGE = 2024 - surv$DOB
 
 ```
 
+
+
 # Sumary Stats Only
+
+
 ```{r}
 
 ########## Number of Respondents Selected / Options (RS) #######
@@ -158,7 +174,11 @@ SSsumCOUNTIES = SSCOUNTIES %>%
 SSsumCOUNTIES
 
 ```
+
+
 ### Race & Ethnicity 
+
+
 ```{r}
 
 RACE = surv$RACE
@@ -190,7 +210,11 @@ SSETHNICITY
 
 ```
 
+
+
 ### Affiliation
+
+
 ```{r}
 
 AFFILIATE = surv$AFFILIATE
@@ -207,7 +231,11 @@ SSAFFILIATE
 
 ```
 
+
+
 ### Activity
+
+
 ```{r}
 
 ACTIVITY = surv$ACTIVITY
@@ -224,9 +252,13 @@ SSACTIVITY
 
 ```
 
+
+
 # Stat + survary Convert
 ## Demographics
 ### Age
+
+
 ```{r}
 
 SSAGE = surv %>%
@@ -247,7 +279,11 @@ surv = surv %>%
 unique(surv$AGE)
 
 ```
+
+
 ### Gender
+
+
 ```{r}
 
 GENDER = surv$GENDER
@@ -275,7 +311,11 @@ unique(surv$GENDERb)
 
 ```
 
+
+
 ### Income
+
+
 ```{r}
 
 
@@ -309,8 +349,12 @@ surv = surv %>%
 unique(surv$INCOME)
 ```
 
+
+
 ## Experience & Expertise
 ### Related Coursework
+
+
 ```{r}
 
 COURSE = surv$COURSE
@@ -370,7 +414,11 @@ surv$COURSE[surv$COURSE == "Yes"] = 1
 
 ```
 
+
+
 ### TWS Certified
+
+
 ```{r}
 
 TWS = surv$TWS
@@ -397,7 +445,11 @@ unique(surv$TWS)
 
 ```
 
+
+
 ### Self Bio Title
+
+
 ```{r}
 
 SELFTITLE = surv$SELFTITLE
@@ -424,7 +476,11 @@ unique(surv$SELFTITLE)
 
 ```
 
+
+
 ### Hunting License
+
+
 ```{r}
 
 LICENSE = surv$LICENSE
@@ -451,7 +507,11 @@ unique(surv$LICENSE)
 
 ```
 
+
+
 ### Education
+
+
 ```{r}
 
 EDUCATION = surv$EDUCATION
@@ -484,7 +544,11 @@ surv$EDUCATION[surv$EDUCATION == "Graduate or Professional School"] = 1
 unique(surv$EDUCATION)
 ```
 
+
+
 ### Degree
+
+
 ```{r}
 
 DEGREE = surv$DEGREE
@@ -510,7 +574,11 @@ surv$DEGREE[surv$DEGREE == "Yes"] = 1
 unique(surv$DEGREE)
 ```
 
+
+
 ### Biology Work Time
+
+
 ```{r}
 
 BIOTIME = surv$BIOTIME
@@ -541,9 +609,13 @@ unique(surv$BIOTIME)
 
 ```
 
+
+
 ## Activity and Practices
 
 ### Counties 
+
+
 ```{r}
 
 # median = 12 
@@ -560,7 +632,11 @@ unique(surv$COUNTIEScount)
 
 ```
 
+
+
 ### Contact
+
+
 ```{r}
 
 CONTACT = surv$CONTACT
@@ -590,7 +666,11 @@ surv$CONTACT[surv$CONTACT ==     "Never"] = 0
 unique(surv$CONTACT)
 ```
 
+
+
 ### Handle Animal/Sample
+
+
 ```{r}
 
 HANDLE = surv$HANDLE
@@ -618,7 +698,11 @@ unique(surv$HANDLE)
 
 ```
 
+
+
 ### State of Animal
+
+
 ```{r}
 
 STATE = surv$STATE
@@ -647,7 +731,11 @@ unique(surv$STATE)
 
 ```
 
+
+
 ### Collect
+
+
 ```{r}
 
 COLLECT = surv$COLLECT
@@ -677,7 +765,11 @@ unique(surv$COLLECT)
 ```
 
 
+
+
 ### Field
+
+
 ```{r}
 
 FIELD = surv$FIELD
@@ -714,7 +806,11 @@ unique(surv$FIELD)
 
 ```
 
+
+
 ### PPE Use
+
+
 ```{r}
 
 PPE = surv$PPE
@@ -766,8 +862,12 @@ unique(surv$PPETIME)
 
 ```
 
+
+
 ## Education/Meeting Interest
 ### Access
+
+
 ```{r}
 
 ACCESS = surv$ACCESS
@@ -793,7 +893,11 @@ surv$ACCESS[surv$ACCESS == "Yes"] = 1
 unique(surv$ACCESS)
 
 ```
+
+
 ### Interest
+
+
 ```{r}
 INTEREST = surv$INTEREST
 INTEREST = na.omit(INTEREST)
@@ -822,7 +926,11 @@ unique(surv$INTEREST)
 
 ```
 
+
+
 ### Free Information
+
+
 ```{r}
 
 ##### Number of Respondents Selected / Options (RS) #####
@@ -883,7 +991,11 @@ unique(surv$FREEINFOcount)
 
 ```
 
+
+
 ### Topics
+
+
 ```{r}
 
 ###### Number of Respondents Selected / Options ######
@@ -946,7 +1058,11 @@ unique(surv$TOPICScount)
 ```
 
 
+
+
 ### Source
+
+
 ```{r}
 
 ##### Number of respondents selected / Options ####
@@ -1004,9 +1120,13 @@ unique(surv$SOURCEcount)
 ```
 
 
+
+
 ## Knowledge
 ### Correct/Incorrect
 #### Pigs
+
+
 ```{r}
 
 PIGS = surv$PIGS
@@ -1038,7 +1158,11 @@ surv$PIGS[surv$PIGS == "I don't know"] = 0
 unique(surv$PIGS)
 ```
 
+
+
 #### Brucellosis
+
+
 ```{r}
 
 BRUCE = surv$BRUCE
@@ -1071,7 +1195,11 @@ surv$BRUCE[surv$BRUCE == "I don't know"] = 0
 unique(surv$BRUCE)
 ```
 
+
+
 #### CWD
+
+
 ```{r}
 CWD = surv$CWD
 CWD = na.omit(CWD)
@@ -1103,7 +1231,11 @@ unique(surv$CWD)
 
 ```
 
+
+
 #### Flu Alabama
+
+
 ```{r}
 
 FLUAL = surv$FLUAL
@@ -1134,7 +1266,11 @@ surv$FLUAL[surv$FLUAL == "I don't know"] = 0
 unique(surv$FLUAL)
 ```
 
+
+
 #### Flu
+
+
 ```{r}
 FLU = surv$FLU
 FLU = na.omit(FLU)
@@ -1165,7 +1301,11 @@ unique(surv$FLU)
 
 ```
 
+
+
 #### COVID
+
+
 ```{r}
 
 COVID = surv$COVID
@@ -1197,7 +1337,11 @@ unique(surv$COVID)
 
 ```
 
+
+
 #### COVID Spillover
+
+
 ```{r}
 
 COVIDSPILL = surv$COVIDSPILL
@@ -1230,7 +1374,11 @@ unique(surv$COVIDSPILL)
 
 ```
 
+
+
 #### Rabies AL
+
+
 ```{r}
 
 RABIESAL = surv$RABIESAL
@@ -1263,7 +1411,11 @@ unique(surv$RABIESAL)
 
 ```
 
+
+
 #### Rabies Transmission
+
+
 ```{r}
 
 RABIES = surv$RABIES
@@ -1298,7 +1450,11 @@ unique(surv$RABIES)
 
 ```
 
+
+
 #### Turkey Disposal
+
+
 ```{r}
 
 TURKEY = surv$TURKEY
@@ -1330,7 +1486,11 @@ surv$TURKEY[surv$TURKEY ==       "Ignore"] = 0
 unique(surv$TURKEY)
 
 ```
+
+
 #### Accuracy: # Correct
+
+
 ```{r}
 
 surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")] = 
@@ -1349,8 +1509,12 @@ surv$CORRECT50 = ifelse(surv$CORRECT > 5, 1, 0)
 
 ```
 
+
+
 ### Certainty
 #### Pigs
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1366,7 +1530,11 @@ surv$PIGSp[surv$PIGSp == "I don't know"] = 0
 unique(surv$PIGSp)
 ```
 
+
+
 #### Brucellosis
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1383,7 +1551,11 @@ unique(surv$BRUCEp)
 
 ```
 
+
+
 #### CWD
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1400,7 +1572,11 @@ unique(surv$CWDp)
 
 ```
 
+
+
 #### Flu Alabama
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1417,7 +1593,11 @@ unique(surv$FLUALp)
 
 ```
 
+
+
 #### Flu
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1433,7 +1613,11 @@ unique(surv$FLUp)
 
 ```
 
+
+
 #### COVID
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1450,7 +1634,11 @@ unique(surv$COVIDp)
 
 ```
 
+
+
 #### COVID Spillover
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1467,7 +1655,11 @@ unique(surv$COVIDSPILLp)
 
 ```
 
+
+
 #### Rabies AL
+
+
 ```{r}
 # TRUE = 1
 # FALSE = 1
@@ -1484,7 +1676,11 @@ unique(surv$RABIESALp)
 
 ```
 
+
+
 #### Rabies Transmission
+
+
 ```{r}
 # Bites, Blood, Arthropods, Urine, Feces = 1
 # I don't Know = 0 
@@ -1503,7 +1699,11 @@ unique(surv$RABIESp)
 
 ```
 
+
+
 #### Turkey Disposal
+
+
 ```{r}
 # Incinerate, bury, field dress and consumption, place in dumpster, ignore = 1
 # I don't know = 0 
@@ -1522,7 +1722,11 @@ unique(surv$TURKEYp)
 
 ```
 
+
+
 #### Perception: # Known
+
+
 ```{r}
 
 surv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")] = lapply(surv[, c("PIGSp", "BRUCEp", "CWDp", "FLUALp", "FLUp", "COVIDp", "COVIDSPILLp", "RABIESALp", "RABIESp", "TURKEYp")], as.numeric)
@@ -1540,9 +1744,13 @@ surv$CERTAIN50 = ifelse(surv$CERTAINTY > 5, 1, 0)
 ```
 
 
+
+
 ## Attitudes 
 ### Agreement = more
 #### CWD AL
+
+
 ```{r}
 
 CWDAL = surv$CWDAL
@@ -1574,7 +1782,11 @@ unique(surv$CWDAL)
 
 ```
 
+
+
 #### Bats 
+
+
 ```{r}
 
 BATS = surv$BATS
@@ -1603,7 +1815,11 @@ unique(surv$BATS)
 
 ```
 
+
+
 ### PPE Requirement
+
+
 ```{r}
 
 PPEREQ = surv$PPEREQ
@@ -1631,7 +1847,11 @@ surv$PPEREQ[surv$PPEREQ ==   "Strongly Disagree"] = 0
 unique(surv$PPEREQ)
 ```
 
+
+
 #### EHD
+
+
 ```{r}
 
 EHD = surv$EHD
@@ -1660,7 +1880,11 @@ unique(surv$EHD)
 
 ```
 
+
+
 #### Surveillance
+
+
 ```{r}
 
 SURVEY = surv$SURVEY
@@ -1688,7 +1912,11 @@ unique(surv$SURVEY)
 
 ```
 
+
+
 #### Vaccine
+
+
 ```{r}
 
 VACCINE = surv$VACCINE
@@ -1717,7 +1945,11 @@ unique(surv$VACCINE)
 
 ```
 
+
+
 #### Prevalence
+
+
 ```{r}
 
 PREVAL = surv$PREVAL
@@ -1745,7 +1977,11 @@ unique(surv$PREVAL)
 
 ```
 
+
+
 #### Diversity 
+
+
 ```{r}
 
 DIVERSE = surv$DIVERSE
@@ -1773,7 +2009,11 @@ unique(surv$DIVERSE)
 
 ```
 
+
+
 #### Consequences 
+
+
 ```{r}
 
 CONSEQ = surv$CONSEQ
@@ -1802,7 +2042,11 @@ unique(surv$CONSEQ)
 
 ```
 
+
+
 #### Climate
+
+
 ```{r}
 
 CLIMATE = surv$CLIMATE
@@ -1830,7 +2074,11 @@ surv$CLIMATE[surv$CLIMATE ==   "Strongly Disagree"] = 0
 unique(surv$CLIMATE)
 ```
 
+
+
 #### Education Requirement
+
+
 ```{r}
 
 EDREQ = surv$EDREQ
@@ -1858,7 +2106,11 @@ unique(surv$EDREQ)
 
 ```
 
+
+
 #### Information
+
+
 ```{r}
 
 INFO = surv$INFO
@@ -1887,7 +2139,11 @@ unique(surv$INFO)
 
 ```
 
+
+
 #### Hands On
+
+
 ```{r}
 
 
@@ -1917,8 +2173,12 @@ unique(surv$HANDSON)
 
 ```
 
+
+
 ### Disagreement = more
 #### Darwin
+
+
 ```{r}
 
 DARWIN = surv$DARWIN
@@ -1949,7 +2209,11 @@ surv$DARWIN[surv$DARWIN ==   "Strongly Disagree"] = 1
 unique(surv$DARWIN)
 ```
 
+
+
 #### Population Reduction
+
+
 ```{r}
 POPRED = surv$POPRED
 POPRED = na.omit(POPRED)
@@ -1977,7 +2241,11 @@ unique(surv$POPRED)
 
 ```
 
+
+
 #### Population Plan
+
+
 ```{r}
 
 POPPLAN = surv$POPPLAN
@@ -2007,12 +2275,16 @@ unique(surv$POPPLAN)
 ```
 
 
+
+
 # Products
+
+
 ```{r}
 #| include: false
 
 ###### Binary Response CSV ######
-oup = file.path(R, "outputs")
+oup = file.path(analyses, "outputs")
 write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 
 ```
@@ -2027,7 +2299,11 @@ write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 ```
 
 
+
+
 ## Technical References
+
+
 ```{r bib}
 #| echo: false
 
@@ -2038,3 +2314,4 @@ write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
 
 ```
+

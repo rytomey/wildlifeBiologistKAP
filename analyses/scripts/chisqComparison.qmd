@@ -36,8 +36,8 @@ require(rcompanion)
 ```{r include=FALSE}
 
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-R = file.path(base, "R")
-oup = file.path(R, "outputs")
+analyses = file.path(base, "analyses")
+oup = file.path(analyses, "outputs")
 
 survdata = read.csv(file.path(oup, "binaryCombined.csv"))
 survdata 
