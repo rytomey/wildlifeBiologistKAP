@@ -36,10 +36,10 @@ require(rcompanion)
 ```{r include=FALSE}
 
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-anp = file.path(base, "Analyses")
-oup = file.path(anp, "Outputs")
+anp = file.path(base, "analyses")
+oup = file.path(anp, "outputs")
 
-survdata = read.csv(file.path(oup, "BinaryCombined.csv"))
+survdata = read.csv(file.path(oup, "binaryCombined.csv"))
 survdata 
 
 ```
@@ -86,3 +86,15 @@ kable(chi_results, format = "html", caption = "Chi-Square and Cramer's V Results
 ```
 
 
+# References Cited
+### Packages
+```{r bib}
+#| echo: false
+
+#### To write a bib file
+# knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='pckg.bib')
+
+#### to display the packages within the .qmd without creating another .bib ####
+knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+
+```

@@ -79,11 +79,11 @@ cat("
 
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-anp = file.path(base, "Analyses")
-inp = file.path(anp, "Inputs")
-fsurv = read.csv(file.path(inp, "fullsurvey.csv"))
+anp = file.path(base, "analyses")
+inp = file.path(anp, "inputs")
+fsurv = read.csv(file.path(inp, "fullSurvey.csv"))
 fsurv # 155 full responses (100% of questions completed)
-psurv = read.csv(file.path(inp, "partialsurvey.csv"))
+psurv = read.csv(file.path(inp, "partialSurvey.csv"))
 psurv # 126 partial responses 
 
 ```
@@ -2013,8 +2013,8 @@ unique(surv$POPPLAN)
 #| include: false
 
 ###### Binary Response CSV ######
-oup = file.path(anp, "Outputs")
-write.csv(surv, file.path(oup, "BinaryCombined.csv"), row.names = FALSE)
+oup = file.path(anp, "outputs")
+write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 
 ```
 
