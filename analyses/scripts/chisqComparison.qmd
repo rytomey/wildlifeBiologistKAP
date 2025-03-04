@@ -44,6 +44,18 @@ survdata
 
 ```
 
+## Samples per Column
+```{r}
+
+count = colSums(!is.na(survdata))
+count = data.frame(Variable = names(count), SampleSize = count)
+
+write.csv(count, file.path(oup, "columnSampleSize.csv"), row.names = FALSE)
+kable(count, format = "html", caption = "Sample Sizes for Each Variable")
+
+```
+
+
 ## Function to compute chi-square and Cramer's V
 ```{r}
 
