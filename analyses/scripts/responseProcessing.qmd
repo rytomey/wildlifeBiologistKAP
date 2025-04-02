@@ -29,7 +29,6 @@ require(tidyverse)
 require(tidyterra)
 require(terra)
 require(ggplot2)
-require(rstudioapi)
 require(knitr)
 
 ```
@@ -72,7 +71,6 @@ cat("
 ```
 
 
-
 ### Importing Data
 ```{r include=FALSE}
 
@@ -80,40 +78,23 @@ cat("
 base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
 analyses = file.path(base, "analyses")
 inp = file.path(analyses, "inputs")
-fsurv = read.csv(file.path(inp, "fullSurvey.csv"))
-fsurv # 155 full responses (100% of questions completed)
-psurv = read.csv(file.path(inp, "partialSurvey.csv"))
-psurv # 126 partial responses 
+surv = read.csv(file.path(inp, "progover50.csv"))
+surv # 155 responses with over 50% of questions answered
+psurv = read.csv(file.path(inp, "progunder50.csv"))
+psurv # 59 responses with less than 50% of questions answered 
+csurv = surv %>%
+  filter(`PROG` >= 100) 
+csurv # 146 responses with 100% of questions completed
 
 ```
 
-### Filtering Data
-```{r include=FALSE}
-
-##### Removing partial responses with <50% of questions completed ####
-psurv = psurv %>%
-  filter(`COMPLETE` >= 50) # 9 additional responses
-
-
-surv = rbind(fsurv, psurv) # 163 responses when 100% complete and 50%+ comsurved
-
-########## Remove responses if 'No' living/working in AL #########
-
-surv$RESIDENT[surv$RESIDENT == "No"] = 0
-surv$RESIDENT[surv$RESIDENT == "Yes"] = 1
-surv = surv[surv$RESIDENT != 0, ] # 162 responses remaining 
-
-##### Removing responses if respondant younger than 19 years old ####
-surv = surv %>%
-  filter(`DOB` <= 2004) # 162 responses remaining (ie born before 2005)
+# Summary Stats Only
+```{r}
 
 ##### Calculating Age #### 
-surv$AGE = 2024 - surv$DOB
-
-```
-
-# Sumary Stats Only
-```{r}
+surv$AGE = 2025 - surv$DOB
+psurv$AGE = 2025 - psurv$DOB
+csurv$AGE = 2025 - csurv$DOB
 
 ########## Number of Respondents Selected / Options (RS) #######
 
@@ -2022,7 +2003,6 @@ write.csv(surv, file.path(oup, "binaryCombined.csv"), row.names = FALSE)
 
 ##### CSS Tables #####
 # kable(RSCOUNTIES, format = "html", table.attr = "class='styled-table'", align = "c")
-
 
 ```
 
