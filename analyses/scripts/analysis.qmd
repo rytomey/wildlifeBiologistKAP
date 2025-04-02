@@ -1,0 +1,424 @@
+---
+title: "Chi-Squared Analysis of Binary Variables"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    html-table-processing: none
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+    fig-cap-location: bottom
+    smooth-scroll: true
+    theme: flatly
+    font-family: serif
+    font-size: 12px
+    line-height: 150%
+    css: styles.css  # Reference your CSS file here
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Initialization
+
+```{r include=FALSE}
+
+require(rcompanion)
+
+base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
+analyses = file.path(base, "analyses")
+oup = file.path(analyses, "outputs")
+
+surv = read.csv(file.path(oup, "binaryCombined.csv"))
+surv 
+
+```
+
+# Function
+```{r}
+
+cramerschi<-function(a,b){
+   
+   data.table <- table(a,b) 
+   data.chi <- chisq.test(data.table)
+   col_counts <- colSums(data.table)
+   data.table_with_counts <- rbind(data.table, Col_Counts = col_counts)
+   CramV<-as.numeric(cramerV(data.table))
+  #assign outputs
+    chistat<-as.numeric(data.chi$statistic)
+   chi.df<-as.integer(data.chi$parameter)
+   chi.pvalue<-data.chi$p.value
+   zero_zero<-data.table_with_counts[1,1]
+   zero_one<-data.table_with_counts[2,1]
+   one_zero<-data.table_with_counts[1,2]
+   one_one<-data.table_with_counts[2,2]
+   colzerotot<-data.table_with_counts[3,1]
+   colonetot<-data.table_with_counts[3,2]
+   total.output<-c(chistat,chi.df, chi.pvalue, CramV, zero_zero, zero_one,
+                           one_zero, one_one,colzerotot,colonetot)
+  
+   
+   return(total.output)
+ }
+ 
+ 
+  #create vector of label for output string
+cramerschi.output.list<-c("chistat","chi.df", "chi.pvalue", "CramV", "zero_zero", "zero_one",
+                        "one_zero", "one_one","colzerotot","colonetot")
+
+
+ #output will follow top row then first column of chiX table
+ #X zeroone is the column "0" and the row "1"
+ #columns will be second variable in comparison
+ #rows will be first listed
+
+```
+
+# Manual comparison for output
+
+This is just a visual of what the output would look like in a chi square table
+
+```{r}
+#Test comparison to compare to true ChiX table from degree x certain50
+ 
+ 
+ 
+ data.table.test <- table(surv$AGE, surv$CORRECTmed)
+ data.chi.test <- chisq.test(data.table.test)
+ print(data.chi.test)
+ col_counts.test <- colSums(data.table.test)
+ col_counts.test
+ data.table_with_counts.test <- rbind(data.table.test, Col_Counts = col_counts.test)
+ print(data.table_with_counts.test)
+ 
+ #compare this to
+agexcorrmed<-cramerschi(surv$AGE, surv$CORRECTmed)
+ data.frame(cramerschi.output.list,agexcorrmed)
+```
+
+# Demographic Information vs Knowledge and Certainty
+
+```{r}
+#in general we need to compare Demographic<->knowledge, Dem<->Certainty, Education<->{Knowledge,Certainty}
+#Opinion<->{knowledge, certainty}, knowledge<->certainty
+#the knowledge and certainty categories are summarized at the end to use in a 
+#binary classification rather than put them all together
+#maybe do handling and field work vs knowledge and cert
+#handling and ppe
+
+#Age
+agexcorrmed<-cramerschi(surv$AGE, surv$CORRECTmed)
+agexcorr50<-cramerschi(surv$AGE, surv$CORRECT50)
+agexcertmed<-cramerschi(surv$AGE, surv$CERTAINmed)
+agexcert50<-cramerschi(surv$AGE, surv$CERTAIN50)
+
+#gender
+genxcorrmed<-cramerschi(surv$GENDER, surv$CORRECTmed)
+genxcorr50<-cramerschi(surv$GENDER, surv$CORRECT50)
+genxcertmed<-cramerschi(surv$GENDER, surv$CERTAINmed)
+genxcert50<-cramerschi(surv$GENDER, surv$CERTAIN50)
+
+#income
+incomexcorrmed<-cramerschi(surv$INCOME, surv$CORRECTmed)
+incomexcorr50<-cramerschi(surv$INCOME, surv$CORRECT50)
+incomexcertmed<- cramerschi(surv$INCOME, surv$CERTAINmed)
+incomexcert50<-cramerschi(surv$INCOME, surv$CERTAIN50)
+
+
+#age, gender, income
+demoxknowcert<-data.frame(cramerschi.output.list, agexcert50, agexcertmed, agexcorr50, agexcorrmed,
+ genxcert50, genxcertmed, genxcorr50, genxcorrmed,
+ incomexcert50, incomexcertmed, incomexcorr50, incomexcorrmed
+)
+
+View(demoxknowcert)
+```
+
+# Education vs Knowledge and Certainty
+
+```{r}
+#degree
+degreexcorrmed<-cramerschi(surv$DEGREE, surv$CORRECTmed)
+degreexcorr50<-cramerschi(surv$DEGREE,surv$CORRECT50)
+degreexcertmed<-cramerschi(surv$DEGREE, surv$CERTAINmed)
+degreexcert50<-cramerschi(surv$DEGREE, surv$CERTAIN50)
+
+#TWS
+twsxcorrmed<-cramerschi(surv$TWS, surv$CORRECTmed)
+twsxcorr50<- cramerschi(surv$TWS, surv$CORRECT50)
+twsxcertmed<-cramerschi(surv$TWS, surv$CERTAINmed)
+twsxcert50<-cramerschi(surv$TWS, surv$CERTAIN50)
+
+#course
+coursexcorrmed<-cramerschi(surv$COURSE, surv$CORRECTmed)
+coursexcorr50<-cramerschi(surv$COURSE, surv$CORRECT50)
+coursexcertmed<-cramerschi(surv$COURSE, surv$CERTAINmed)
+coursexcert50<-cramerschi(surv$COURSE, surv$CERTAIN50)
+
+#Selftitle
+titlexcorrmed<-cramerschi(surv$SELFTITLE, surv$CORRECTmed)
+titlexcorr50<-cramerschi(surv$SELFTITLE, surv$CORRECT50)
+titlexcertmed<-cramerschi(surv$SELFTITLE, surv$CERTAINmed)
+titlexcert50<-cramerschi(surv$SELFTITLE, surv$CERTAIN50)
+
+#biotime
+biotimexcorrmed<-cramerschi(surv$BIOTIME, surv$CORRECTmed)
+biotimexcorr50<-cramerschi(surv$BIOTIME, surv$CORRECT50)
+biotimexcertmed<-cramerschi(surv$BIOTIME, surv$CERTAINmed)
+biotimexcert50<-cramerschi(surv$BIOTIME, surv$CERTAIN50)
+
+#education
+eduxcorrmed<-cramerschi(surv$EDUCATION, surv$CORRECTmed)
+eduxcorr50<-cramerschi(surv$EDUCATION, surv$CORRECT50)
+eduxcertmed<-cramerschi(surv$EDUCATION, surv$CERTAINmed)
+eduxcert50<-cramerschi(surv$EDUCATION, surv$CERTAIN50)
+
+#degree, tws, course, selftitle, biotime, education
+eduxknowcert<-data.frame(cramerschi.output.list, 
+      degreexcert50, degreexcertmed, degreexcorr50, degreexcorrmed,
+      twsxcert50,twsxcertmed, twsxcorr50, twsxcorrmed,
+      coursexcert50, coursexcertmed, coursexcorr50, coursexcorrmed,
+      titlexcert50, titlexcertmed, titlexcorr50, titlexcorrmed,
+      biotimexcert50, biotimexcertmed, biotimexcorr50, biotimexcorrmed,
+      eduxcert50, eduxcertmed, eduxcorr50, eduxcorrmed
+)
+View(eduxknowcert)
+```
+
+# Field and Handling vs Knowledge and Certainty
+
+```{r}
+#contact
+contactxcorrmed<-cramerschi(surv$CONTACT, surv$CORRECTmed)
+contactxcorr50<-cramerschi(surv$CONTACT, surv$CORRECT50)
+contactxcertmed<-cramerschi(surv$CONTACT, surv$CERTAINmed)
+contactxcert50<-cramerschi(surv$CONTACT, surv$CERTAIN50)
+
+#field
+fieldxcorrmed<-cramerschi(surv$FIELD, surv$CORRECTmed)
+fieldxcorr50<-cramerschi(surv$FIELD, surv$CORRECT50)
+fieldxcertmed<-cramerschi(surv$FIELD, surv$CERTAINmed)
+fieldxcert50<-cramerschi(surv$FIELD, surv$CERTAIN50)
+
+#collect
+collectxcorrmed<-cramerschi(surv$COLLECT, surv$CORRECTmed)
+collectxcorr50<-cramerschi(surv$COLLECT, surv$CORRECT50)
+collectxcertmed<-cramerschi(surv$COLLECT, surv$CERTAINmed)
+collectxcert50<-cramerschi(surv$COLLECT, surv$CERTAIN50)
+
+#handle
+handlexcorrmed<-cramerschi(surv$HANDLE, surv$CORRECTmed)
+handlexcorr50<-cramerschi(surv$HANDLE, surv$CORRECT50)
+handlexcertmed<-cramerschi(surv$HANDLE, surv$CERTAINmed)
+handlexcert50<-cramerschi(surv$HANDLE, surv$CERTAIN50)
+
+#contact, field, collect, handle
+
+fieldxknowcert<-data.frame(cramerschi.output.list, 
+      contactxcert50, contactxcertmed, contactxcorr50, contactxcorrmed,
+      fieldxcert50, fieldxcertmed, fieldxcorr50, fieldxcorrmed,
+      collectxcert50, collectxcertmed, collectxcorr50, collectxcorrmed,
+      handlexcert50, handlexcertmed, handlexcorr50, handlexcorrmed
+)
+
+View(fieldxknowcert)
+```
+
+# Opinion vs Knowledge and Certainty
+
+Pprereq would not run as there was a difference in vector lengths
+
+```{r}
+#CWDAL
+cwdalxcorrmed<-cramerschi(surv$CWDAL, surv$CORRECTmed)
+     cwdalxcorr50<-cramerschi(surv$CWDAL, surv$CORRECT50)
+     cwdalxcertmed<-cramerschi(surv$CWDAL, surv$CERTAINmed)
+     cwdalxcert50<-cramerschi(surv$CWDAL, surv$CERTAIN50)
+
+  #BATS
+     batsxcorrmed<-cramerschi(surv$BATS, surv$CORRECTmed)
+     batsxcorr50<-cramerschi(surv$BATS, surv$CORRECT50)
+     batsxcertmed<-cramerschi(surv$BATS, surv$CERTAINmed)
+     batsxcert50<-cramerschi(surv$BATS, surv$CERTAIN50)
+     
+#pprereq
+     #pprereqxcorrmed<-cramerschi(surv$PPREREQ, surv$CORRECTmed)
+     #pprereqxcorr50<-cramerschi(surv$PPREREQ, surv$CORRECT50)
+     #pprereqxcertmed<-cramerschi(surv$PPREREQ, surv$CERTAINmed)
+     #pprereqxcert50<-cramerschi(surv$PPREREQ, surv$CERTAIN50)
+     
+#EHD
+     ehdxcorrmed<-cramerschi(surv$EHD, surv$CORRECTmed)
+     ehdxcorr50<-cramerschi(surv$EHD, surv$CORRECT50)
+     ehdxcertmed<-cramerschi(surv$EHD, surv$CERTAINmed)
+     ehdxcert50<-cramerschi(surv$EHD, surv$CERTAIN50)
+     
+#DARWIN
+     darwinxcorrmed<-cramerschi(surv$DARWIN, surv$CORRECTmed)
+     darwinxcorr50<-cramerschi(surv$DARWIN, surv$CORRECT50)
+     darwinxcertmed<-cramerschi(surv$DARWIN, surv$CERTAINmed)
+     darwinxcert50<-cramerschi(surv$DARWIN, surv$CERTAIN50)
+     
+#popred
+     popredxcorrmed<-cramerschi(surv$POPRED, surv$CORRECTmed)
+     popredxcorr50<-cramerschi(surv$POPRED, surv$CORRECT50)
+     popredxcertmed<-cramerschi(surv$POPRED, surv$CERTAINmed)
+     popredxcert50<-cramerschi(surv$POPRED, surv$CERTAIN50)
+     
+#popplan
+     popplanxcorrmed<-cramerschi(surv$POPPLAN, surv$CORRECTmed)
+     popplanxcorr50<-cramerschi(surv$POPPLAN, surv$CORRECT50)
+     popplanxcertmed<-cramerschi(surv$POPPLAN, surv$CERTAINmed)
+     popplanxcert50<-cramerschi(surv$POPPLAN, surv$CERTAIN50)
+
+#Survey
+     surveyxcorrmed<-cramerschi(surv$SURVEY, surv$CORRECTmed)
+     surveyxcorr50<-cramerschi(surv$SURVEY, surv$CORRECT50)
+     surveyxcertmed<-cramerschi(surv$SURVEY, surv$CERTAINmed)
+     surveyxcert50<-cramerschi(surv$SURVEY, surv$CERTAIN50)
+    
+#vaccine
+     vaccinexcorrmed<-cramerschi(surv$VACCINE, surv$CORRECTmed)
+     vaccinexcorr50<-cramerschi(surv$VACCINE, surv$CORRECT50)
+     vaccinexcertmed<-cramerschi(surv$VACCINE, surv$CERTAINmed)
+     vaccinexcert50<-cramerschi(surv$VACCINE, surv$CERTAIN50)
+
+#preval
+     prevalxcorrmed<-cramerschi(surv$PREVAL, surv$CORRECTmed)
+     prevalxcorr50<-cramerschi(surv$PREVAL, surv$CORRECT50)
+     prevalxcertmed<-cramerschi(surv$PREVAL, surv$CERTAINmed)
+     prevalxcert50<-cramerschi(surv$PREVAL, surv$CERTAIN50)
+     
+#diverse
+     diversexcorrmed<-cramerschi(surv$DIVERSE, surv$CORRECTmed)
+     diversexcorr50<-cramerschi(surv$DIVERSE, surv$CORRECT50)
+     diversexcertmed<-cramerschi(surv$DIVERSE, surv$CERTAINmed)
+     diversexcert50<-cramerschi(surv$DIVERSE, surv$CERTAIN50)
+     
+#conseq
+     conseqxcorrmed<-cramerschi(surv$CONSEQ, surv$CORRECTmed)
+     conseqxcorr50<-cramerschi(surv$CONSEQ, surv$CORRECT50)
+     conseqxcertmed<-cramerschi(surv$CONSEQ, surv$CERTAINmed)
+     conseqxcert50<-cramerschi(surv$CONSEQ, surv$CERTAIN50)
+     
+#Climate
+     climatexcorrmed<-cramerschi(surv$CLIMATE, surv$CORRECTmed)
+     climatexcorr50<-cramerschi(surv$CLIMATE, surv$CORRECT50)
+     climatexcertmed<-cramerschi(surv$CLIMATE, surv$CERTAINmed)
+     climatexcert50<-cramerschi(surv$CLIMATE, surv$CERTAIN50)
+     
+#Edreq
+     edreqxcorrmed<-cramerschi(surv$EDREQ, surv$CORRECTmed)
+     edreqxcorr50<-cramerschi(surv$EDREQ, surv$CORRECT50)
+     edreqxcertmed<-cramerschi(surv$EDREQ, surv$CERTAINmed)
+     edreqxcert50<-cramerschi(surv$EDREQ, surv$CERTAIN50)
+     
+#INFO
+     infoxcorrmed<-cramerschi(surv$INFO, surv$CORRECTmed)
+     infoxcorr50<-cramerschi(surv$INFO, surv$CORRECT50)
+     infoxcertmed<-cramerschi(surv$INFO, surv$CERTAINmed)
+     infoxcert50<-cramerschi(surv$INFO, surv$CERTAIN50)
+     
+opinionxknowcert<-data.frame(cramerschi.output.list, 
+     cwdalxcert50, cwdalxcertmed, cwdalxcorr50, cwdalxcorrmed,
+     batsxcert50, batsxcertmed, batsxcorr50, batsxcorrmed,
+     ehdxcert50, ehdxcertmed, ehdxcorr50, ehdxcorrmed,
+     darwinxcert50, darwinxcertmed, darwinxcorr50, darwinxcorrmed,
+     popredxcert50, popredxcertmed, popredxcorr50, popredxcorrmed,
+     popplanxcert50, popplanxcertmed, popplanxcorr50, popplanxcorrmed,
+     surveyxcert50, surveyxcertmed, surveyxcorr50, surveyxcorrmed,
+     vaccinexcert50, vaccinexcertmed, vaccinexcorr50, vaccinexcorrmed,
+     prevalxcert50, prevalxcertmed, prevalxcorr50, prevalxcorrmed,
+     diversexcert50, diversexcertmed, diversexcorr50, diversexcorrmed,
+     conseqxcert50, conseqxcertmed, conseqxcorr50, conseqxcorrmed,
+     climatexcert50, climatexcertmed, climatexcorr50, climatexcorrmed,
+     edreqxcert50, edreqxcertmed, edreqxcorr50, edreqxcorrmed,
+     infoxcert50, infoxcertmed, infoxcorr50, infoxcorrmed
+)                           
+
+View( opinionxknowcert)
+```
+
+# Field and Hanlding vs PPE usages
+
+```{r}
+#contact
+     contactxppe<-cramerschi(surv$CONTACT, surv$PPE)
+     contactxppetime<-cramerschi(surv$CONTACT, surv$PPETIME)
+  
+     
+     #field
+
+     fieldxppe<-cramerschi(surv$FIELD, surv$PPE)
+     fieldxppetime<-cramerschi(surv$FIELD, surv$PPETIME)
+     
+     #collect
+
+     collectxppe<-cramerschi(surv$COLLECT, surv$PPE)
+     collectxppetime<-cramerschi(surv$COLLECT, surv$PPETIME)
+     
+     #handle
+
+     handlexppe<-cramerschi(surv$HANDLE, surv$PPE)
+     handlexppetime<-cramerschi(surv$HANDLE, surv$PPETIME)
+     
+fieldxppe<-data.frame(cramerschi.output.list,      
+        contactxppe, contactxppetime,
+        fieldxppe, fieldxppetime,
+        collectxppe, collectxppetime,
+        handlexppe, handlexppetime
+)     
+
+View(fieldxppe)
+```
+
+# Knowledge vs Certainty
+
+```{r}
+#knowledge x certainty
+     
+     corrmedxcertmed<- cramerschi(surv$CORRECTmed, surv$CERTAINmed)
+       corrmedxcert50<-cramerschi(surv$CORRECT50, surv$CERTAIN50)
+       corr50xcert50<-cramerschi(surv$CORRECT50, surv$CERTAIN50)
+       corr50xcertmed<-cramerschi(surv$CORRECT50, surv$CERTAINmed)
+    
+     knowledgexcert<-data.frame(cramerschi.output.list, 
+                                corrmedxcert50, corrmedxcertmed,
+                                corr50xcert50, corr50xcertmed
+     )
+View(knowledgexcert)     
+```
+
+# Write CSV
+
+```{r}
+#write csv
+
+oup = file.path(analyses, "outputs")
+
+write.csv(demoxknowcert, file.path(oup, "demographic_knowledge-certainty.csv"))
+write.csv(eduxknowcert, file.path(oup, "education_knowledge-certainty.csv"))
+write.csv(fieldxknowcert,file.path(oup, "field_knowledge-certainty.csv"))
+write.csv(opinionxknowcert, file.path(oup, "opinion_knowledge-certainty.csv"))
+write.csv(fieldxppe,file.path(oup, "field_ppe.csv"))
+write.csv(knowledgexcert,file.path(oup, "knowledge_certainty.csv"))
+
+```
+
+
+# References Cited
+### Packages
+
+```{r bib}
+#| echo: false
+
+#### To write a bib file
+# knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='pckg.bib')
+
+#### to display the packages within the .qmd without creating another .bib ####
+knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+
+```

@@ -43,3 +43,5 @@ surv = read.csv(file.path(oup, "binaryCombined.csv"))
 cnty = st_read(file.path(oup, "Counties/TIGER_AL_counties.shp"))
 
 ```
+
+

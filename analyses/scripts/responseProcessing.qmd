@@ -620,9 +620,12 @@ SSSTATE
 surv = surv %>%
   mutate(STATE = na_if(STATE, ""))
 
-surv$STATE[surv$STATE == "Dead"] = 0
-surv$STATE[surv$STATE == "Alive - Sedated"] = 1
-surv$STATE[surv$STATE == "Alive - Not Sedated"] = 1
+surv$STATE[surv$STATE == "Dead
+"] = 0
+surv$STATE[surv$STATE == "Alive - Sedated
+"] = 1
+surv$STATE[surv$STATE == "Alive - Not Sedated
+"] = 1
 
 unique(surv$STATE)
 
@@ -715,8 +718,10 @@ SSPPE
 surv = surv %>%
   mutate(PPE = na_if(PPE, ""))
 
-surv$PPE[surv$PPE == "No"] = 1
-surv$PPE[surv$PPE == "Yes"] = 0
+surv$PPE[surv$PPE == "No
+"] = 1
+surv$PPE[surv$PPE == "Yes
+"] = 0
 
 unique(surv$PPE)
 
@@ -737,10 +742,14 @@ SSPPETIME
 surv = surv %>%
   mutate(PPETIME = na_if(PPETIME, ""))
 
-surv$PPETIME[surv$PPETIME == "Rarely (<25%)"] = 1
-surv$PPETIME[surv$PPETIME == "Sometimes (25%-75%)"] = 1
-surv$PPETIME[surv$PPETIME == "Usually (>75%)"] = 0
-surv$PPETIME[surv$PPETIME == "Always (100%)"] = 0
+surv$PPETIME[surv$PPETIME == "Rarely (<25%)
+"] = 1
+surv$PPETIME[surv$PPETIME == "Sometimes (25%-75%)
+"] = 1
+surv$PPETIME[surv$PPETIME == "Usually (>75%)
+"] = 0
+surv$PPETIME[surv$PPETIME == "Always (100%)
+"] = 0
 
 unique(surv$PPETIME)
 
@@ -1002,19 +1011,19 @@ SSPIGS = surv %>%
 sum(SSPIGS$proportion)
 SSPIGS
 
-# Correct Answer = 1, I Don't Know and incorrect = 0 
+# Correct Answer = 1, I don't kNow and incorrect = 0 
 surv$PIGSp = surv$PIGS
 unique(surv$PIGS)
 # TRUE = 1
 # FALSE = 0
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(PIGS = na_if(PIGS, ""))
 
 surv$PIGS[surv$PIGS ==         "TRUE"] = 1
 surv$PIGS[surv$PIGS ==        "FALSE"] = 0
-surv$PIGS[surv$PIGS == "I don't know"] = 0
+surv$PIGS[surv$PIGS == "I don't kNow"] = 0
 
 unique(surv$PIGS)
 ```
@@ -1040,14 +1049,14 @@ surv$BRUCEp = surv$BRUCE
 
 # TRUE = 0
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(BRUCE = na_if(BRUCE, ""))
 
 surv$BRUCE[surv$BRUCE ==         "TRUE"] = 0
 surv$BRUCE[surv$BRUCE ==        "FALSE"] = 1
-surv$BRUCE[surv$BRUCE == "I don't know"] = 0
+surv$BRUCE[surv$BRUCE == "I don't kNow"] = 0
 
 unique(surv$BRUCE)
 ```
@@ -1071,14 +1080,14 @@ surv$CWDp = surv$CWD
 unique(surv$CWD)
 # TRUE = 0
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(CWD = na_if(CWD, ""))
 
 surv$CWD[surv$CWD ==         "TRUE"] = 0
 surv$CWD[surv$CWD ==        "FALSE"] = 1
-surv$CWD[surv$CWD == "I don't know"] = 0
+surv$CWD[surv$CWD == "I don't kNow"] = 0
 
 unique(surv$CWD)
 
@@ -1103,14 +1112,14 @@ SSFLUAL
 surv$FLUALp = surv$FLUAL
 # TRUE = 1
 # FALSE = 0
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(FLUAL = na_if(FLUAL, ""))
 
 surv$FLUAL[surv$FLUAL ==         "TRUE"] = 1
 surv$FLUAL[surv$FLUAL ==        "FALSE"] = 0
-surv$FLUAL[surv$FLUAL == "I don't know"] = 0
+surv$FLUAL[surv$FLUAL == "I don't kNow"] = 0
 
 unique(surv$FLUAL)
 ```
@@ -1133,14 +1142,14 @@ SSFLU
 surv$FLUp = surv$FLU
 # TRUE = 0
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(FLU = na_if(FLU, ""))
 
 surv$FLU[surv$FLU ==         "TRUE"] = 0
 surv$FLU[surv$FLU ==        "FALSE"] = 1
-surv$FLU[surv$FLU == "I don't know"] = 0
+surv$FLU[surv$FLU == "I don't kNow"] = 0
 
 unique(surv$FLU)
 
@@ -1165,14 +1174,14 @@ SSCOVID
 surv$COVIDp = surv$COVID
 # TRUE = 1
 # FALSE = 0
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(COVID = na_if(COVID, ""))
 
 surv$COVID[surv$COVID ==         "TRUE"] = 1
 surv$COVID[surv$COVID ==        "FALSE"] = 0
-surv$COVID[surv$COVID == "I don't know"] = 0
+surv$COVID[surv$COVID == "I don't kNow"] = 0
 
 unique(surv$COVID)
 
@@ -1198,14 +1207,14 @@ SSCOVIDSPILL
 surv$COVIDSPILLp = surv$COVIDSPILL
 # TRUE = 0
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(COVIDSPILL = na_if(COVIDSPILL, ""))
 
 surv$COVIDSPILL[surv$COVIDSPILL ==         "TRUE"] = 0
 surv$COVIDSPILL[surv$COVIDSPILL ==        "FALSE"] = 1
-surv$COVIDSPILL[surv$COVIDSPILL == "I don't know"] = 0
+surv$COVIDSPILL[surv$COVIDSPILL == "I don't kNow"] = 0
 
 unique(surv$COVIDSPILL)
 
@@ -1231,14 +1240,14 @@ SSRABIESAL
 surv$RABIESALp = surv$RABIESAL
 # TRUE = 0
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(RABIESAL = na_if(RABIESAL, ""))
 
 surv$RABIESAL[surv$RABIESAL ==         "TRUE"] = 0
 surv$RABIESAL[surv$RABIESAL ==        "FALSE"] = 1
-surv$RABIESAL[surv$RABIESAL == "I don't know"] = 0
+surv$RABIESAL[surv$RABIESAL == "I don't kNow"] = 0
 
 unique(surv$RABIESAL)
 
@@ -1263,14 +1272,14 @@ SSRABIES
 
 surv$RABIESp = surv$RABIES
 # Bites = 1
-# Blood, Arthropods, Urine, Feces, I don't Know = 0 
+# Blood, Arthropods, Urine, Feces, I don't kNow = 0 
 
 surv = surv %>%
   mutate(RABIES = na_if(RABIES, ""))
 
 surv$RABIES[surv$RABIES ==        "Bites"] = 1
 surv$RABIES[surv$RABIES ==        "Blood"] = 0
-surv$RABIES[surv$RABIES == "I don't know"] = 0
+surv$RABIES[surv$RABIES == "I don't kNow"] = 0
 surv$RABIES[surv$RABIES ==   "Anthropods"] = 0
 surv$RABIES[surv$RABIES ==        "Urine"] = 0
 surv$RABIES[surv$RABIES ==        "Feces"] = 0
@@ -1304,9 +1313,9 @@ surv = surv %>%
 surv$TURKEY[surv$TURKEY ==     "Incinerate"] = 1
 surv$TURKEY[surv$TURKEY ==      "Bury"] = 0
 surv$TURKEY[surv$TURKEY =="Field dress and consumption"] = 0
-surv$TURKEY[surv$TURKEY ==   "I don't know"] = 0
+surv$TURKEY[surv$TURKEY ==   "I don't kNow"] = 0
 surv$TURKEY[surv$TURKEY == "Place in a dumpster"] = 0
-surv$TURKEY[surv$TURKEY ==       "Ignore"] = 0
+surv$TURKEY[surv$TURKEY ==       "IgNore"] = 0
 
 unique(surv$TURKEY)
 
@@ -1335,14 +1344,14 @@ surv$CORRECT50 = ifelse(surv$CORRECT > 5, 1, 0)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(PIGSp = na_if(PIGSp, ""))
 
 surv$PIGSp[surv$PIGSp ==         "TRUE"] = 1
 surv$PIGSp[surv$PIGSp ==        "FALSE"] = 1
-surv$PIGSp[surv$PIGSp == "I don't know"] = 0
+surv$PIGSp[surv$PIGSp == "I don't kNow"] = 0
 
 unique(surv$PIGSp)
 ```
@@ -1351,14 +1360,14 @@ unique(surv$PIGSp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(BRUCEp = na_if(BRUCEp, ""))
 
 surv$BRUCEp[surv$BRUCEp ==         "TRUE"] = 1
 surv$BRUCEp[surv$BRUCEp ==        "FALSE"] = 1
-surv$BRUCEp[surv$BRUCEp == "I don't know"] = 0
+surv$BRUCEp[surv$BRUCEp == "I don't kNow"] = 0
 
 unique(surv$BRUCEp)
 
@@ -1368,14 +1377,14 @@ unique(surv$BRUCEp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(CWDp = na_if(CWDp, ""))
 
 surv$CWDp[surv$CWDp ==         "TRUE"] = 1
 surv$CWDp[surv$CWDp ==        "FALSE"] = 1
-surv$CWDp[surv$CWDp == "I don't know"] = 0
+surv$CWDp[surv$CWDp == "I don't kNow"] = 0
 
 unique(surv$CWDp)
 
@@ -1385,14 +1394,14 @@ unique(surv$CWDp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(FLUALp = na_if(FLUALp, ""))
 
 surv$FLUALp[surv$FLUALp ==         "TRUE"] = 1
 surv$FLUALp[surv$FLUALp ==        "FALSE"] = 1
-surv$FLUALp[surv$FLUALp == "I don't know"] = 0
+surv$FLUALp[surv$FLUALp == "I don't kNow"] = 0
 
 unique(surv$FLUALp)
 
@@ -1402,14 +1411,14 @@ unique(surv$FLUALp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(FLUp = na_if(FLUp, ""))
 
 surv$FLUp[surv$FLUp ==         "TRUE"] = 1
 surv$FLUp[surv$FLUp ==        "FALSE"] = 1
-surv$FLUp[surv$FLUp == "I don't know"] = 0
+surv$FLUp[surv$FLUp == "I don't kNow"] = 0
 unique(surv$FLUp)
 
 ```
@@ -1418,14 +1427,14 @@ unique(surv$FLUp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(COVIDp = na_if(COVIDp, ""))
 
 surv$COVIDp[surv$COVIDp ==         "TRUE"] = 1
 surv$COVIDp[surv$COVIDp ==        "FALSE"] = 1
-surv$COVIDp[surv$COVIDp == "I don't know"] = 0
+surv$COVIDp[surv$COVIDp == "I don't kNow"] = 0
 
 unique(surv$COVIDp)
 
@@ -1435,14 +1444,14 @@ unique(surv$COVIDp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(COVIDSPILLp = na_if(COVIDSPILLp, ""))
 
 surv$COVIDSPILLp[surv$COVIDSPILLp ==         "TRUE"] = 1
 surv$COVIDSPILLp[surv$COVIDSPILLp ==        "FALSE"] = 1
-surv$COVIDSPILLp[surv$COVIDSPILLp == "I don't know"] = 0
+surv$COVIDSPILLp[surv$COVIDSPILLp == "I don't kNow"] = 0
 
 unique(surv$COVIDSPILLp)
 
@@ -1452,14 +1461,14 @@ unique(surv$COVIDSPILLp)
 ```{r}
 # TRUE = 1
 # FALSE = 1
-# I don't know = 0
+# I don't kNow = 0
 
 surv = surv %>%
   mutate(RABIESALp = na_if(RABIESALp, ""))
 
 surv$RABIESALp[surv$RABIESALp ==         "TRUE"] = 1
 surv$RABIESALp[surv$RABIESALp ==        "FALSE"] = 1
-surv$RABIESALp[surv$RABIESALp == "I don't know"] = 0
+surv$RABIESALp[surv$RABIESALp == "I don't kNow"] = 0
 
 unique(surv$RABIESALp)
 
@@ -1468,14 +1477,14 @@ unique(surv$RABIESALp)
 #### Rabies Transmission
 ```{r}
 # Bites, Blood, Arthropods, Urine, Feces = 1
-# I don't Know = 0 
+# I don't kNow = 0 
 
 surv = surv %>%
   mutate(RABIESp = na_if(RABIESp, ""))
 
 surv$RABIESp[surv$RABIESp ==        "Bites"] = 1
 surv$RABIESp[surv$RABIESp ==        "Blood"] = 1
-surv$RABIESp[surv$RABIESp == "I don't know"] = 0
+surv$RABIESp[surv$RABIESp == "I don't kNow"] = 0
 surv$RABIESp[surv$RABIESp ==   "Anthropods"] = 1
 surv$RABIESp[surv$RABIESp ==        "Urine"] = 1
 surv$RABIESp[surv$RABIESp ==        "Feces"] = 1
@@ -1487,17 +1496,17 @@ unique(surv$RABIESp)
 #### Turkey Disposal
 ```{r}
 # Incinerate, bury, field dress and consumption, place in dumpster, ignore = 1
-# I don't know = 0 
+# I don't kNow = 0 
 
 surv = surv %>%
   mutate(TURKEYp = na_if(TURKEYp, ""))
 
 surv$TURKEYp[surv$TURKEYp ==     "Incinerate"] = 1
 surv$TURKEYp[surv$TURKEYp ==      "Bury"] = 1
-surv$TURKEYp[surv$TURKEYp =="Field dress and consumption"] = 1
-surv$TURKEYp[surv$TURKEYp ==   "I don't know"] = 0
+surv$TURKEYp[surv$TURKEYp == "Field dress and consumption"] = 1
+surv$TURKEYp[surv$TURKEYp ==   "I don't kNow"] = 0
 surv$TURKEYp[surv$TURKEYp == "Place in a dumpster"] = 1
-surv$TURKEYp[surv$TURKEYp ==       "Ignore"] = 1
+surv$TURKEYp[surv$TURKEYp ==       "IgNore"] = 1
 
 unique(surv$TURKEYp)
 
@@ -1988,7 +1997,7 @@ unique(surv$POPPLAN)
 ```
 
 
-# Products
+# Write CSV
 ```{r}
 #| include: false
 
