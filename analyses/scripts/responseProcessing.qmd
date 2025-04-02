@@ -30,6 +30,8 @@ require(tidyterra)
 require(terra)
 require(ggplot2)
 require(knitr)
+require(gt)
+require(scales)
 
 ```
 
@@ -254,6 +256,7 @@ surv$GENDERb[surv$GENDER == "Other"] = NA
 
 unique(surv$GENDERb)
 
+
 ```
 
 ### Income
@@ -288,6 +291,10 @@ surv = surv %>%
     TRUE ~ NA_real_ ))
 
 unique(surv$INCOME)
+
+
+
+
 ```
 
 ## Experience & Expertise
@@ -1327,14 +1334,25 @@ surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESA
   lapply(surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES",
   "TURKEY")], as.numeric)
 
-surv$CORRECT = rowSums(surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")],, na.rm = TRUE)
+surv$CORRECT = rowSums(surv[, c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")], na.rm = TRUE)
 
 # median # correct answers = 7 
 medcorrect = median(surv$CORRECT)
 medcorrect
 
+SScorrect <- surv %>%
+  summarise(
+    mean_correct   = mean(CORRECT, na.rm = TRUE),
+    median_correct = median(CORRECT, na.rm = TRUE),
+    sd_correct     = sd(CORRECT, na.rm = TRUE),
+    min_correct    = min(CORRECT, na.rm = TRUE),
+    max_correct    = max(CORRECT, na.rm = TRUE),
+    n_nonmissing   = sum(!is.na(CORRECT)))
+SScorrect
+
+
 # More knowledgeable = 1 ~ less knowledgeable = 0 
-surv$CORRECTmed = ifelse(surv$CORRECT >= 7, 1, 0)
+surv$CORRECTmed = ifelse(surv$CORRECT >= 6, 1, 0)
 surv$CORRECT50 = ifelse(surv$CORRECT > 5, 1, 0)
 
 ```

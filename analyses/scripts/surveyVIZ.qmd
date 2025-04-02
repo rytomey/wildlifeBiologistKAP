@@ -32,6 +32,9 @@ require(terra)
 require(ggplot2)
 require(knitr)
 
+surv = read.csv(file.path(inp, "progover50.csv"))
+surv # 155 responses with over 50% of questions answered
+
 ```
 
 ```{r}
@@ -44,4 +47,198 @@ cnty = st_read(file.path(oup, "Counties/TIGER_AL_counties.shp"))
 
 ```
 
+# Demographic: Age Histogram
+```{r}
+
+require(lubridate)
+surv$AGE2 = 2025 - surv$DOB
+ageHIST = ggplot(surv, aes(x = AGE2)) +
+  geom_histogram(binwidth = 2, fill = "#233954", color = "white") +
+  scale_x_continuous(breaks = seq(20, 100, by = 2), limits = c(19, NA), expand = c(0, 0)) +
+  labs(
+    x = "Age (years)",
+    y = "Number of Participants"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", color = NA),
+    panel.grid = element_blank(),
+    axis.line = element_blank(),
+    axis.ticks = element_blank()
+  )
+ageHIST
+
+tiff_file <- file.path(oup, "agehistogram.tiff")
+ggsave(
+  filename = tiff_file,
+  plot = ageHIST,          # your ggplot object
+  device = "tiff",
+  width = 6, height = 4, units = "in",
+  dpi = 500,
+  bg = "transparent"
+)
+
+
+```
+
+# Income
+```{r}
+
+surv <- surv %>%
+  mutate(
+    INCOME_label = na_if(INCOME, ""),
+    INCOME_label = factor(INCOME_label, levels = c(
+      "$0-20,000", "$20,001-30,000", "$30,001-40,000", 
+      "$40,001-50,000", "$50,001-60,000", "$60,001-70,000",
+      "$70,001-80,000", "$80,001-90,000", "$90,001-100,000", "$100,001+"
+    ), ordered = TRUE)
+  )
+
+incomeBAR = ggplot(surv %>% filter(!is.na(INCOME_label)), aes(y = INCOME_label)) +
+  geom_bar(fill = "#006C9A", color = "white") +
+  geom_text(stat = "count", aes(label = ..count..), hjust = -0.1, size = 3.5) +
+  labs(
+    y = "Income Bracket",
+    x = "Number of Participants"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title = element_text(face = "bold"),
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", color = NA)
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.1)))
+
+tiff_file <- file.path(oup, "incomebar.tiff")
+ggsave(
+  filename = tiff_file,
+  plot = incomeBAR,          # your ggplot object
+  device = "tiff",
+  width = 5, height = 3, units = "in",
+  dpi = 500,
+  bg = "transparent"
+)
+
+```
+
+# Education
+```{r}
+
+# Restore EDUCATION from original if needed, and recode for plotting
+surv <- surv %>%
+  mutate(
+    EDUCATION_label = case_when(
+      EDUCATION == "Did not graduate high school/no GED" ~ "No GED",
+      EDUCATION == "High school graduate/GED" ~ "High school/GED",
+      EDUCATION == "Technical/Vocational School" ~ "Technical/Vocational",
+      EDUCATION == "Some College/AA or AS (2-year degree)" ~ "2-year degree",
+      EDUCATION == "College Graduate/BA or BS (4-year degree)" ~ "4-year degree",
+      EDUCATION == "Graduate or Professional School" ~ "Graduate/Professional",
+      TRUE ~ NA_character_
+    ),
+    EDUCATION_label = factor(EDUCATION_label, levels = c(
+      "No GED",
+      "High school/GED",
+      "Technical/Vocational",
+      "2-year degree",
+      "4-year degree",
+      "Graduate/Professional"
+    ), ordered = TRUE)
+  )
+
+
+eduBAR = ggplot(surv %>% filter(!is.na(EDUCATION_label)), aes(y = EDUCATION_label)) +
+  geom_bar(fill = "#FFC044", color = "white") +
+  geom_text(stat = "count", aes(label = ..count..), hjust = -0.1, size = 3.5) +
+  labs(
+    y = "Education Level",
+    x = "Number of Participants"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.title = element_text(face = "bold", 14),
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", color = NA)
+  ) +
+  scale_x_continuous(expand = expansion(mult = c(0, 0.1)))
+eduBAR
+
+tiff_file <- file.path(oup, "educationbar.tiff")
+ggsave(
+  filename = tiff_file,
+  plot = eduBAR,          # your ggplot object
+  device = "tiff",
+  width = 3, height = 2, units = "in",
+  dpi = 500,
+  bg = "transparent"
+)
+
+
+```
+
+
+# Knowledge: Correct / Certain Histogram
+```{r}
+
+correctHIST = ggplot(surv, aes(x = CORRECT)) +
+  geom_histogram(binwidth = 1, fill = "black", color = "white", boundary = 0.5) +
+  geom_vline(xintercept = medcorrect, linetype = "dashed", color = "#E86100", size = 1) +
+  geom_vline(xintercept = 5, linetype = "dotted", color = "#00C8B7", size = 1) +
+  annotate("text", x = medcorrect + 0.5, y = Inf, label = paste0("Median = ", medcorrect),
+           vjust = 1, hjust = 0.3, color = "black", size = 2) +
+  annotate("text", x = 5.5, y = Inf, label = "Logic = 5",
+           vjust = 2, hjust = 1.75, color = "black", size = 2) +
+  scale_x_continuous(limits = c(0,11), expand = c(0.0, 0)) +
+  labs(
+    x = "Correct Responses",
+    y = "Number of Participants") +
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", color = NA),
+    panel.grid = element_blank(),
+    axis.title = element_text(face = "bold"))
+correctHIST
+
+tiff_file <- file.path(oup, "correcthistogram.tiff")
+ggsave(
+  filename = tiff_file,
+  plot = correctHIST,          # your ggplot object
+  device = "tiff",
+  width = 3, height = 2, units = "in",
+  dpi = 500,
+  bg = "transparent"
+)
+
+
+certainHIST = ggplot(surv, aes(x = CERTAINTY)) +
+  geom_histogram(binwidth = 1, fill = "black", color = "white", boundary = 0.5) +
+  geom_vline(xintercept = certainmed, linetype = "dashed", color = "#E86100", size = 1) +
+  geom_vline(xintercept = 5, linetype = "dotted", color = "#00C8B7", size = 1) +
+  annotate("text", x = certainmed + 0.5, y = Inf, label = paste0("Median = ", certainmed),
+           vjust = 1, hjust = 1.5, color = "black", size = 2) +
+  annotate("text", x = 5.5, y = Inf, label = "Logic = 5",
+           vjust = 2, hjust = 1.75, color = "black", size = 2) +
+  scale_x_continuous(limits = c(0,11), expand = c(0.0, 0)) +
+  labs(
+    x = "Certain Responses",
+    y = "Number of Participants") +
+  theme(
+    panel.background = element_rect(fill = "transparent", color = NA),
+    plot.background = element_rect(fill = "transparent", color = NA),
+    panel.grid = element_blank(),
+    axis.title = element_text(face = "bold"))
+certainHIST
+
+tiff_file <- file.path(oup, "certainhistogram.tiff")
+ggsave(
+  filename = tiff_file,
+  plot = certainHIST,          # your ggplot object
+  device = "tiff",
+  width = 3, height = 2, units = "in",
+  dpi = 500,
+  bg = "transparent",
+)
+```
 
