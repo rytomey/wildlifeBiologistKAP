@@ -1,0 +1,63 @@
+---
+title: "Formatting Data for Analyses"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    html-table-processing: none
+    toc: true
+    toc-depth: 4
+    toc-location: left
+    number-sections: true
+    code-fold: true
+    code-summary: "Show Code"
+    fig-cap-location: bottom
+    smooth-scroll: true
+    theme: flatly
+    font-family: serif
+    font-size: 12px
+    line-height: 150%
+    css: styles.css  # Reference your CSS file here
+---
+
+# Initialization
+```{r include=FALSE}
+
+require(dplyr)
+require(sf)
+require(sp)
+require(tidyverse)
+require(tidyterra)
+require(terra)
+require(ggplot2)
+require(knitr)
+require(gt)
+require(scales)
+require(rlang)
+require(zipcodeR)
+require(tidyr)
+require(stringr)
+
+```
+
+### Importing Data
+```{r include=FALSE}
+
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
+analyses = file.path(base, "analyses")
+oup = file.path(analyses, "outputs")
+surv = read.csv(file.path(oup, "descriptiveKAP.csv"))
+surv 
+
+```
+
+# Processing data frame
+```{r}
+
+survp = surv %>%
+    select()
+
+
+
+
+
