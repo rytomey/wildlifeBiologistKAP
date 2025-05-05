@@ -82,6 +82,11 @@ analyses = file.path(base, "analyses")
 inp = file.path(analyses, "inputs")
 surv = read.csv(file.path(inp, "progover50.csv"))
 surv # 155 responses with over 50% of questions answered
+SSPROG = surv %>%
+  count(surv$PROG) %>%
+  rename(count = n) %>%
+  mutate(proportion = count / 155)
+SSPROG
 psurv = read.csv(file.path(inp, "progunder50.csv"))
 psurv # 59 responses with less than 50% of questions answered 
 csurv = surv %>%
@@ -222,10 +227,10 @@ SSAGE = surv %>%
     max = max(AGE, na.rm = TRUE))
 SSAGE
 
-# Median = 35 
+# Median = 37 
 # 1 = older, 0 = younger
 surv = surv %>%
-  mutate(AGE = ifelse(AGE > 35, "1", "0"))
+  mutate(AGE = ifelse(AGE > 37, "1", "0"))
 
 unique(surv$AGE)
 
@@ -291,9 +296,6 @@ surv = surv %>%
     TRUE ~ NA_real_ ))
 
 unique(surv$INCOME)
-
-
-
 
 ```
 

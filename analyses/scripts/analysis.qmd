@@ -111,28 +111,39 @@ agexcorrmed<-cramerschi(surv$AGE, surv$CORRECTmed)
 
 #Age
 agexcorrmed<-cramerschi(surv$AGE, surv$CORRECTmed)
-agexcorr50<-cramerschi(surv$AGE, surv$CORRECT50)
+agexcorr50 <-cramerschi(surv$AGE, surv$CORRECT50)
 agexcertmed<-cramerschi(surv$AGE, surv$CERTAINmed)
-agexcert50<-cramerschi(surv$AGE, surv$CERTAIN50)
+agexcert50 <-cramerschi(surv$AGE, surv$CERTAIN50)
+agexcorrmed
+agexcorr50 
+agexcertmed
+agexcert50 
 
 #gender
 genxcorrmed<-cramerschi(surv$GENDER, surv$CORRECTmed)
-genxcorr50<-cramerschi(surv$GENDER, surv$CORRECT50)
+genxcorr50 <-cramerschi(surv$GENDER, surv$CORRECT50)
 genxcertmed<-cramerschi(surv$GENDER, surv$CERTAINmed)
-genxcert50<-cramerschi(surv$GENDER, surv$CERTAIN50)
+genxcert50 <-cramerschi(surv$GENDER, surv$CERTAIN50)
+genxcorrmed
+genxcorr50 
+genxcertmed
+genxcert50 
 
 #income
 incomexcorrmed<-cramerschi(surv$INCOME, surv$CORRECTmed)
-incomexcorr50<-cramerschi(surv$INCOME, surv$CORRECT50)
+incomexcorr50 <-cramerschi(surv$INCOME, surv$CORRECT50)
 incomexcertmed<- cramerschi(surv$INCOME, surv$CERTAINmed)
-incomexcert50<-cramerschi(surv$INCOME, surv$CERTAIN50)
-
+incomexcert50 <-cramerschi(surv$INCOME, surv$CERTAIN50)
+incomexcorrmed
+incomexcorr50 
+incomexcertmed
+incomexcert50 
 
 #age, gender, income
-demoxknowcert<-data.frame(cramerschi.output.list, agexcert50, agexcertmed, agexcorr50, agexcorrmed,
+demoxknowcert <-data.frame(cramerschi.output.list, agexcert50, agexcertmed, agexcorr50, agexcorrmed,
  genxcert50, genxcertmed, genxcorr50, genxcorrmed,
- incomexcert50, incomexcertmed, incomexcorr50, incomexcorrmed
-)
+ incomexcert50, incomexcertmed, incomexcorr50, incomexcorrmed)
+demoxknowcert
 
 View(demoxknowcert)
 ```
@@ -142,39 +153,63 @@ View(demoxknowcert)
 ```{r}
 #degree
 degreexcorrmed<-cramerschi(surv$DEGREE, surv$CORRECTmed)
-degreexcorr50<-cramerschi(surv$DEGREE,surv$CORRECT50)
+degreexcorr50 <-cramerschi(surv$DEGREE,surv$CORRECT50)
 degreexcertmed<-cramerschi(surv$DEGREE, surv$CERTAINmed)
-degreexcert50<-cramerschi(surv$DEGREE, surv$CERTAIN50)
+degreexcert50 <-cramerschi(surv$DEGREE, surv$CERTAIN50)
+degreexcorrmed
+degreexcorr50 
+degreexcertmed
+degreexcert50 
 
 #TWS
 twsxcorrmed<-cramerschi(surv$TWS, surv$CORRECTmed)
-twsxcorr50<- cramerschi(surv$TWS, surv$CORRECT50)
+twsxcorr50 <- cramerschi(surv$TWS, surv$CORRECT50)
 twsxcertmed<-cramerschi(surv$TWS, surv$CERTAINmed)
-twsxcert50<-cramerschi(surv$TWS, surv$CERTAIN50)
+twsxcert50 <-cramerschi(surv$TWS, surv$CERTAIN50)
+twsxcorrmed
+twsxcorr50 
+twsxcertmed
+twsxcert50 
 
 #course
 coursexcorrmed<-cramerschi(surv$COURSE, surv$CORRECTmed)
-coursexcorr50<-cramerschi(surv$COURSE, surv$CORRECT50)
+coursexcorr50 <-cramerschi(surv$COURSE, surv$CORRECT50)
 coursexcertmed<-cramerschi(surv$COURSE, surv$CERTAINmed)
-coursexcert50<-cramerschi(surv$COURSE, surv$CERTAIN50)
+coursexcert50 <-cramerschi(surv$COURSE, surv$CERTAIN50)
+coursexcorrmed
+coursexcorr50 
+coursexcertmed
+coursexcert50 
 
 #Selftitle
 titlexcorrmed<-cramerschi(surv$SELFTITLE, surv$CORRECTmed)
-titlexcorr50<-cramerschi(surv$SELFTITLE, surv$CORRECT50)
+titlexcorr50 <-cramerschi(surv$SELFTITLE, surv$CORRECT50)
 titlexcertmed<-cramerschi(surv$SELFTITLE, surv$CERTAINmed)
-titlexcert50<-cramerschi(surv$SELFTITLE, surv$CERTAIN50)
+titlexcert50 <-cramerschi(surv$SELFTITLE, surv$CERTAIN50)
+titlexcorrmed
+titlexcorr50 
+titlexcertmed
+titlexcert50 
 
 #biotime
 biotimexcorrmed<-cramerschi(surv$BIOTIME, surv$CORRECTmed)
-biotimexcorr50<-cramerschi(surv$BIOTIME, surv$CORRECT50)
+biotimexcorr50 <-cramerschi(surv$BIOTIME, surv$CORRECT50)
 biotimexcertmed<-cramerschi(surv$BIOTIME, surv$CERTAINmed)
-biotimexcert50<-cramerschi(surv$BIOTIME, surv$CERTAIN50)
+biotimexcert50 <-cramerschi(surv$BIOTIME, surv$CERTAIN50)
+biotimexcorrmed
+biotimexcorr50 
+biotimexcertmed
+biotimexcert50 
 
 #education
 eduxcorrmed<-cramerschi(surv$EDUCATION, surv$CORRECTmed)
-eduxcorr50<-cramerschi(surv$EDUCATION, surv$CORRECT50)
+eduxcorr50 <-cramerschi(surv$EDUCATION, surv$CORRECT50)
 eduxcertmed<-cramerschi(surv$EDUCATION, surv$CERTAINmed)
-eduxcert50<-cramerschi(surv$EDUCATION, surv$CERTAIN50)
+eduxcert50 <-cramerschi(surv$EDUCATION, surv$CERTAIN50)
+eduxcorrmed
+eduxcorr50 
+eduxcertmed
+eduxcert50 
 
 #degree, tws, course, selftitle, biotime, education
 eduxknowcert<-data.frame(cramerschi.output.list, 
@@ -185,6 +220,7 @@ eduxknowcert<-data.frame(cramerschi.output.list,
       biotimexcert50, biotimexcertmed, biotimexcorr50, biotimexcorrmed,
       eduxcert50, eduxcertmed, eduxcorr50, eduxcorrmed
 )
+eduxknowcert
 View(eduxknowcert)
 ```
 
@@ -193,27 +229,43 @@ View(eduxknowcert)
 ```{r}
 #contact
 contactxcorrmed<-cramerschi(surv$CONTACT, surv$CORRECTmed)
-contactxcorr50<-cramerschi(surv$CONTACT, surv$CORRECT50)
+contactxcorr50 <-cramerschi(surv$CONTACT, surv$CORRECT50)
 contactxcertmed<-cramerschi(surv$CONTACT, surv$CERTAINmed)
-contactxcert50<-cramerschi(surv$CONTACT, surv$CERTAIN50)
+contactxcert50 <-cramerschi(surv$CONTACT, surv$CERTAIN50)
+contactxcorrmed
+contactxcorr50 
+contactxcertmed
+contactxcert50 
 
 #field
 fieldxcorrmed<-cramerschi(surv$FIELD, surv$CORRECTmed)
-fieldxcorr50<-cramerschi(surv$FIELD, surv$CORRECT50)
+fieldxcorr50 <-cramerschi(surv$FIELD, surv$CORRECT50)
 fieldxcertmed<-cramerschi(surv$FIELD, surv$CERTAINmed)
-fieldxcert50<-cramerschi(surv$FIELD, surv$CERTAIN50)
+fieldxcert50 <-cramerschi(surv$FIELD, surv$CERTAIN50)
+fieldxcorrmed
+fieldxcorr50 
+fieldxcertmed
+fieldxcert50 
 
 #collect
 collectxcorrmed<-cramerschi(surv$COLLECT, surv$CORRECTmed)
-collectxcorr50<-cramerschi(surv$COLLECT, surv$CORRECT50)
+collectxcorr50 <-cramerschi(surv$COLLECT, surv$CORRECT50)
 collectxcertmed<-cramerschi(surv$COLLECT, surv$CERTAINmed)
-collectxcert50<-cramerschi(surv$COLLECT, surv$CERTAIN50)
+collectxcert50 <-cramerschi(surv$COLLECT, surv$CERTAIN50)
+collectxcorrmed
+collectxcorr50 
+collectxcertmed
+collectxcert50 
 
 #handle
 handlexcorrmed<-cramerschi(surv$HANDLE, surv$CORRECTmed)
-handlexcorr50<-cramerschi(surv$HANDLE, surv$CORRECT50)
+handlexcorr50 <-cramerschi(surv$HANDLE, surv$CORRECT50)
 handlexcertmed<-cramerschi(surv$HANDLE, surv$CERTAINmed)
-handlexcert50<-cramerschi(surv$HANDLE, surv$CERTAIN50)
+handlexcert50 <-cramerschi(surv$HANDLE, surv$CERTAIN50)
+handlexcorrmed
+handlexcorr50 
+handlexcertmed
+handlexcert50 
 
 #contact, field, collect, handle
 
@@ -223,6 +275,7 @@ fieldxknowcert<-data.frame(cramerschi.output.list,
       collectxcert50, collectxcertmed, collectxcorr50, collectxcorrmed,
       handlexcert50, handlexcertmed, handlexcorr50, handlexcorrmed
 )
+fieldxknowcert
 
 View(fieldxknowcert)
 ```
@@ -234,16 +287,24 @@ Pprereq would not run as there was a difference in vector lengths
 ```{r}
 #CWDAL
 cwdalxcorrmed<-cramerschi(surv$CWDAL, surv$CORRECTmed)
-     cwdalxcorr50<-cramerschi(surv$CWDAL, surv$CORRECT50)
-     cwdalxcertmed<-cramerschi(surv$CWDAL, surv$CERTAINmed)
-     cwdalxcert50<-cramerschi(surv$CWDAL, surv$CERTAIN50)
+cwdalxcorr50 <-cramerschi(surv$CWDAL, surv$CORRECT50)
+cwdalxcertmed<-cramerschi(surv$CWDAL, surv$CERTAINmed)
+cwdalxcert50 <-cramerschi(surv$CWDAL, surv$CERTAIN50)
+cwdalxcorrmed
+cwdalxcorr50 
+cwdalxcertmed
+cwdalxcert50 
 
   #BATS
-     batsxcorrmed<-cramerschi(surv$BATS, surv$CORRECTmed)
-     batsxcorr50<-cramerschi(surv$BATS, surv$CORRECT50)
-     batsxcertmed<-cramerschi(surv$BATS, surv$CERTAINmed)
-     batsxcert50<-cramerschi(surv$BATS, surv$CERTAIN50)
-     
+batsxcorrmed<-cramerschi(surv$BATS, surv$CORRECTmed)
+batsxcorr50 <-cramerschi(surv$BATS, surv$CORRECT50)
+batsxcertmed<-cramerschi(surv$BATS, surv$CERTAINmed)
+batsxcert50 <-cramerschi(surv$BATS, surv$CERTAIN50)
+batsxcorrmed
+batsxcorr50 
+batsxcertmed
+batsxcert50 
+
 #pprereq
      #pprereqxcorrmed<-cramerschi(surv$PPREREQ, surv$CORRECTmed)
      #pprereqxcorr50<-cramerschi(surv$PPREREQ, surv$CORRECT50)
@@ -251,76 +312,124 @@ cwdalxcorrmed<-cramerschi(surv$CWDAL, surv$CORRECTmed)
      #pprereqxcert50<-cramerschi(surv$PPREREQ, surv$CERTAIN50)
      
 #EHD
-     ehdxcorrmed<-cramerschi(surv$EHD, surv$CORRECTmed)
-     ehdxcorr50<-cramerschi(surv$EHD, surv$CORRECT50)
-     ehdxcertmed<-cramerschi(surv$EHD, surv$CERTAINmed)
-     ehdxcert50<-cramerschi(surv$EHD, surv$CERTAIN50)
-     
+ehdxcorrmed<-cramerschi(surv$EHD, surv$CORRECTmed)
+ehdxcorr50 <-cramerschi(surv$EHD, surv$CORRECT50)
+ehdxcertmed<-cramerschi(surv$EHD, surv$CERTAINmed)
+ehdxcert50 <-cramerschi(surv$EHD, surv$CERTAIN50)
+ehdxcorrmed
+ehdxcorr50 
+ehdxcertmed
+ehdxcert50 
+
 #DARWIN
-     darwinxcorrmed<-cramerschi(surv$DARWIN, surv$CORRECTmed)
-     darwinxcorr50<-cramerschi(surv$DARWIN, surv$CORRECT50)
-     darwinxcertmed<-cramerschi(surv$DARWIN, surv$CERTAINmed)
-     darwinxcert50<-cramerschi(surv$DARWIN, surv$CERTAIN50)
-     
+darwinxcorrmed<-cramerschi(surv$DARWIN, surv$CORRECTmed)
+darwinxcorr50 <-cramerschi(surv$DARWIN, surv$CORRECT50)
+darwinxcertmed<-cramerschi(surv$DARWIN, surv$CERTAINmed)
+darwinxcert50 <-cramerschi(surv$DARWIN, surv$CERTAIN50)
+darwinxcorrmed
+darwinxcorr50 
+darwinxcertmed
+darwinxcert50 
+
 #popred
-     popredxcorrmed<-cramerschi(surv$POPRED, surv$CORRECTmed)
-     popredxcorr50<-cramerschi(surv$POPRED, surv$CORRECT50)
-     popredxcertmed<-cramerschi(surv$POPRED, surv$CERTAINmed)
-     popredxcert50<-cramerschi(surv$POPRED, surv$CERTAIN50)
-     
+popredxcorrmed<-cramerschi(surv$POPRED, surv$CORRECTmed)
+popredxcorr50 <-cramerschi(surv$POPRED, surv$CORRECT50)
+popredxcertmed<-cramerschi(surv$POPRED, surv$CERTAINmed)
+popredxcert50 <-cramerschi(surv$POPRED, surv$CERTAIN50)
+popredxcorrmed
+popredxcorr50 
+popredxcertmed
+popredxcert50 
+
 #popplan
-     popplanxcorrmed<-cramerschi(surv$POPPLAN, surv$CORRECTmed)
-     popplanxcorr50<-cramerschi(surv$POPPLAN, surv$CORRECT50)
-     popplanxcertmed<-cramerschi(surv$POPPLAN, surv$CERTAINmed)
-     popplanxcert50<-cramerschi(surv$POPPLAN, surv$CERTAIN50)
+popplanxcorrmed<-cramerschi(surv$POPPLAN, surv$CORRECTmed)
+popplanxcorr50 <-cramerschi(surv$POPPLAN, surv$CORRECT50)
+popplanxcertmed<-cramerschi(surv$POPPLAN, surv$CERTAINmed)
+popplanxcert50 <-cramerschi(surv$POPPLAN, surv$CERTAIN50)
+popplanxcorrmed
+popplanxcorr50 
+popplanxcertmed
+popplanxcert50 
 
 #Survey
-     surveyxcorrmed<-cramerschi(surv$SURVEY, surv$CORRECTmed)
-     surveyxcorr50<-cramerschi(surv$SURVEY, surv$CORRECT50)
-     surveyxcertmed<-cramerschi(surv$SURVEY, surv$CERTAINmed)
-     surveyxcert50<-cramerschi(surv$SURVEY, surv$CERTAIN50)
-    
+surveyxcorrmed<-cramerschi(surv$SURVEY, surv$CORRECTmed)
+surveyxcorr50 <-cramerschi(surv$SURVEY, surv$CORRECT50)
+surveyxcertmed<-cramerschi(surv$SURVEY, surv$CERTAINmed)
+surveyxcert50 <-cramerschi(surv$SURVEY, surv$CERTAIN50)
+surveyxcorrmed
+surveyxcorr50 
+surveyxcertmed
+surveyxcert50 
+
 #vaccine
-     vaccinexcorrmed<-cramerschi(surv$VACCINE, surv$CORRECTmed)
-     vaccinexcorr50<-cramerschi(surv$VACCINE, surv$CORRECT50)
-     vaccinexcertmed<-cramerschi(surv$VACCINE, surv$CERTAINmed)
-     vaccinexcert50<-cramerschi(surv$VACCINE, surv$CERTAIN50)
+vaccinexcorrmed<-cramerschi(surv$VACCINE, surv$CORRECTmed)
+vaccinexcorr50 <-cramerschi(surv$VACCINE, surv$CORRECT50)
+vaccinexcertmed<-cramerschi(surv$VACCINE, surv$CERTAINmed)
+vaccinexcert50 <-cramerschi(surv$VACCINE, surv$CERTAIN50)
+vaccinexcorrmed
+vaccinexcorr50 
+vaccinexcertmed
+vaccinexcert50 
 
 #preval
-     prevalxcorrmed<-cramerschi(surv$PREVAL, surv$CORRECTmed)
-     prevalxcorr50<-cramerschi(surv$PREVAL, surv$CORRECT50)
-     prevalxcertmed<-cramerschi(surv$PREVAL, surv$CERTAINmed)
-     prevalxcert50<-cramerschi(surv$PREVAL, surv$CERTAIN50)
-     
+prevalxcorrmed<-cramerschi(surv$PREVAL, surv$CORRECTmed)
+prevalxcorr50 <-cramerschi(surv$PREVAL, surv$CORRECT50)
+prevalxcertmed<-cramerschi(surv$PREVAL, surv$CERTAINmed)
+prevalxcert50 <-cramerschi(surv$PREVAL, surv$CERTAIN50)
+prevalxcorrmed
+prevalxcorr50 
+prevalxcertmed
+prevalxcert50 
+
 #diverse
-     diversexcorrmed<-cramerschi(surv$DIVERSE, surv$CORRECTmed)
-     diversexcorr50<-cramerschi(surv$DIVERSE, surv$CORRECT50)
-     diversexcertmed<-cramerschi(surv$DIVERSE, surv$CERTAINmed)
-     diversexcert50<-cramerschi(surv$DIVERSE, surv$CERTAIN50)
-     
+diversexcorrmed<-cramerschi(surv$DIVERSE, surv$CORRECTmed)
+diversexcorr50 <-cramerschi(surv$DIVERSE, surv$CORRECT50)
+diversexcertmed<-cramerschi(surv$DIVERSE, surv$CERTAINmed)
+diversexcert50 <-cramerschi(surv$DIVERSE, surv$CERTAIN50)
+diversexcorrmed
+diversexcorr50 
+diversexcertmed
+diversexcert50 
+
 #conseq
-     conseqxcorrmed<-cramerschi(surv$CONSEQ, surv$CORRECTmed)
-     conseqxcorr50<-cramerschi(surv$CONSEQ, surv$CORRECT50)
-     conseqxcertmed<-cramerschi(surv$CONSEQ, surv$CERTAINmed)
-     conseqxcert50<-cramerschi(surv$CONSEQ, surv$CERTAIN50)
-     
+conseqxcorrmed<-cramerschi(surv$CONSEQ, surv$CORRECTmed)
+conseqxcorr50 <-cramerschi(surv$CONSEQ, surv$CORRECT50)
+conseqxcertmed<-cramerschi(surv$CONSEQ, surv$CERTAINmed)
+conseqxcert50 <-cramerschi(surv$CONSEQ, surv$CERTAIN50)
+conseqxcorrmed
+conseqxcorr50 
+conseqxcertmed
+conseqxcert50 
+
 #Climate
-     climatexcorrmed<-cramerschi(surv$CLIMATE, surv$CORRECTmed)
-     climatexcorr50<-cramerschi(surv$CLIMATE, surv$CORRECT50)
-     climatexcertmed<-cramerschi(surv$CLIMATE, surv$CERTAINmed)
-     climatexcert50<-cramerschi(surv$CLIMATE, surv$CERTAIN50)
-     
+climatexcorrmed<-cramerschi(surv$CLIMATE, surv$CORRECTmed)
+climatexcorr50 <-cramerschi(surv$CLIMATE, surv$CORRECT50)
+climatexcertmed<-cramerschi(surv$CLIMATE, surv$CERTAINmed)
+climatexcert50 <-cramerschi(surv$CLIMATE, surv$CERTAIN50)
+climatexcorrmed
+climatexcorr50 
+climatexcertmed
+climatexcert50
+
 #Edreq
-     edreqxcorrmed<-cramerschi(surv$EDREQ, surv$CORRECTmed)
-     edreqxcorr50<-cramerschi(surv$EDREQ, surv$CORRECT50)
-     edreqxcertmed<-cramerschi(surv$EDREQ, surv$CERTAINmed)
-     edreqxcert50<-cramerschi(surv$EDREQ, surv$CERTAIN50)
-     
+edreqxcorrmed<-cramerschi(surv$EDREQ, surv$CORRECTmed)
+edreqxcorr50 <-cramerschi(surv$EDREQ, surv$CORRECT50)
+edreqxcertmed<-cramerschi(surv$EDREQ, surv$CERTAINmed)
+edreqxcert50 <-cramerschi(surv$EDREQ, surv$CERTAIN50)
+edreqxcorrmed
+edreqxcorr50 
+edreqxcertmed
+edreqxcert50
+
 #INFO
-     infoxcorrmed<-cramerschi(surv$INFO, surv$CORRECTmed)
-     infoxcorr50<-cramerschi(surv$INFO, surv$CORRECT50)
-     infoxcertmed<-cramerschi(surv$INFO, surv$CERTAINmed)
-     infoxcert50<-cramerschi(surv$INFO, surv$CERTAIN50)
+infoxcorrmed<-cramerschi(surv$INFO, surv$CORRECTmed)
+infoxcorr50 <-cramerschi(surv$INFO, surv$CORRECT50)
+infoxcertmed<-cramerschi(surv$INFO, surv$CERTAINmed)
+infoxcert50 <-cramerschi(surv$INFO, surv$CERTAIN50)
+infoxcorrmed
+infoxcorr50 
+infoxcertmed
+infoxcert50 
      
 opinionxknowcert<-data.frame(cramerschi.output.list, 
      cwdalxcert50, cwdalxcertmed, cwdalxcorr50, cwdalxcorrmed,
@@ -337,7 +446,8 @@ opinionxknowcert<-data.frame(cramerschi.output.list,
      climatexcert50, climatexcertmed, climatexcorr50, climatexcorrmed,
      edreqxcert50, edreqxcertmed, edreqxcorr50, edreqxcorrmed,
      infoxcert50, infoxcertmed, infoxcorr50, infoxcorrmed
-)                           
+)  
+opinionxknowcert
 
 View( opinionxknowcert)
 ```
@@ -346,31 +456,36 @@ View( opinionxknowcert)
 
 ```{r}
 #contact
-     contactxppe<-cramerschi(surv$CONTACT, surv$PPE)
-     contactxppetime<-cramerschi(surv$CONTACT, surv$PPETIME)
-  
-     
-     #field
+contactxppe    <-cramerschi(surv$CONTACT, surv$PPE)
+contactxppetime<-cramerschi(surv$CONTACT, surv$PPETIME)
+contactxppe    
+contactxppetime
+    
+    #field
+fieldxppe    <-cramerschi(surv$FIELD, surv$PPE)
+fieldxppetime<-cramerschi(surv$FIELD, surv$PPETIME)
+fieldxppe    
+fieldxppetime
 
-     fieldxppe<-cramerschi(surv$FIELD, surv$PPE)
-     fieldxppetime<-cramerschi(surv$FIELD, surv$PPETIME)
-     
-     #collect
+    #collect
+collectxppe    <-cramerschi(surv$COLLECT, surv$PPE)
+collectxppetime<-cramerschi(surv$COLLECT, surv$PPETIME)
+collectxppe    
+collectxppetime
 
-     collectxppe<-cramerschi(surv$COLLECT, surv$PPE)
-     collectxppetime<-cramerschi(surv$COLLECT, surv$PPETIME)
-     
-     #handle
+    #handle
+handlexppe    <-cramerschi(surv$HANDLE, surv$PPE)
+handlexppetime<-cramerschi(surv$HANDLE, surv$PPETIME)
+handlexppe    
+handlexppetime
 
-     handlexppe<-cramerschi(surv$HANDLE, surv$PPE)
-     handlexppetime<-cramerschi(surv$HANDLE, surv$PPETIME)
-     
 fieldxppe<-data.frame(cramerschi.output.list,      
         contactxppe, contactxppetime,
         fieldxppe, fieldxppetime,
         collectxppe, collectxppetime,
         handlexppe, handlexppetime
-)     
+)   
+fieldxppe
 
 View(fieldxppe)
 ```
@@ -380,15 +495,20 @@ View(fieldxppe)
 ```{r}
 #knowledge x certainty
      
-     corrmedxcertmed<- cramerschi(surv$CORRECTmed, surv$CERTAINmed)
-       corrmedxcert50<-cramerschi(surv$CORRECT50, surv$CERTAIN50)
-       corr50xcert50<-cramerschi(surv$CORRECT50, surv$CERTAIN50)
-       corr50xcertmed<-cramerschi(surv$CORRECT50, surv$CERTAINmed)
+corrmedxcertmed<- cramerschi(surv$CORRECTmed, surv$CERTAINmed)
+corrmedxcert50 <-cramerschi(surv$CORRECT50, surv$CERTAIN50)
+corr50xcert50  <-cramerschi(surv$CORRECT50, surv$CERTAIN50)
+corr50xcertmed <-cramerschi(surv$CORRECT50, surv$CERTAINmed)
+corrmedxcertmed
+corrmedxcert50 
+corr50xcert50  
+corr50xcertmed 
     
-     knowledgexcert<-data.frame(cramerschi.output.list, 
+knowledgexcert<-data.frame(cramerschi.output.list, 
                                 corrmedxcert50, corrmedxcertmed,
                                 corr50xcert50, corr50xcertmed
      )
+knowledgexcert
 View(knowledgexcert)     
 ```
 
