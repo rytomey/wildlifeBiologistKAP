@@ -36,6 +36,12 @@ require(rlang)
 require(zipcodeR)
 require(tidyr)
 require(stringr)
+require(MASS)
+require(dplyr)
+require(tidyr)
+require(ggplot2)
+require(broom)
+require(janitor)
 
 ```
 
@@ -54,18 +60,7 @@ surv
 ### New Data Frame
 ```{r}
 
-psurv = surv %>%
-    select(c(
-  "PIGSCORRECT", "BRUCECORRECT", "CWDCORRECT", "FLUALCORRECT", "COVIDCORRECT",
-  "COVIDSPILLCORRECT", "RABIESALCORRECT", "RABIESCORRECT",
-  "PIGSCCORRECT", "BRUCECCORRECT", "CWDCCORRECT", "FLUALCCORRECT", "COVIDCCORRECT",
-  "COVIDSPILLCCORRECT", "RABIESALCCORRECT", "RABIESCCORRECT", "TURKEYCCORRECT",
-  "PIGSCERTAIN", "INTERESTCERTAIN", "BRUCECERTAIN", "noSOURCE", "CWDCERTAIN", "FLUALCERTAIN",
-  "COVIDCERTAIN", "COVIDSPILLCERTAIN", "RABIESALCERTAIN", "RABIESCERTAIN", "TURKEYCERTAIN",
-  "CWDALNEUTRAL", "BATSNEUTRAL", "PPEREQNEUTRAL", "EHDNEUTRAL", "DARWINNEUTRAL",
-  "POPREDNEUTRAL", "POPPLANNEUTRAL", "SURVEYNEUTRAL", "VACCINENEUTRAL", "PREVALNEUTRAL",
-  "DIVERSENEUTRAL", "CONSEQNEUTRAL", "CLIMATENEUTRAL", "EDREQNEUTRAL", "INFONEUTRAL",
-  "HANDSONNEUTRAL"))
+psurv <- surv %>% dplyr::select(ID, RESIDENCE, noSOURCE)
 psurv
 
 ```
@@ -85,25 +80,15 @@ for (col in YNcols) {
 }
 
 table(psurv$DEGREEbin)
-table(surv$DEGREE)
 table(psurv$TWSbin)
-table(surv$TWS)
 table(psurv$COURSEbin)
-table(surv$COURSE)
 table(psurv$SELFTITLEbin)
-table(surv$SELFTITLE)
 table(psurv$COLLECTbin)
-table(surv$COLLECT)
 table(psurv$HANDLEbin)
-table(surv$HANDLE)
 table(psurv$PPEbin)
-table(surv$PPE)
 table(psurv$ACCESSbin)
-table(surv$ACCESS)
 table(psurv$INTERESTbin)
-table(surv$INTEREST)
 table(psurv$LICENSEbin)
-table(surv$LICENSE)
 
 ```
 
@@ -190,9 +175,9 @@ table(psurv$BIOTIMEord)
 table(psurv$BIOTIMEbin)
 table(surv$BIOTIME)
 
-psurv$AFFILLIATEbin <- ifelse(surv$AFFILIATE %in% c("Federal Government", "State/Provincial Government"), 1,
+psurv$AFFILIATEbin <- ifelse(surv$AFFILIATE %in% c("Federal Government", "State/Provincial Government"), 1,
                         ifelse(is.na(surv$AFFILIATE), NA, 0))
-table(psurv$AFFILLIATEbin)
+table(psurv$AFFILIATEbinbin)
 
 ```
 
@@ -210,10 +195,15 @@ table(surv$COUNTIESsel2)
 table(psurv$COUNTIESbin)
 table(psurv$COUNTIESnum)
 
+psurv$ACTIVITYord <- factor(surv$ACTIVITY, ordered = TRUE,
+              levels = c("Land/Wildlife Management", "Research", "Administration", 
+                                       "Consulting", "Education", "Other"))
+table(psurv$ACTIVITYord)
 
 psurv$PPETIMEord <- factor(surv$PPETIME, ordered = TRUE,
                             levels = c("Never (0%)", "Rarely (1%-24%)", "Sometimes (25%-75%)", 
                                        "Usually (76%-99%)", "Always (100%)"))
+
 psurv$PPETIMEbin <- ifelse(surv$PPETIME %in% c("Usually (76%-99%)", "Always (100%)"), 1,
                       ifelse(surv$PPETIME %in% c("Never (0%)", "Rarely (1%-24%)", "Sometimes (25%-75%)"), 0, NA))
 
@@ -260,7 +250,7 @@ med_certain
 med_ccorrect 
 psurv$CORRECTmed <- ifelse(surv$CORRECT >= med_correct, 1, 0)
 psurv$CERTAINmed <- ifelse(surv$CERTAIN >= med_certain, 1, 0)
-psurv$CCORRECTtmed <- ifelse(surv$CCORRECT >= med_ccorrect, 1, 0)
+psurv$CCORRECTmed <- ifelse(surv$CCORRECT >= med_ccorrect, 1, 0)
 
 avg_correct  <- mean(surv$CORRECT, na.rm = TRUE)
 avg_certain  <- mean(surv$CERTAIN, na.rm = TRUE)
@@ -270,7 +260,7 @@ avg_certain
 avg_ccorrect 
 psurv$CORRECTavg   <- ifelse(surv$CORRECT >= med_correct, 1, 0)
 psurv$CERTAINavg   <- ifelse(surv$CERTAIN >= med_certain, 1, 0)
-psurv$CCORRECTtavg <- ifelse(surv$CCORRECT >= med_ccorrect, 1, 0)
+psurv$CCORRECTavg <- ifelse(surv$CCORRECT >= med_ccorrect, 1, 0)
 
 table(psurv$CORRECT50)
 table(psurv$CERTAIN50)
@@ -331,9 +321,22 @@ for (var in attitude_items) {
 psurv$NEUTRALnum = surv$NEUTRAL
 table(psurv$NEUTRALnum)
 
+attitude_ord <- paste0(attitude_items, "ord")
+
+# Step 2: Create indicator matrices for each response type
+psurv$AGREEnum    <- rowSums(sapply(attitude_ord, function(x) psurv[[x]] == "agree"), na.rm = TRUE)
+psurv$NEUTRALnum  <- rowSums(sapply(attitude_ord, function(x) psurv[[x]] == "neutral"), na.rm = TRUE)
+psurv$DISAGREEnum <- rowSums(sapply(attitude_ord, function(x) psurv[[x]] == "disagree"), na.rm = TRUE)
+
+# Optional: Check the distribution of each
+table(psurv$AGREEnum)
+table(psurv$NEUTRALnum)
+table(psurv$DISAGREEnum)
+
+
 ```
 
-# Write CSV
+# Exports
 ```{r}
 
 summary_tables <- list()
@@ -347,19 +350,13 @@ binary_vars <- grep("bin$|avg$|med$|50$", names(psurv), value = TRUE)
 summary_tables$binary_summary <- as.data.frame(
   t(sapply(psurv[, binary_vars], function(x) table(x, useNA = "ifany")))
 )
-writexl::write_xlsx(summary_tables, path = file.path(oup, "processedDFS.xlsx"))
 
-```
-
-
-```{r}
-#| include: false
-
-###### Processed Responses ######
-oup = file.path(analyses, "outputs")
+if (!dir.exists(oup)) dir.create(oup, recursive = TRUE)
+writexl::write_xlsx(summary_tables, path = file.path(oup, "summaryDFS.xlsx"))
 write.csv(psurv, file.path(oup, "processedKAP.csv"), row.names = FALSE)
 
 ```
+
 
 ```{r}
 #| echo: false
