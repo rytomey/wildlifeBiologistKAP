@@ -22,6 +22,27 @@ editor:
     wrap: 72
 ---
 
+```{r}
+# Convert predictors to appropriate formats
+kap <- finalsurv %>%
+  mutate(
+    EDUCATION = factor(EDUCATION),
+    DEGREE = factor(DEGREE),
+    COURSE = factor(COURSE),
+    BIOTIME = factor(BIOTIME, ordered = TRUE)
+  )
+
+# Linear regression
+mod_know <- lm(KNOWcorrect ~ AGE + EDUCATION + DEGREE + BIOTIME + COURSE, data = kap)
+
+# Model summary
+summary(mod_know)
+
+# Tidy output with confidence intervals
+tidy(mod_know, conf.int = TRUE)
+
+```
+
 
 # Initialization
 ```{r include=FALSE}

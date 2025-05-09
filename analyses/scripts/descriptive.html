@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-05-05">
+<meta name="dcterms.date" content="2025-05-08">
 
 <title>Descriptive statistics</title>
 <style>
@@ -97,10 +97,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#education-experience" id="toc-education-experience" class="nav-link" data-scroll-target="#education-experience"><span class="header-section-number">6</span> Education &amp; Experience</a></li>
   <li><a href="#practices-activities" id="toc-practices-activities" class="nav-link" data-scroll-target="#practices-activities"><span class="header-section-number">7</span> Practices &amp; Activities</a></li>
   <li><a href="#health-knowledge" id="toc-health-knowledge" class="nav-link" data-scroll-target="#health-knowledge"><span class="header-section-number">8</span> Health Knowledge</a></li>
-  <li><a href="#attitudes-beliefs" id="toc-attitudes-beliefs" class="nav-link" data-scroll-target="#attitudes-beliefs"><span class="header-section-number">9</span> Attitudes &amp; Beliefs</a></li>
-  <li><a href="#write-csv" id="toc-write-csv" class="nav-link" data-scroll-target="#write-csv"><span class="header-section-number">10</span> Write CSV</a>
+  <li><a href="#attitudes-beliefs" id="toc-attitudes-beliefs" class="nav-link" data-scroll-target="#attitudes-beliefs"><span class="header-section-number">9</span> Attitudes &amp; Beliefs</a>
   <ul>
-  <li><a href="#technical-refs" id="toc-technical-refs" class="nav-link" data-scroll-target="#technical-refs"><span class="header-section-number">10.1</span> Technical Refs</a></li>
+  <li><a href="#descriptive-data-frames" id="toc-descriptive-data-frames" class="nav-link" data-scroll-target="#descriptive-data-frames"><span class="header-section-number">9.1</span> Descriptive Data Frames</a></li>
+  </ul></li>
+  <li><a href="#exports" id="toc-exports" class="nav-link" data-scroll-target="#exports"><span class="header-section-number">10</span> Exports</a>
+  <ul>
+  <li><a href="#descriptive" id="toc-descriptive" class="nav-link" data-scroll-target="#descriptive"><span class="header-section-number">10.0.1</span> Descriptive</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -122,7 +125,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">May 5, 2025</p>
+      <p class="date">May 8, 2025</p>
     </div>
   </div>
   
@@ -2890,294 +2893,204 @@ State Wildlife Agency,Academic Publications,News Sources,Conferences,I have Not 
 13      16     1</code></pre>
 </div>
 </div>
-</section>
-<section id="write-csv" class="level1" data-number="10">
-<h1 data-number="10"><span class="header-section-number">10</span> Write CSV</h1>
-<section id="technical-refs" class="level2" data-number="10.1">
-<h2 data-number="10.1" class="anchored" data-anchor-id="technical-refs"><span class="header-section-number">10.1</span> Technical Refs</h2>
+<section id="descriptive-data-frames" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="descriptive-data-frames"><span class="header-section-number">9.1</span> Descriptive Data Frames</h2>
 <div class="cell">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb284"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb284-1"><a href="#cb284-1" aria-hidden="true" tabindex="-1"></a>descriptiveDFS <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb284-2"><a href="#cb284-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-3"><a href="#cb284-3" aria-hidden="true" tabindex="-1"></a><span class="do">## I. Survey Metadata</span></span>
+<span id="cb284-4"><a href="#cb284-4" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T1_Duration <span class="ot">&lt;-</span> survsum<span class="sc">$</span>DURATIONMIN</span>
+<span id="cb284-5"><a href="#cb284-5" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T2_Progress <span class="ot">&lt;-</span> survsum<span class="sc">$</span>PROG</span>
+<span id="cb284-6"><a href="#cb284-6" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T3_CompletionRate <span class="ot">&lt;-</span> survsum<span class="sc">$</span>FINISHED</span>
+<span id="cb284-7"><a href="#cb284-7" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T4_ResponseDates <span class="ot">&lt;-</span> survuni<span class="sc">$</span>RECDATE</span>
+<span id="cb284-8"><a href="#cb284-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-9"><a href="#cb284-9" aria-hidden="true" tabindex="-1"></a><span class="do">## II. Demographics</span></span>
+<span id="cb284-10"><a href="#cb284-10" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T5_Age <span class="ot">&lt;-</span> survsum<span class="sc">$</span>AGE</span>
+<span id="cb284-11"><a href="#cb284-11" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T6_Gender <span class="ot">&lt;-</span> survsum<span class="sc">$</span>GENDER</span>
+<span id="cb284-12"><a href="#cb284-12" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T7_Race <span class="ot">&lt;-</span> survsum<span class="sc">$</span>RACE</span>
+<span id="cb284-13"><a href="#cb284-13" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T8_Ethnicity <span class="ot">&lt;-</span> survsum<span class="sc">$</span>ETHNICITY</span>
+<span id="cb284-14"><a href="#cb284-14" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T9_Income <span class="ot">&lt;-</span> survsum<span class="sc">$</span>INCOME</span>
+<span id="cb284-15"><a href="#cb284-15" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T10_ResidenceCounty <span class="ot">&lt;-</span> survsum<span class="sc">$</span>RESIDENCE</span>
+<span id="cb284-16"><a href="#cb284-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-17"><a href="#cb284-17" aria-hidden="true" tabindex="-1"></a><span class="do">## III. Education &amp; Experience</span></span>
+<span id="cb284-18"><a href="#cb284-18" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T11_Education <span class="ot">&lt;-</span> survsum<span class="sc">$</span>EDUCATION</span>
+<span id="cb284-19"><a href="#cb284-19" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T12_Degree <span class="ot">&lt;-</span> survsum<span class="sc">$</span>DEGREE</span>
+<span id="cb284-20"><a href="#cb284-20" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T13_TWS <span class="ot">&lt;-</span> survsum<span class="sc">$</span>TWS</span>
+<span id="cb284-21"><a href="#cb284-21" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T14_CourseTaken <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COURSE</span>
+<span id="cb284-22"><a href="#cb284-22" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T15_CourseRecency <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COURSETIME</span>
+<span id="cb284-23"><a href="#cb284-23" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T16_SelfTitle <span class="ot">&lt;-</span> survsum<span class="sc">$</span>SELFTITLE</span>
+<span id="cb284-24"><a href="#cb284-24" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T17_Experience <span class="ot">&lt;-</span> survsum<span class="sc">$</span>BIOTIME</span>
+<span id="cb284-25"><a href="#cb284-25" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T18_Affiliate <span class="ot">&lt;-</span> survsum<span class="sc">$</span>AFFILIATEfill</span>
+<span id="cb284-26"><a href="#cb284-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-27"><a href="#cb284-27" aria-hidden="true" tabindex="-1"></a><span class="do">## IV. Practices &amp; Activities</span></span>
+<span id="cb284-28"><a href="#cb284-28" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T19_ContactFreq <span class="ot">&lt;-</span> survsum<span class="sc">$</span>CONTACT</span>
+<span id="cb284-29"><a href="#cb284-29" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T20_FieldTime <span class="ot">&lt;-</span> survsum<span class="sc">$</span>FIELD</span>
+<span id="cb284-30"><a href="#cb284-30" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T21_CollectSamples <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COLLECT</span>
+<span id="cb284-31"><a href="#cb284-31" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T22_HandleLive <span class="ot">&lt;-</span> survsum<span class="sc">$</span>HANDLE</span>
+<span id="cb284-32"><a href="#cb284-32" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T23_AnimalState <span class="ot">&lt;-</span> survsum<span class="sc">$</span>STATE</span>
+<span id="cb284-33"><a href="#cb284-33" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T24_UsePPE <span class="ot">&lt;-</span> survsum<span class="sc">$</span>PPE</span>
+<span id="cb284-34"><a href="#cb284-34" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T25_PPEFrequency <span class="ot">&lt;-</span> survsum<span class="sc">$</span>PPETIME</span>
+<span id="cb284-35"><a href="#cb284-35" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T26_CountiesWorked <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COUNTIES</span>
+<span id="cb284-36"><a href="#cb284-36" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T27_LicenseHeld <span class="ot">&lt;-</span> survsum<span class="sc">$</span>LICENSE</span>
+<span id="cb284-37"><a href="#cb284-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-38"><a href="#cb284-38" aria-hidden="true" tabindex="-1"></a><span class="do">## V. Health Knowledge</span></span>
+<span id="cb284-39"><a href="#cb284-39" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T28_PIGS <span class="ot">&lt;-</span> survsum<span class="sc">$</span>PIGS</span>
+<span id="cb284-40"><a href="#cb284-40" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T29_BRUCE <span class="ot">&lt;-</span> survsum<span class="sc">$</span>BRUCE</span>
+<span id="cb284-41"><a href="#cb284-41" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T30_CWD <span class="ot">&lt;-</span> survsum<span class="sc">$</span>CWD</span>
+<span id="cb284-42"><a href="#cb284-42" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T31_FLUAL <span class="ot">&lt;-</span> survsum<span class="sc">$</span>FLUAL</span>
+<span id="cb284-43"><a href="#cb284-43" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T32_COVID <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COVID</span>
+<span id="cb284-44"><a href="#cb284-44" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T33_COVIDSPILL <span class="ot">&lt;-</span> survsum<span class="sc">$</span>COVIDSPILL</span>
+<span id="cb284-45"><a href="#cb284-45" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T34_RABIESAL <span class="ot">&lt;-</span> survsum<span class="sc">$</span>RABIESAL</span>
+<span id="cb284-46"><a href="#cb284-46" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T35_RABIES <span class="ot">&lt;-</span> survsum<span class="sc">$</span>RABIES</span>
+<span id="cb284-47"><a href="#cb284-47" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T36_TURKEY <span class="ot">&lt;-</span> survsum<span class="sc">$</span>TURKEY</span>
+<span id="cb284-48"><a href="#cb284-48" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T37_CORRECT_Total <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>CORRECT)</span>
+<span id="cb284-49"><a href="#cb284-49" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T38_CERTAIN_Total <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>CERTAIN)</span>
+<span id="cb284-50"><a href="#cb284-50" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T39_CCORRECT_Total <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>CCORRECT)</span>
+<span id="cb284-51"><a href="#cb284-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-52"><a href="#cb284-52" aria-hidden="true" tabindex="-1"></a><span class="do">## VI. Attitudes &amp; Beliefs</span></span>
+<span id="cb284-53"><a href="#cb284-53" aria-hidden="true" tabindex="-1"></a>attitude_items <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"CWDAL"</span>, <span class="st">"BATS"</span>, <span class="st">"PPEREQ"</span>, <span class="st">"EHD"</span>, <span class="st">"DARWIN"</span>, <span class="st">"POPRED"</span>, <span class="st">"POPPLAN"</span>,</span>
+<span id="cb284-54"><a href="#cb284-54" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"SURVEY"</span>, <span class="st">"VACCINE"</span>, <span class="st">"PREVAL"</span>, <span class="st">"DIVERSE"</span>, <span class="st">"CONSEQ"</span>, <span class="st">"CLIMATE"</span>,</span>
+<span id="cb284-55"><a href="#cb284-55" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"EDREQ"</span>, <span class="st">"INFO"</span>, <span class="st">"HANDSON"</span>)</span>
+<span id="cb284-56"><a href="#cb284-56" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (item <span class="cf">in</span> attitude_items) {</span>
+<span id="cb284-57"><a href="#cb284-57" aria-hidden="true" tabindex="-1"></a>  descriptiveDFS[[<span class="fu">paste0</span>(<span class="st">"T40_Attitude_"</span>, item)]] <span class="ot">&lt;-</span> survsum[[item]]</span>
+<span id="cb284-58"><a href="#cb284-58" aria-hidden="true" tabindex="-1"></a>  descriptiveDFS[[<span class="fu">paste0</span>(<span class="st">"T41_Neutral_"</span>, item)]] <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni[[<span class="fu">paste0</span>(item, <span class="st">"NEUTRAL"</span>)]])</span>
+<span id="cb284-59"><a href="#cb284-59" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb284-60"><a href="#cb284-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-61"><a href="#cb284-61" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T42_NeutralCount <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>NEUTRAL)</span>
+<span id="cb284-62"><a href="#cb284-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-63"><a href="#cb284-63" aria-hidden="true" tabindex="-1"></a><span class="do">## VII. Information Seeking &amp; Preferences</span></span>
+<span id="cb284-64"><a href="#cb284-64" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T43_SourceSelection <span class="ot">&lt;-</span> <span class="fu">selFUN</span>(surv, SOURCE)</span>
+<span id="cb284-65"><a href="#cb284-65" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T44_SourceOther <span class="ot">&lt;-</span> survsum<span class="sc">$</span>othSOURCE</span>
+<span id="cb284-66"><a href="#cb284-66" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T45_SourceCount <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>SOURCEsel2)</span>
+<span id="cb284-67"><a href="#cb284-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-68"><a href="#cb284-68" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T46_CountySelection <span class="ot">&lt;-</span> <span class="fu">selFUN</span>(surv, COUNTIES)</span>
+<span id="cb284-69"><a href="#cb284-69" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T47_CountyCount <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>COUNTIESsel2)</span>
+<span id="cb284-70"><a href="#cb284-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-71"><a href="#cb284-71" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T48_TopicSelection <span class="ot">&lt;-</span> <span class="fu">selFUN</span>(surv, TOPICS)</span>
+<span id="cb284-72"><a href="#cb284-72" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T49_TopicOther <span class="ot">&lt;-</span> survsum<span class="sc">$</span>othTOPICS</span>
+<span id="cb284-73"><a href="#cb284-73" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T50_TopicCount <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>TOPICSsel2)</span>
+<span id="cb284-74"><a href="#cb284-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb284-75"><a href="#cb284-75" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T51_FormatSelection <span class="ot">&lt;-</span> <span class="fu">selFUN</span>(surv, FREEINFO)</span>
+<span id="cb284-76"><a href="#cb284-76" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T52_FormatOther <span class="ot">&lt;-</span> survsum<span class="sc">$</span>othFREEINFO</span>
+<span id="cb284-77"><a href="#cb284-77" aria-hidden="true" tabindex="-1"></a>descriptiveDFS<span class="sc">$</span>T53_FormatCount <span class="ot">&lt;-</span> <span class="fu">as_tibble</span>(survuni<span class="sc">$</span>FREEINFOsel2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+<section id="exports" class="level1" data-number="10">
+<h1 data-number="10"><span class="header-section-number">10</span> Exports</h1>
+<section id="descriptive" class="level3" data-number="10.0.1">
+<h3 data-number="10.0.1" class="anchored" data-anchor-id="descriptive"><span class="header-section-number">10.0.1</span> Descriptive</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Show Code</summary>
+<div class="sourceCode cell-code" id="cb285"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb285-1"><a href="#cb285-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- PATHS ----</span></span>
+<span id="cb285-2"><a href="#cb285-2" aria-hidden="true" tabindex="-1"></a>base <span class="ot">&lt;-</span> <span class="fu">normalizePath</span>(<span class="fu">file.path</span>(<span class="st">".."</span>, <span class="st">".."</span>), <span class="at">mustWork =</span> <span class="cn">FALSE</span>)  </span>
+<span id="cb285-3"><a href="#cb285-3" aria-hidden="true" tabindex="-1"></a>analyses <span class="ot">&lt;-</span> <span class="fu">file.path</span>(base, <span class="st">"analyses"</span>)</span>
+<span id="cb285-4"><a href="#cb285-4" aria-hidden="true" tabindex="-1"></a>inp <span class="ot">&lt;-</span> <span class="fu">file.path</span>(analyses, <span class="st">"inputs"</span>)</span>
+<span id="cb285-5"><a href="#cb285-5" aria-hidden="true" tabindex="-1"></a>oup <span class="ot">&lt;-</span> <span class="fu">file.path</span>(analyses, <span class="st">"outputs"</span>)</span>
+<span id="cb285-6"><a href="#cb285-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-7"><a href="#cb285-7" aria-hidden="true" tabindex="-1"></a>kap <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="fu">file.path</span>(inp, <span class="st">"progover60.csv"</span>))</span>
+<span id="cb285-8"><a href="#cb285-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-9"><a href="#cb285-9" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- CLEAN DATA ----</span></span>
+<span id="cb285-10"><a href="#cb285-10" aria-hidden="true" tabindex="-1"></a>kap <span class="ot">&lt;-</span> kap <span class="sc">%&gt;%</span> <span class="fu">clean_names</span>()</span>
+<span id="cb285-11"><a href="#cb285-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-12"><a href="#cb285-12" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- DOMAIN VARIABLES ----</span></span>
+<span id="cb285-13"><a href="#cb285-13" aria-hidden="true" tabindex="-1"></a>demographic_vars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"dob"</span>, <span class="st">"resident"</span>, <span class="st">"zipcode"</span>, <span class="st">"race"</span>, <span class="st">"ethnicity"</span>, <span class="st">"gender"</span>, <span class="st">"income"</span>, <span class="st">"education"</span>, <span class="st">"degree"</span>)</span>
+<span id="cb285-14"><a href="#cb285-14" aria-hidden="true" tabindex="-1"></a>experience_vars  <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"selftitle"</span>, <span class="st">"biotime"</span>, <span class="st">"affiliate"</span>, <span class="st">"contact"</span>, <span class="st">"field"</span>, <span class="st">"collect"</span>, <span class="st">"handle"</span>, <span class="st">"counties"</span>, <span class="st">"state"</span>)</span>
+<span id="cb285-15"><a href="#cb285-15" aria-hidden="true" tabindex="-1"></a>knowledge_vars   <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"pigs"</span>, <span class="st">"bruce"</span>, <span class="st">"cwd"</span>, <span class="st">"flual"</span>, <span class="st">"flu"</span>, <span class="st">"covid"</span>, <span class="st">"covidspill"</span>, <span class="st">"rabiesal"</span>, <span class="st">"rabies"</span>, <span class="st">"turkey"</span>)</span>
+<span id="cb285-16"><a href="#cb285-16" aria-hidden="true" tabindex="-1"></a>attitude_vars    <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cwdal"</span>, <span class="st">"bats"</span>, <span class="st">"ppereq"</span>, <span class="st">"ehd"</span>, <span class="st">"darwin"</span>, <span class="st">"popred"</span>, <span class="st">"popplan"</span>, <span class="st">"survey"</span>, </span>
+<span id="cb285-17"><a href="#cb285-17" aria-hidden="true" tabindex="-1"></a>                      <span class="st">"vaccine"</span>, <span class="st">"preval"</span>, <span class="st">"diverse"</span>, <span class="st">"conseq"</span>, <span class="st">"climate"</span>, <span class="st">"edreq"</span>, <span class="st">"info"</span>, <span class="st">"handson"</span>)</span>
+<span id="cb285-18"><a href="#cb285-18" aria-hidden="true" tabindex="-1"></a>practice_vars    <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"ppe"</span>, <span class="st">"ppetime"</span>, <span class="st">"source"</span>, <span class="st">"interest"</span>, <span class="st">"freeinfo"</span>, <span class="st">"topics"</span>)</span>
+<span id="cb285-19"><a href="#cb285-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-20"><a href="#cb285-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- FORMATTING FUNCTION ----</span></span>
+<span id="cb285-21"><a href="#cb285-21" aria-hidden="true" tabindex="-1"></a>summarize_var <span class="ot">&lt;-</span> <span class="cf">function</span>(df, vars) {</span>
+<span id="cb285-22"><a href="#cb285-22" aria-hidden="true" tabindex="-1"></a>  df <span class="sc">%&gt;%</span></span>
+<span id="cb285-23"><a href="#cb285-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="fu">any_of</span>(vars)) <span class="sc">%&gt;%</span></span>
+<span id="cb285-24"><a href="#cb285-24" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">everything</span>(), as.character)) <span class="sc">%&gt;%</span></span>
+<span id="cb285-25"><a href="#cb285-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">everything</span>(), <span class="at">names_to =</span> <span class="st">"Variable"</span>, <span class="at">values_to =</span> <span class="st">"Response"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb285-26"><a href="#cb285-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(Response)) <span class="sc">%&gt;%</span></span>
+<span id="cb285-27"><a href="#cb285-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Variable, Response) <span class="sc">%&gt;%</span></span>
+<span id="cb285-28"><a href="#cb285-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">N =</span> <span class="fu">n</span>(), <span class="at">.groups =</span> <span class="st">"drop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb285-29"><a href="#cb285-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(Variable) <span class="sc">%&gt;%</span></span>
+<span id="cb285-30"><a href="#cb285-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
+<span id="cb285-31"><a href="#cb285-31" aria-hidden="true" tabindex="-1"></a>      <span class="at">Percent =</span> <span class="fu">round</span>(<span class="dv">100</span> <span class="sc">*</span> N <span class="sc">/</span> <span class="fu">sum</span>(N), <span class="dv">1</span>),</span>
+<span id="cb285-32"><a href="#cb285-32" aria-hidden="true" tabindex="-1"></a>      <span class="at">Variable =</span> <span class="fu">str_to_title</span>(Variable)</span>
+<span id="cb285-33"><a href="#cb285-33" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">%&gt;%</span></span>
+<span id="cb285-34"><a href="#cb285-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(Variable, <span class="fu">desc</span>(N)) <span class="sc">%&gt;%</span></span>
+<span id="cb285-35"><a href="#cb285-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(Variable, Response, N, Percent)</span>
+<span id="cb285-36"><a href="#cb285-36" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb285-37"><a href="#cb285-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-38"><a href="#cb285-38" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- GENERATE TABLES ----</span></span>
+<span id="cb285-39"><a href="#cb285-39" aria-hidden="true" tabindex="-1"></a>demographic <span class="ot">&lt;-</span> <span class="fu">summarize_var</span>(kap, demographic_vars)</span>
+<span id="cb285-40"><a href="#cb285-40" aria-hidden="true" tabindex="-1"></a>experience  <span class="ot">&lt;-</span> <span class="fu">summarize_var</span>(kap, experience_vars)</span>
+<span id="cb285-41"><a href="#cb285-41" aria-hidden="true" tabindex="-1"></a>knowledge   <span class="ot">&lt;-</span> <span class="fu">summarize_var</span>(kap, knowledge_vars)</span>
+<span id="cb285-42"><a href="#cb285-42" aria-hidden="true" tabindex="-1"></a>attitude    <span class="ot">&lt;-</span> <span class="fu">summarize_var</span>(kap, attitude_vars)</span>
+<span id="cb285-43"><a href="#cb285-43" aria-hidden="true" tabindex="-1"></a>practice    <span class="ot">&lt;-</span> <span class="fu">summarize_var</span>(kap, practice_vars)</span>
+<span id="cb285-44"><a href="#cb285-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-45"><a href="#cb285-45" aria-hidden="true" tabindex="-1"></a><span class="co"># ---- EXPORT TO EXCEL ----</span></span>
+<span id="cb285-46"><a href="#cb285-46" aria-hidden="true" tabindex="-1"></a><span class="fu">write.xlsx</span>(</span>
+<span id="cb285-47"><a href="#cb285-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb285-48"><a href="#cb285-48" aria-hidden="true" tabindex="-1"></a>    <span class="at">Demographics =</span> demographic,</span>
+<span id="cb285-49"><a href="#cb285-49" aria-hidden="true" tabindex="-1"></a>    <span class="at">Experience   =</span> experience,</span>
+<span id="cb285-50"><a href="#cb285-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">Knowledge    =</span> knowledge,</span>
+<span id="cb285-51"><a href="#cb285-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">Attitudes    =</span> attitude,</span>
+<span id="cb285-52"><a href="#cb285-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">Practices    =</span> practice</span>
+<span id="cb285-53"><a href="#cb285-53" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb285-54"><a href="#cb285-54" aria-hidden="true" tabindex="-1"></a>  <span class="at">file =</span> <span class="fu">file.path</span>(oup, <span class="st">"descriptive.xlsx"</span>),</span>
+<span id="cb285-55"><a href="#cb285-55" aria-hidden="true" tabindex="-1"></a>  <span class="at">overwrite =</span> <span class="cn">TRUE</span></span>
+<span id="cb285-56"><a href="#cb285-56" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb285-57"><a href="#cb285-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-58"><a href="#cb285-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb285-59"><a href="#cb285-59" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"✅ Descriptive statistics exported to 'descriptive.xlsx'</span><span class="sc">\n</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
 <div class="cell-output cell-output-stdout">
-<pre><code>@Manual{R-base,
-  title = {R: A Language and Environment for Statistical Computing},
-  author = {{R Core Team}},
-  organization = {R Foundation for Statistical Computing},
-  address = {Vienna, Austria},
-  year = {2024},
-  url = {https://www.R-project.org/},
-}
-
-@Manual{R-dplyr,
-  title = {dplyr: A Grammar of Data Manipulation},
-  author = {Hadley Wickham and Romain François and Lionel Henry and Kirill Müller and Davis Vaughan},
-  year = {2023},
-  note = {R package version 1.1.4},
-  url = {https://dplyr.tidyverse.org},
-}
-
-@Manual{R-forcats,
-  title = {forcats: Tools for Working with Categorical Variables (Factors)},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.0.0},
-  url = {https://forcats.tidyverse.org/},
-}
-
-@Manual{R-ggplot2,
-  title = {ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics},
-  author = {Hadley Wickham and Winston Chang and Lionel Henry and Thomas Lin Pedersen and Kohske Takahashi and Claus Wilke and Kara Woo and Hiroaki Yutani and Dewey Dunnington and Teun {van den Brand}},
-  year = {2024},
-  note = {R package version 3.5.1},
-  url = {https://ggplot2.tidyverse.org},
-}
-
-@Manual{R-gt,
-  title = {gt: Easily Create Presentation-Ready Display Tables},
-  author = {Richard Iannone and Joe Cheng and Barret Schloerke and Ellis Hughes and Alexandra Lauer and JooYoung Seo},
-  year = {2024},
-  note = {R package version 0.10.1},
-  url = {https://gt.rstudio.com},
-}
-
-@Manual{R-knitr,
-  title = {knitr: A General-Purpose Package for Dynamic Report Generation in R},
-  author = {Yihui Xie},
-  year = {2024},
-  note = {R package version 1.49},
-  url = {https://yihui.org/knitr/},
-}
-
-@Manual{R-lubridate,
-  title = {lubridate: Make Dealing with Dates a Little Easier},
-  author = {Vitalie Spinu and Garrett Grolemund and Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.9.3},
-  url = {https://lubridate.tidyverse.org},
-}
-
-@Manual{R-purrr,
-  title = {purrr: Functional Programming Tools},
-  author = {Hadley Wickham and Lionel Henry},
-  year = {2023},
-  note = {R package version 1.0.2},
-  url = {https://purrr.tidyverse.org/},
-}
-
-@Manual{R-readr,
-  title = {readr: Read Rectangular Text Data},
-  author = {Hadley Wickham and Jim Hester and Jennifer Bryan},
-  year = {2024},
-  note = {R package version 2.1.5},
-  url = {https://readr.tidyverse.org},
-}
-
-@Manual{R-rlang,
-  title = {rlang: Functions for Base Types and Core R and Tidyverse Features},
-  author = {Lionel Henry and Hadley Wickham},
-  year = {2024},
-  note = {R package version 1.1.4},
-  url = {https://rlang.r-lib.org},
-}
-
-@Manual{R-scales,
-  title = {scales: Scale Functions for Visualization},
-  author = {Hadley Wickham and Thomas Lin Pedersen and Dana Seidel},
-  year = {2023},
-  note = {R package version 1.3.0},
-  url = {https://scales.r-lib.org},
-}
-
-@Manual{R-sf,
-  title = {sf: Simple Features for R},
-  author = {Edzer Pebesma},
-  year = {2024},
-  note = {R package version 1.0-16},
-  url = {https://r-spatial.github.io/sf/},
-}
-
-@Manual{R-sp,
-  title = {sp: Classes and Methods for Spatial Data},
-  author = {Edzer Pebesma and Roger Bivand},
-  year = {2024},
-  note = {R package version 2.1-4},
-  url = {https://github.com/edzer/sp/},
-}
-
-@Manual{R-stringr,
-  title = {stringr: Simple, Consistent Wrappers for Common String Operations},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.5.1},
-  url = {https://stringr.tidyverse.org},
-}
-
-@Manual{R-terra,
-  title = {terra: Spatial Data Analysis},
-  author = {Robert J. Hijmans},
-  year = {2024},
-  note = {R package version 1.7-83},
-  url = {https://rspatial.org/},
-}
-
-@Manual{R-tibble,
-  title = {tibble: Simple Data Frames},
-  author = {Kirill Müller and Hadley Wickham},
-  year = {2023},
-  note = {R package version 3.2.1},
-  url = {https://tibble.tidyverse.org/},
-}
-
-@Manual{R-tidyr,
-  title = {tidyr: Tidy Messy Data},
-  author = {Hadley Wickham and Davis Vaughan and Maximilian Girlich},
-  year = {2024},
-  note = {R package version 1.3.1},
-  url = {https://tidyr.tidyverse.org},
-}
-
-@Manual{R-tidyterra,
-  title = {tidyterra: tidyverse Methods and ggplot2 Helpers for terra Objects},
-  author = {Diego Hernangómez},
-  year = {2024},
-  note = {R package version 0.6.1},
-  url = {https://dieghernan.github.io/tidyterra/},
-}
-
-@Manual{R-tidyverse,
-  title = {tidyverse: Easily Install and Load the Tidyverse},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 2.0.0},
-  url = {https://tidyverse.tidyverse.org},
-}
-
-@Manual{R-zipcodeR,
-  title = {zipcodeR: Data \&amp; Functions for Working with US ZIP Codes},
-  author = {Gavin Rozzi},
-  year = {2022},
-  note = {R package version 0.3.5},
-  url = {https://github.com/gavinrozzi/zipcodeR/},
-}
-
-@Book{ggplot22016,
-  author = {Hadley Wickham},
-  title = {ggplot2: Elegant Graphics for Data Analysis},
-  publisher = {Springer-Verlag New York},
-  year = {2016},
-  isbn = {978-3-319-24277-4},
-  url = {https://ggplot2.tidyverse.org},
-}
-
-@Book{knitr2015,
-  title = {Dynamic Documents with {R} and knitr},
-  author = {Yihui Xie},
-  publisher = {Chapman and Hall/CRC},
-  address = {Boca Raton, Florida},
-  year = {2015},
-  edition = {2nd},
-  note = {ISBN 978-1498716963},
-  url = {https://yihui.org/knitr/},
-}
-
-@InCollection{knitr2014,
-  booktitle = {Implementing Reproducible Computational Research},
-  editor = {Victoria Stodden and Friedrich Leisch and Roger D. Peng},
-  title = {knitr: A Comprehensive Tool for Reproducible Research in {R}},
-  author = {Yihui Xie},
-  publisher = {Chapman and Hall/CRC},
-  year = {2014},
-  note = {ISBN 978-1466561595},
-}
-
-@Article{lubridate2011,
-  title = {Dates and Times Made Easy with {lubridate}},
-  author = {Garrett Grolemund and Hadley Wickham},
-  journal = {Journal of Statistical Software},
-  year = {2011},
-  volume = {40},
-  number = {3},
-  pages = {1--25},
-  url = {https://www.jstatsoft.org/v40/i03/},
-}
-
-@Book{sf2023,
-  author = {Edzer Pebesma and Roger Bivand},
-  title = {{Spatial Data Science: With applications in R}},
-  year = {2023},
-  publisher = {{Chapman and Hall/CRC}},
-  url = {https://r-spatial.org/book/},
-  doi = {10.1201/9780429459016},
-}
-
-@Article{sf2018,
-  author = {Edzer Pebesma},
-  title = {{Simple Features for R: Standardized Support for Spatial Vector Data}},
-  year = {2018},
-  journal = {{The R Journal}},
-  doi = {10.32614/RJ-2018-009},
-  url = {https://doi.org/10.32614/RJ-2018-009},
-  pages = {439--446},
-  volume = {10},
-  number = {1},
-}
-
-@Article{sp2005,
-  author = {Edzer J. Pebesma and Roger Bivand},
-  title = {Classes and methods for spatial data in {R}},
-  journal = {R News},
-  year = {2005},
-  volume = {5},
-  number = {2},
-  pages = {9--13},
-  month = {November},
-  url = {https://CRAN.R-project.org/doc/Rnews/},
-}
-
-@Book{sp2013,
-  author = {Roger S. Bivand and Edzer Pebesma and Virgilio Gomez-Rubio},
-  title = {Applied spatial data analysis with {R}, Second edition},
-  year = {2013},
-  publisher = {Springer, NY},
-  url = {https://asdar-book.org/},
-}
-
-@Article{R-tidyterra,
-  title = {Using the {tidyverse} with {terra} objects: the {tidyterra} package},
-  doi = {10.21105/joss.05751},
-  author = {Diego Hernangómez},
-  year = {2023},
-  url = {https://doi.org/10.21105/joss.05751},
-  publisher = {The Open Journal},
-  volume = {8},
-  number = {91},
-  pages = {5751},
-  journal = {Journal of Open Source Software},
-  issn = {2475-9066},
-}
-
-@Article{tidyverse2019,
-  title = {Welcome to the {tidyverse}},
-  author = {Hadley Wickham and Mara Averick and Jennifer Bryan and Winston Chang and Lucy D'Agostino McGowan and Romain François and Garrett Grolemund and Alex Hayes and Lionel Henry and Jim Hester and Max Kuhn and Thomas Lin Pedersen and Evan Miller and Stephan Milton Bache and Kirill Müller and Jeroen Ooms and David Robinson and Dana Paige Seidel and Vitalie Spinu and Kohske Takahashi and Davis Vaughan and Claus Wilke and Kara Woo and Hiroaki Yutani},
-  year = {2019},
-  journal = {Journal of Open Source Software},
-  volume = {4},
-  number = {43},
-  pages = {1686},
-  doi = {10.21105/joss.01686},
-}
-
-@Article{zipcodeR2021,
-  author = {Gavin C. Rozzi},
-  title = {zipcodeR: Advancing the analysis of spatial data at the ZIP code level in R},
-  journal = {Software Impacts},
-  issn = {2665-9638},
-  volume = {9},
-  pages = {100099},
-  year = {2021},
-  doi = {10.1016/j.simpa.2021.100099},
-  url = {https://www.sciencedirect.com/science/article/pii/S2665963821000373/},
-}</code></pre>
+<pre><code>✅ Descriptive statistics exported to 'descriptive.xlsx'</code></pre>
 </div>
 </div>
+<pre><code>
+## Technical Refs
+
+::: {.cell}
+::: {.cell-output .cell-output-stdout}
+</code></pre>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-base, title = {R: A Language and Environment for Statistical Computing}, author = {{R Core Team}}, organization = {R Foundation for Statistical Computing}, address = {Vienna, Austria}, year = {2024}, url = {https://www.R-project.org/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-dplyr, title = {dplyr: A Grammar of Data Manipulation}, author = {Hadley Wickham and Romain François and Lionel Henry and Kirill Müller and Davis Vaughan}, year = {2023}, note = {R package version 1.1.4}, url = {https://dplyr.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-forcats, title = {forcats: Tools for Working with Categorical Variables (Factors)}, author = {Hadley Wickham}, year = {2023}, note = {R package version 1.0.0}, url = {https://forcats.tidyverse.org/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-ggplot2, title = {ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics}, author = {Hadley Wickham and Winston Chang and Lionel Henry and Thomas Lin Pedersen and Kohske Takahashi and Claus Wilke and Kara Woo and Hiroaki Yutani and Dewey Dunnington and Teun {van den Brand}}, year = {2024}, note = {R package version 3.5.1}, url = {https://ggplot2.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-gt, title = {gt: Easily Create Presentation-Ready Display Tables}, author = {Richard Iannone and Joe Cheng and Barret Schloerke and Ellis Hughes and Alexandra Lauer and JooYoung Seo}, year = {2024}, note = {R package version 0.10.1}, url = {https://gt.rstudio.com}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-janitor, title = {janitor: Simple Tools for Examining and Cleaning Dirty Data}, author = {Sam Firke}, year = {2023}, note = {R package version 2.2.0}, url = {https://github.com/sfirke/janitor}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-knitr, title = {knitr: A General-Purpose Package for Dynamic Report Generation in R}, author = {Yihui Xie}, year = {2024}, note = {R package version 1.49}, url = {https://yihui.org/knitr/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-lubridate, title = {lubridate: Make Dealing with Dates a Little Easier}, author = {Vitalie Spinu and Garrett Grolemund and Hadley Wickham}, year = {2023}, note = {R package version 1.9.3}, url = {https://lubridate.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-openxlsx, title = {openxlsx: Read, Write and Edit xlsx Files}, author = {Philipp Schauberger and Alexander Walker}, year = {2024}, note = {R package version 4.2.7}, url = {https://ycphs.github.io/openxlsx/index.html}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-purrr, title = {purrr: Functional Programming Tools}, author = {Hadley Wickham and Lionel Henry}, year = {2023}, note = {R package version 1.0.2}, url = {https://purrr.tidyverse.org/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-readr, title = {readr: Read Rectangular Text Data}, author = {Hadley Wickham and Jim Hester and Jennifer Bryan}, year = {2024}, note = {R package version 2.1.5}, url = {https://readr.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-rlang, title = {rlang: Functions for Base Types and Core R and Tidyverse Features}, author = {Lionel Henry and Hadley Wickham}, year = {2024}, note = {R package version 1.1.4}, url = {https://rlang.r-lib.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-scales, title = {scales: Scale Functions for Visualization}, author = {Hadley Wickham and Thomas Lin Pedersen and Dana Seidel}, year = {2023}, note = {R package version 1.3.0}, url = {https://scales.r-lib.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-sf, title = {sf: Simple Features for R}, author = {Edzer Pebesma}, year = {2024}, note = {R package version 1.0-16}, url = {https://r-spatial.github.io/sf/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-sp, title = {sp: Classes and Methods for Spatial Data}, author = {Edzer Pebesma and Roger Bivand}, year = {2024}, note = {R package version 2.1-4}, url = {https://github.com/edzer/sp/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-stringr, title = {stringr: Simple, Consistent Wrappers for Common String Operations}, author = {Hadley Wickham}, year = {2023}, note = {R package version 1.5.1}, url = {https://stringr.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-terra, title = {terra: Spatial Data Analysis}, author = {Robert J. Hijmans}, year = {2024}, note = {R package version 1.7-83}, url = {https://rspatial.org/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-tibble, title = {tibble: Simple Data Frames}, author = {Kirill Müller and Hadley Wickham}, year = {2023}, note = {R package version 3.2.1}, url = {https://tibble.tidyverse.org/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-tidyr, title = {tidyr: Tidy Messy Data}, author = {Hadley Wickham and Davis Vaughan and Maximilian Girlich}, year = {2024}, note = {R package version 1.3.1}, url = {https://tidyr.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-tidyterra, title = {tidyterra: tidyverse Methods and ggplot2 Helpers for terra Objects}, author = {Diego Hernangómez}, year = {2024}, note = {R package version 0.6.1}, url = {https://dieghernan.github.io/tidyterra/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-tidyverse, title = {tidyverse: Easily Install and Load the Tidyverse}, author = {Hadley Wickham}, year = {2023}, note = {R package version 2.0.0}, url = {https://tidyverse.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-writexl, title = {writexl: Export Data Frames to Excel xlsx Format}, author = {Jeroen Ooms}, year = {2024}, note = {R package version 1.5.0}, url = {https://docs.ropensci.org/writexl/}, }</p>
+<p><span class="citation" data-cites="Manual">@Manual</span>{R-zipcodeR, title = {zipcodeR: Data &amp; Functions for Working with US ZIP Codes}, author = {Gavin Rozzi}, year = {2022}, note = {R package version 0.3.5}, url = {https://github.com/gavinrozzi/zipcodeR/}, }</p>
+<p><span class="citation" data-cites="Book">@Book</span>{ggplot22016, author = {Hadley Wickham}, title = {ggplot2: Elegant Graphics for Data Analysis}, publisher = {Springer-Verlag New York}, year = {2016}, isbn = {978-3-319-24277-4}, url = {https://ggplot2.tidyverse.org}, }</p>
+<p><span class="citation" data-cites="Book">@Book</span>{knitr2015, title = {Dynamic Documents with {R} and knitr}, author = {Yihui Xie}, publisher = {Chapman and Hall/CRC}, address = {Boca Raton, Florida}, year = {2015}, edition = {2nd}, note = {ISBN 978-1498716963}, url = {https://yihui.org/knitr/}, }</p>
+<p><span class="citation" data-cites="InCollection">@InCollection</span>{knitr2014, booktitle = {Implementing Reproducible Computational Research}, editor = {Victoria Stodden and Friedrich Leisch and Roger D. Peng}, title = {knitr: A Comprehensive Tool for Reproducible Research in {R}}, author = {Yihui Xie}, publisher = {Chapman and Hall/CRC}, year = {2014}, note = {ISBN 978-1466561595}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{lubridate2011, title = {Dates and Times Made Easy with {lubridate}}, author = {Garrett Grolemund and Hadley Wickham}, journal = {Journal of Statistical Software}, year = {2011}, volume = {40}, number = {3}, pages = {1–25}, url = {https://www.jstatsoft.org/v40/i03/}, }</p>
+<p><span class="citation" data-cites="Book">@Book</span>{sf2023, author = {Edzer Pebesma and Roger Bivand}, title = {{Spatial Data Science: With applications in R}}, year = {2023}, publisher = {{Chapman and Hall/CRC}}, url = {https://r-spatial.org/book/}, doi = {10.1201/9780429459016}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{sf2018, author = {Edzer Pebesma}, title = {{Simple Features for R: Standardized Support for Spatial Vector Data}}, year = {2018}, journal = {{The R Journal}}, doi = {10.32614/RJ-2018-009}, url = {https://doi.org/10.32614/RJ-2018-009}, pages = {439–446}, volume = {10}, number = {1}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{sp2005, author = {Edzer J. Pebesma and Roger Bivand}, title = {Classes and methods for spatial data in {R}}, journal = {R News}, year = {2005}, volume = {5}, number = {2}, pages = {9–13}, month = {November}, url = {https://CRAN.R-project.org/doc/Rnews/}, }</p>
+<p><span class="citation" data-cites="Book">@Book</span>{sp2013, author = {Roger S. Bivand and Edzer Pebesma and Virgilio Gomez-Rubio}, title = {Applied spatial data analysis with {R}, Second edition}, year = {2013}, publisher = {Springer, NY}, url = {https://asdar-book.org/}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{R-tidyterra, title = {Using the {tidyverse} with {terra} objects: the {tidyterra} package}, doi = {10.21105/joss.05751}, author = {Diego Hernangómez}, year = {2023}, url = {https://doi.org/10.21105/joss.05751}, publisher = {The Open Journal}, volume = {8}, number = {91}, pages = {5751}, journal = {Journal of Open Source Software}, issn = {2475-9066}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{tidyverse2019, title = {Welcome to the {tidyverse}}, author = {Hadley Wickham and Mara Averick and Jennifer Bryan and Winston Chang and Lucy D’Agostino McGowan and Romain François and Garrett Grolemund and Alex Hayes and Lionel Henry and Jim Hester and Max Kuhn and Thomas Lin Pedersen and Evan Miller and Stephan Milton Bache and Kirill Müller and Jeroen Ooms and David Robinson and Dana Paige Seidel and Vitalie Spinu and Kohske Takahashi and Davis Vaughan and Claus Wilke and Kara Woo and Hiroaki Yutani}, year = {2019}, journal = {Journal of Open Source Software}, volume = {4}, number = {43}, pages = {1686}, doi = {10.21105/joss.01686}, }</p>
+<p><span class="citation" data-cites="Article">@Article</span>{zipcodeR2021, author = {Gavin C. Rozzi}, title = {zipcodeR: Advancing the analysis of spatial data at the ZIP code level in R}, journal = {Software Impacts}, issn = {2665-9638}, volume = {9}, pages = {100099}, year = {2021}, doi = {10.1016/j.simpa.2021.100099}, url = {https://www.sciencedirect.com/science/article/pii/S2665963821000373/}, } ```</p>
+<p>::: :::</p>
 </section>
 </section>
 
