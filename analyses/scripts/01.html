@@ -2222,90 +2222,129 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="variable-processing-3" class="level4">
 <h4 class="anchored" data-anchor-id="variable-processing-3">Variable Processing</h4>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb258"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb258-1"><a href="#cb258-1" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> surv <span class="sc">%&gt;%</span></span>
-<span id="cb258-2"><a href="#cb258-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb258-3"><a href="#cb258-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">nSOURCE =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(SOURCE), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(SOURCE, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
-<span id="cb258-4"><a href="#cb258-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCOUNTIES =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(COUNTIES), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(COUNTIES, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
-<span id="cb258-5"><a href="#cb258-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">noSOURCE =</span> <span class="fu">case_when</span>(</span>
-<span id="cb258-6"><a href="#cb258-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(SOURCE) <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
-<span id="cb258-7"><a href="#cb258-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(SOURCE, <span class="fu">fixed</span>(<span class="st">"I have Not looked for health information"</span>)) <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb258-8"><a href="#cb258-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>),</span>
-<span id="cb258-9"><a href="#cb258-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">COLLECT =</span> <span class="fu">if_else</span>(COLLECT <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(COLLECT <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
-<span id="cb258-10"><a href="#cb258-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">HANDLE  =</span> <span class="fu">if_else</span>(HANDLE <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(HANDLE <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
-<span id="cb258-11"><a href="#cb258-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">PPE     =</span> <span class="fu">if_else</span>(PPE <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(PPE <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
-<span id="cb258-12"><a href="#cb258-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">FIELD   =</span> <span class="fu">if_else</span>(FIELD <span class="sc">&gt;=</span> <span class="dv">50</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
-<span id="cb258-13"><a href="#cb258-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">STATE   =</span> <span class="fu">case_when</span>(</span>
-<span id="cb258-14"><a href="#cb258-14" aria-hidden="true" tabindex="-1"></a>      STATE <span class="sc">==</span> <span class="st">"Dead"</span> <span class="sc">~</span> <span class="dv">1</span>L,</span>
-<span id="cb258-15"><a href="#cb258-15" aria-hidden="true" tabindex="-1"></a>      STATE <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Alive - Not Sedated"</span>, <span class="st">"Alive - Sedated"</span>) <span class="sc">~</span> <span class="dv">0</span>L,</span>
-<span id="cb258-16"><a href="#cb258-16" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_integer_</span>)</span>
-<span id="cb258-17"><a href="#cb258-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb258-18"><a href="#cb258-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb258-19"><a href="#cb258-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply median split for source and counties</span></span>
-<span id="cb258-20"><a href="#cb258-20" aria-hidden="true" tabindex="-1"></a>source_median <span class="ot">&lt;-</span> <span class="fu">median</span>(practsurv<span class="sc">$</span>nSOURCE, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb258-21"><a href="#cb258-21" aria-hidden="true" tabindex="-1"></a>counties_median <span class="ot">&lt;-</span> <span class="fu">median</span>(practsurv<span class="sc">$</span>nCOUNTIES, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb258-22"><a href="#cb258-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb258-23"><a href="#cb258-23" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> practsurv <span class="sc">%&gt;%</span></span>
-<span id="cb258-24"><a href="#cb258-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb258-25"><a href="#cb258-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">SOURCE =</span> <span class="fu">if_else</span>(nSOURCE <span class="sc">&gt;</span> source_median, <span class="dv">1</span>, <span class="dv">0</span>),</span>
-<span id="cb258-26"><a href="#cb258-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">COUNTIES =</span> <span class="fu">if_else</span>(nCOUNTIES <span class="sc">&gt;</span> counties_median, <span class="dv">1</span>, <span class="dv">0</span>)</span>
-<span id="cb258-27"><a href="#cb258-27" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb258-28"><a href="#cb258-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(ID, nSOURCE, nCOUNTIES, noSOURCE, SOURCE, COUNTIES, COLLECT, HANDLE, PPE, FIELD, STATE)</span>
-<span id="cb258-29"><a href="#cb258-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb258-30"><a href="#cb258-30" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>nSOURCE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb258"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb258-1"><a href="#cb258-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Variable Processing</span></span>
+<span id="cb258-2"><a href="#cb258-2" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> surv <span class="sc">%&gt;%</span></span>
+<span id="cb258-3"><a href="#cb258-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb258-4"><a href="#cb258-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">nSOURCE =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(SOURCE), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(SOURCE, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
+<span id="cb258-5"><a href="#cb258-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">nCOUNTIES =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(COUNTIES), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(COUNTIES, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
+<span id="cb258-6"><a href="#cb258-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">noSOURCE =</span> <span class="fu">case_when</span>(</span>
+<span id="cb258-7"><a href="#cb258-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(SOURCE) <span class="sc">~</span> <span class="cn">NA_real_</span>,</span>
+<span id="cb258-8"><a href="#cb258-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">str_detect</span>(SOURCE, <span class="fu">fixed</span>(<span class="st">"I have Not looked for health information"</span>)) <span class="sc">~</span> <span class="dv">0</span>,</span>
+<span id="cb258-9"><a href="#cb258-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">1</span>),</span>
+<span id="cb258-10"><a href="#cb258-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">COLLECT =</span> <span class="fu">if_else</span>(COLLECT <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(COLLECT <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
+<span id="cb258-11"><a href="#cb258-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">HANDLE  =</span> <span class="fu">if_else</span>(HANDLE <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(HANDLE <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
+<span id="cb258-12"><a href="#cb258-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">PPE     =</span> <span class="fu">if_else</span>(PPE <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">0</span>L, <span class="fu">if_else</span>(PPE <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">1</span>L, <span class="cn">NA_integer_</span>)),  <span class="co"># 1 = no PPE use</span></span>
+<span id="cb258-13"><a href="#cb258-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">FIELD   =</span> <span class="fu">if_else</span>(FIELD <span class="sc">&gt;=</span> <span class="dv">50</span>, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb258-14"><a href="#cb258-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">STATE   =</span> <span class="fu">case_when</span>(</span>
+<span id="cb258-15"><a href="#cb258-15" aria-hidden="true" tabindex="-1"></a>      STATE <span class="sc">==</span> <span class="st">"Dead"</span> <span class="sc">~</span> <span class="dv">1</span>L,</span>
+<span id="cb258-16"><a href="#cb258-16" aria-hidden="true" tabindex="-1"></a>      STATE <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Alive - Not Sedated"</span>, <span class="st">"Alive - Sedated"</span>) <span class="sc">~</span> <span class="dv">0</span>L,</span>
+<span id="cb258-17"><a href="#cb258-17" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_integer_</span>),</span>
+<span id="cb258-18"><a href="#cb258-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">CONTACT =</span> <span class="fu">case_when</span>(</span>
+<span id="cb258-19"><a href="#cb258-19" aria-hidden="true" tabindex="-1"></a>      CONTACT <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Daily"</span>, <span class="st">"Weekly"</span>, <span class="st">"Monthly"</span>) <span class="sc">~</span> <span class="dv">1</span>L,</span>
+<span id="cb258-20"><a href="#cb258-20" aria-hidden="true" tabindex="-1"></a>      CONTACT <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Rarely"</span>, <span class="st">"Never"</span>) <span class="sc">~</span> <span class="dv">0</span>L,</span>
+<span id="cb258-21"><a href="#cb258-21" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_integer_</span>)</span>
+<span id="cb258-22"><a href="#cb258-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb258-23"><a href="#cb258-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-24"><a href="#cb258-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply median split for SOURCE and COUNTIES</span></span>
+<span id="cb258-25"><a href="#cb258-25" aria-hidden="true" tabindex="-1"></a>source_median <span class="ot">&lt;-</span> <span class="fu">median</span>(practsurv<span class="sc">$</span>nSOURCE, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb258-26"><a href="#cb258-26" aria-hidden="true" tabindex="-1"></a>counties_median <span class="ot">&lt;-</span> <span class="fu">median</span>(practsurv<span class="sc">$</span>nCOUNTIES, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb258-27"><a href="#cb258-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-28"><a href="#cb258-28" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> practsurv <span class="sc">%&gt;%</span></span>
+<span id="cb258-29"><a href="#cb258-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb258-30"><a href="#cb258-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">SOURCE =</span> <span class="fu">if_else</span>(nSOURCE <span class="sc">&gt;</span> source_median, <span class="dv">1</span>, <span class="dv">0</span>),</span>
+<span id="cb258-31"><a href="#cb258-31" aria-hidden="true" tabindex="-1"></a>    <span class="at">COUNTIES =</span> <span class="fu">if_else</span>(nCOUNTIES <span class="sc">&gt;</span> counties_median, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb258-32"><a href="#cb258-32" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb258-33"><a href="#cb258-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-34"><a href="#cb258-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute PRACscore as sum of binary risk-related behaviors</span></span>
+<span id="cb258-35"><a href="#cb258-35" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> practsurv <span class="sc">%&gt;%</span></span>
+<span id="cb258-36"><a href="#cb258-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb258-37"><a href="#cb258-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">PRACscore =</span> <span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">c</span>(CONTACT, FIELD, COLLECT, HANDLE, COUNTIES, PPE)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb258-38"><a href="#cb258-38" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb258-39"><a href="#cb258-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-40"><a href="#cb258-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute median and classify into high vs low risk</span></span>
+<span id="cb258-41"><a href="#cb258-41" aria-hidden="true" tabindex="-1"></a>prac_median <span class="ot">&lt;-</span> <span class="fu">median</span>(practsurv<span class="sc">$</span>PRACscore, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb258-42"><a href="#cb258-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-43"><a href="#cb258-43" aria-hidden="true" tabindex="-1"></a>practsurv <span class="ot">&lt;-</span> practsurv <span class="sc">%&gt;%</span></span>
+<span id="cb258-44"><a href="#cb258-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">PRACrisk =</span> <span class="fu">if_else</span>(PRACscore <span class="sc">&gt;=</span> prac_median, <span class="dv">1</span>L, <span class="dv">0</span>L))</span>
+<span id="cb258-45"><a href="#cb258-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb258-46"><a href="#cb258-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Tabulate variables</span></span>
+<span id="cb258-47"><a href="#cb258-47" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>PRACscore)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ 0  1  2  3  4  5  6 
+17 20 26 29 33 24  1 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb260"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb260-1"><a href="#cb260-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>PRACrisk)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+ 0  1 
+63 87 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb262"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb262-1"><a href="#cb262-1" aria-hidden="true" tabindex="-1"></a>prac_median</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 3</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb264"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb264-1"><a href="#cb264-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>CONTACT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  0   1 
+ 34 116 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb266"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb266-1"><a href="#cb266-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>nSOURCE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  1  2  3  4  5  6 
 42 33 48 17  9  1 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb260"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb260-1"><a href="#cb260-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>nCOUNTIES )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb268"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb268-1"><a href="#cb268-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>nCOUNTIES)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  1  2  3  4  5  6  7  8 10 11 12 13 14 15 16 17 18 19 22 67 
 47 31 16  9 12  9  4  3  1  1  4  3  1  2  2  1  1  1  1  1 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb262"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb262-1"><a href="#cb262-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>noSOURCE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb270"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb270-1"><a href="#cb270-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>noSOURCE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
   0   1 
  11 139 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb264"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb264-1"><a href="#cb264-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>SOURCE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb272"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb272-1"><a href="#cb272-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>SOURCE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
 75 75 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb266"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb266-1"><a href="#cb266-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>COUNTIES )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb274"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb274-1"><a href="#cb274-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>COUNTIES)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
 78 72 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb268"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb268-1"><a href="#cb268-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>COLLECT )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb276"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb276-1"><a href="#cb276-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>COLLECT)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
 83 67 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb270"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb270-1"><a href="#cb270-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>HANDLE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb278"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb278-1"><a href="#cb278-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>HANDLE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
 92 58 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb272"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb272-1"><a href="#cb272-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>PPE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb280"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb280-1"><a href="#cb280-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>PPE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
-25 88 </code></pre>
+88 25 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb274"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb274-1"><a href="#cb274-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>FIELD )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb282"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb282-1"><a href="#cb282-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>FIELD)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
 71 79 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb276"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb276-1"><a href="#cb276-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>STATE )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb284"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb284-1"><a href="#cb284-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(practsurv<span class="sc">$</span>STATE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
@@ -2316,40 +2355,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="interest" class="level1">
 <h1>INTEREST</h1>
-<section id="data-manipulation-5" class="level4">
-<h4 class="anchored" data-anchor-id="data-manipulation-5">Data Manipulation</h4>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb278"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb278-1"><a href="#cb278-1" aria-hidden="true" tabindex="-1"></a><span class="co">#--------- Options Selected / Certainty in INTEREST -----------</span></span>
-<span id="cb278-2"><a href="#cb278-2" aria-hidden="true" tabindex="-1"></a>psurv <span class="ot">&lt;-</span> surv <span class="sc">%&gt;%</span></span>
-<span id="cb278-3"><a href="#cb278-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb278-4"><a href="#cb278-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">nFREEINFO =</span> <span class="fu">case_when</span>(</span>
-<span id="cb278-5"><a href="#cb278-5" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(FREEINFO) <span class="sc">~</span> <span class="cn">NA_integer_</span>,</span>
-<span id="cb278-6"><a href="#cb278-6" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="fu">str_count</span>(FREEINFO, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>),</span>
-<span id="cb278-7"><a href="#cb278-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTOPICS =</span> <span class="fu">case_when</span>(</span>
-<span id="cb278-8"><a href="#cb278-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">is.na</span>(TOPICS) <span class="sc">~</span> <span class="cn">NA_integer_</span>,</span>
-<span id="cb278-9"><a href="#cb278-9" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="fu">str_count</span>(TOPICS, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>),</span>
-<span id="cb278-10"><a href="#cb278-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">INTERESTcert =</span> <span class="fu">case_when</span>(</span>
-<span id="cb278-11"><a href="#cb278-11" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">==</span> <span class="st">"Unsure"</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb278-12"><a href="#cb278-12" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Yes"</span>, <span class="st">"No"</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb278-13"><a href="#cb278-13" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
 <section id="descriptive-statistics-5" class="level4">
 <h4 class="anchored" data-anchor-id="descriptive-statistics-5">Descriptive Statistics</h4>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb279"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb279-1"><a href="#cb279-1" aria-hidden="true" tabindex="-1"></a>survsum  <span class="ot">&lt;-</span> <span class="fu">sumFUN</span>(surv)</span>
-<span id="cb279-2"><a href="#cb279-2" aria-hidden="true" tabindex="-1"></a>survuni  <span class="ot">&lt;-</span> <span class="fu">uniFUN</span>(surv)</span>
-<span id="cb279-3"><a href="#cb279-3" aria-hidden="true" tabindex="-1"></a>psurvsum <span class="ot">&lt;-</span> <span class="fu">sumFUN</span>(psurv)</span>
-<span id="cb279-4"><a href="#cb279-4" aria-hidden="true" tabindex="-1"></a>psurvuni <span class="ot">&lt;-</span> <span class="fu">uniFUN</span>(psurv)</span>
-<span id="cb279-5"><a href="#cb279-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb279-6"><a href="#cb279-6" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>ACCESS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb286"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb286-1"><a href="#cb286-1" aria-hidden="true" tabindex="-1"></a>survsum  <span class="ot">&lt;-</span> <span class="fu">sumFUN</span>(surv)</span>
+<span id="cb286-2"><a href="#cb286-2" aria-hidden="true" tabindex="-1"></a>survuni  <span class="ot">&lt;-</span> <span class="fu">uniFUN</span>(surv)</span>
+<span id="cb286-3"><a href="#cb286-3" aria-hidden="true" tabindex="-1"></a>psurvsum <span class="ot">&lt;-</span> <span class="fu">sumFUN</span>(psurv)</span>
+<span id="cb286-4"><a href="#cb286-4" aria-hidden="true" tabindex="-1"></a>psurvuni <span class="ot">&lt;-</span> <span class="fu">uniFUN</span>(psurv)</span>
+<span id="cb286-5"><a href="#cb286-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb286-6"><a href="#cb286-6" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>ACCESS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  Variable Level Count Proportion
 1   ACCESS           3  0.0200000
 2   ACCESS    No    43  0.2866667
 3   ACCESS   Yes   104  0.6933333</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb281"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb281-1"><a href="#cb281-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>INTEREST</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb288"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb288-1"><a href="#cb288-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>INTEREST</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  Variable  Level Count Proportion
 1 INTEREST            3 0.02000000
@@ -2357,7 +2378,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 3 INTEREST Unsure    12 0.08000000
 4 INTEREST    Yes   133 0.88666667</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb283"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb283-1"><a href="#cb283-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>FREEINFOfill</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb290"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb290-1"><a href="#cb290-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>FREEINFOfill</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>       Variable
 1  FREEINFOfill
@@ -2402,7 +2423,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 12    15 0.100000000
 13     1 0.006666667</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb285"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb285-1"><a href="#cb285-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>TOPICSfill</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb292"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb292-1"><a href="#cb292-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>TOPICSfill</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     Variable
 1  TOPICSfill
@@ -2627,50 +2648,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 72     1 0.006666667
 73     1 0.006666667</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb287"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb287-1"><a href="#cb287-1" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>INTERESTcert</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb294"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb294-1"><a href="#cb294-1" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>INTERESTcert</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1 × 8
-  Variable     Type           N  Mean Median    SD   Min   Max
-  &lt;chr&gt;        &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 INTERESTcert Continuous   147 0.918      1 0.275     0     1</code></pre>
+<pre><code>NULL</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb289"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb289-1"><a href="#cb289-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ------------ Count of selected options -----------------</span></span>
-<span id="cb289-2"><a href="#cb289-2" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>nFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb296"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb296-1"><a href="#cb296-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ------------ Count of selected options -----------------</span></span>
+<span id="cb296-2"><a href="#cb296-2" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>nFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1 × 8
-  Variable  Type           N  Mean Median    SD   Min   Max
-  &lt;chr&gt;     &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 nFREEINFO Continuous   150  1.51      1 0.702     1     3</code></pre>
+<pre><code>NULL</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb291"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb291-1"><a href="#cb291-1" aria-hidden="true" tabindex="-1"></a>psurvuni<span class="sc">$</span>nFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb298"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb298-1"><a href="#cb298-1" aria-hidden="true" tabindex="-1"></a>psurvuni<span class="sc">$</span>nFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  nFREEINFO Count
-1         1    92
-2         2    40
-3         3    18</code></pre>
+<pre><code>NULL</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb293"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb293-1"><a href="#cb293-1" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>nTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb300"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb300-1"><a href="#cb300-1" aria-hidden="true" tabindex="-1"></a>psurvsum<span class="sc">$</span>nTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 1 × 8
-  Variable Type           N  Mean Median    SD   Min   Max
-  &lt;chr&gt;    &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
-1 nTOPICS  Continuous   150  4.45      4  2.57     1     9</code></pre>
+<pre><code>NULL</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb295"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb295-1"><a href="#cb295-1" aria-hidden="true" tabindex="-1"></a>psurvuni<span class="sc">$</span>nTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb302"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb302-1"><a href="#cb302-1" aria-hidden="true" tabindex="-1"></a>psurvuni<span class="sc">$</span>nTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>  nTOPICS Count
-1       8    28
-2       1    26
-3       4    25
-4       3    21
-5       2    15
-6       7    12
-7       5    10
-8       6     9
-9       9     4</code></pre>
+<pre><code>NULL</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb297"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb297-1"><a href="#cb297-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ------------ Other -----------------</span></span>
-<span id="cb297-2"><a href="#cb297-2" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>othFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb304"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb304-1"><a href="#cb304-1" aria-hidden="true" tabindex="-1"></a>psurvuni<span class="sc">$</span>nSOURCE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  nSOURCE Count
+1       3    48
+2       1    42
+3       2    33
+4       4    17
+5       5     9
+6       6     1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb306"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb306-1"><a href="#cb306-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ------------ Other -----------------</span></span>
+<span id="cb306-2"><a href="#cb306-2" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>othFREEINFO</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     Variable
 1 othFREEINFO
@@ -2697,7 +2707,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 6     1 0.006666667
 7     1 0.006666667</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb299"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb299-1"><a href="#cb299-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>othTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb308"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb308-1"><a href="#cb308-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>othTOPICS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    Variable
 1  othTOPICS
@@ -2760,60 +2770,99 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 18     1 0.006666667
 19     1 0.006666667</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb310"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb310-1"><a href="#cb310-1" aria-hidden="true" tabindex="-1"></a>survsum<span class="sc">$</span>othSOURCE</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    Variable                         Level Count  Proportion
+1  othSOURCE                                 141 0.940000000
+2  othSOURCE                    Colleagues     1 0.006666667
+3  othSOURCE                    Extension      1 0.006666667
+4  othSOURCE Federal agencies like the CDC     1 0.006666667
+5  othSOURCE             Federal and SCWDS     1 0.006666667
+6  othSOURCE       Federal wildlife agency     1 0.006666667
+7  othSOURCE      Professional Connections     1 0.006666667
+8  othSOURCE                       School      1 0.006666667
+9  othSOURCE                         SCWDS     1 0.006666667
+10 othSOURCE           Wildlife Health Lab     1 0.006666667</code></pre>
+</div>
 </div>
 </section>
 <section id="variable-processing-4" class="level4">
 <h4 class="anchored" data-anchor-id="variable-processing-4">Variable Processing</h4>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb301"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb301-1"><a href="#cb301-1" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> surv <span class="sc">%&gt;%</span></span>
-<span id="cb301-2"><a href="#cb301-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb301-3"><a href="#cb301-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">nFREEINFO =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(FREEINFO), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(FREEINFO, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
-<span id="cb301-4"><a href="#cb301-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTOPICS =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(TOPICS), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(TOPICS, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
-<span id="cb301-5"><a href="#cb301-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">INTERESTcert =</span> <span class="fu">case_when</span>(</span>
-<span id="cb301-6"><a href="#cb301-6" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">==</span> <span class="st">"Unsure"</span> <span class="sc">~</span> <span class="dv">0</span>,</span>
-<span id="cb301-7"><a href="#cb301-7" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"Yes"</span>, <span class="st">"No"</span>) <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb301-8"><a href="#cb301-8" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_real_</span>)</span>
-<span id="cb301-9"><a href="#cb301-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb301-10"><a href="#cb301-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb301-11"><a href="#cb301-11" aria-hidden="true" tabindex="-1"></a>freeinfo_median <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>nFREEINFO, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb301-12"><a href="#cb301-12" aria-hidden="true" tabindex="-1"></a>topics_median   <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>nTOPICS, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb301-13"><a href="#cb301-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb301-14"><a href="#cb301-14" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> intsurv <span class="sc">%&gt;%</span></span>
-<span id="cb301-15"><a href="#cb301-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb301-16"><a href="#cb301-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">FREEINFO =</span> <span class="fu">if_else</span>(nFREEINFO <span class="sc">&gt;</span> freeinfo_median, <span class="dv">1</span>, <span class="dv">0</span>),</span>
-<span id="cb301-17"><a href="#cb301-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">TOPICS =</span> <span class="fu">if_else</span>(nTOPICS <span class="sc">&gt;</span> topics_median, <span class="dv">1</span>, <span class="dv">0</span>)</span>
-<span id="cb301-18"><a href="#cb301-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
-<span id="cb301-19"><a href="#cb301-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(ID, nFREEINFO, nTOPICS, INTERESTcert, FREEINFO, TOPICS)</span>
-<span id="cb301-20"><a href="#cb301-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb301-21"><a href="#cb301-21" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>nFREEINFO )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb312"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb312-1"><a href="#cb312-1" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> surv <span class="sc">%&gt;%</span></span>
+<span id="cb312-2"><a href="#cb312-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb312-3"><a href="#cb312-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">nFREEINFO =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(FREEINFO), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(FREEINFO, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
+<span id="cb312-4"><a href="#cb312-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">nTOPICS =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(TOPICS), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(TOPICS, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L),</span>
+<span id="cb312-5"><a href="#cb312-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">nSOURCE =</span> <span class="fu">if_else</span>(<span class="fu">is.na</span>(SOURCE), <span class="cn">NA_integer_</span>, <span class="fu">str_count</span>(SOURCE, <span class="st">","</span>) <span class="sc">+</span> <span class="dv">1</span>L))</span>
+<span id="cb312-6"><a href="#cb312-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-7"><a href="#cb312-7" aria-hidden="true" tabindex="-1"></a>freeinfo_median <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>nFREEINFO, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb312-8"><a href="#cb312-8" aria-hidden="true" tabindex="-1"></a>topics_median   <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>nTOPICS, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb312-9"><a href="#cb312-9" aria-hidden="true" tabindex="-1"></a>source_median   <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>nSOURCE, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)  <span class="co"># already exists</span></span>
+<span id="cb312-10"><a href="#cb312-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-11"><a href="#cb312-11" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> intsurv <span class="sc">%&gt;%</span></span>
+<span id="cb312-12"><a href="#cb312-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb312-13"><a href="#cb312-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">FREEINFO =</span> <span class="fu">if_else</span>(nFREEINFO <span class="sc">&gt;=</span> freeinfo_median, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb312-14"><a href="#cb312-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">TOPICS   =</span> <span class="fu">if_else</span>(nTOPICS <span class="sc">&gt;=</span> topics_median, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb312-15"><a href="#cb312-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">SOURCE   =</span> <span class="fu">if_else</span>(nSOURCE <span class="sc">&gt;=</span> source_median, <span class="dv">1</span>L, <span class="dv">0</span>L),</span>
+<span id="cb312-16"><a href="#cb312-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">ACCESS   =</span> <span class="fu">if_else</span>(ACCESS <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">1</span>L, <span class="fu">if_else</span>(ACCESS <span class="sc">==</span> <span class="st">"No"</span>, <span class="dv">0</span>L, <span class="cn">NA_integer_</span>)),</span>
+<span id="cb312-17"><a href="#cb312-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">INTEREST =</span> <span class="fu">case_when</span>(</span>
+<span id="cb312-18"><a href="#cb312-18" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">==</span> <span class="st">"Yes"</span> <span class="sc">~</span> <span class="dv">1</span>L,</span>
+<span id="cb312-19"><a href="#cb312-19" aria-hidden="true" tabindex="-1"></a>      INTEREST <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">"No"</span>, <span class="st">"I don't know"</span>) <span class="sc">~</span> <span class="dv">0</span>L,</span>
+<span id="cb312-20"><a href="#cb312-20" aria-hidden="true" tabindex="-1"></a>      <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_integer_</span></span>
+<span id="cb312-21"><a href="#cb312-21" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb312-22"><a href="#cb312-22" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb312-23"><a href="#cb312-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-24"><a href="#cb312-24" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> intsurv <span class="sc">%&gt;%</span></span>
+<span id="cb312-25"><a href="#cb312-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">INFOscore =</span> <span class="fu">rowSums</span>(<span class="fu">across</span>(<span class="fu">c</span>(FREEINFO, TOPICS, SOURCE, ACCESS, INTEREST)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb312-26"><a href="#cb312-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-27"><a href="#cb312-27" aria-hidden="true" tabindex="-1"></a>info_median <span class="ot">&lt;-</span> <span class="fu">median</span>(intsurv<span class="sc">$</span>INFOscore, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb312-28"><a href="#cb312-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-29"><a href="#cb312-29" aria-hidden="true" tabindex="-1"></a>intsurv <span class="ot">&lt;-</span> intsurv <span class="sc">%&gt;%</span></span>
+<span id="cb312-30"><a href="#cb312-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">INFOgroup =</span> <span class="fu">if_else</span>(INFOscore <span class="sc">&gt;=</span> info_median, <span class="dv">1</span>L, <span class="dv">0</span>L))</span>
+<span id="cb312-31"><a href="#cb312-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-32"><a href="#cb312-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb312-33"><a href="#cb312-33" aria-hidden="true" tabindex="-1"></a><span class="do">### Output tables and medians</span></span>
+<span id="cb312-34"><a href="#cb312-34" aria-hidden="true" tabindex="-1"></a>freeinfo_median</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb314"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb314-1"><a href="#cb314-1" aria-hidden="true" tabindex="-1"></a>topics_median  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 4</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb316"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb316-1"><a href="#cb316-1" aria-hidden="true" tabindex="-1"></a>source_median  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.5</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb318"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb318-1"><a href="#cb318-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>nFREEINFO)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  1  2  3 
 92 40 18 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb303"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb303-1"><a href="#cb303-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>nTOPICS )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb320"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb320-1"><a href="#cb320-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>nTOPICS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  1  2  3  4  5  6  7  8  9 
 26 15 21 25 10  9 12 28  4 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb305"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb305-1"><a href="#cb305-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>INTERESTcert )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb322"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb322-1"><a href="#cb322-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>INTEREST)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
   0   1 
- 12 135 </code></pre>
+  2 133 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb307"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb307-1"><a href="#cb307-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>FREEINFO )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb324"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb324-1"><a href="#cb324-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>FREEINFO)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+  1 
+150 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb326"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb326-1"><a href="#cb326-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>TOPICS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
  0  1 
-92 58 </code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb309"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb309-1"><a href="#cb309-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(intsurv<span class="sc">$</span>TOPICS )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>
- 0  1 
-87 63 </code></pre>
+62 88 </code></pre>
 </div>
 </div>
 </section>
@@ -2826,313 +2875,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="references" class="level1">
 <h1>References</h1>
-<div class="cell">
-<div class="cell-output cell-output-stdout">
-<pre><code>@Manual{R-base,
-  title = {R: A Language and Environment for Statistical Computing},
-  author = {{R Core Team}},
-  organization = {R Foundation for Statistical Computing},
-  address = {Vienna, Austria},
-  year = {2024},
-  url = {https://www.R-project.org/},
-}
-
-@Manual{R-dplyr,
-  title = {dplyr: A Grammar of Data Manipulation},
-  author = {Hadley Wickham and Romain François and Lionel Henry and Kirill Müller and Davis Vaughan},
-  year = {2023},
-  note = {R package version 1.1.4},
-  url = {https://dplyr.tidyverse.org},
-}
-
-@Manual{R-forcats,
-  title = {forcats: Tools for Working with Categorical Variables (Factors)},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.0.0},
-  url = {https://forcats.tidyverse.org/},
-}
-
-@Manual{R-ggplot2,
-  title = {ggplot2: Create Elegant Data Visualisations Using the Grammar of Graphics},
-  author = {Hadley Wickham and Winston Chang and Lionel Henry and Thomas Lin Pedersen and Kohske Takahashi and Claus Wilke and Kara Woo and Hiroaki Yutani and Dewey Dunnington and Teun {van den Brand}},
-  year = {2024},
-  note = {R package version 3.5.1},
-  url = {https://ggplot2.tidyverse.org},
-}
-
-@Manual{R-gt,
-  title = {gt: Easily Create Presentation-Ready Display Tables},
-  author = {Richard Iannone and Joe Cheng and Barret Schloerke and Ellis Hughes and Alexandra Lauer and JooYoung Seo},
-  year = {2024},
-  note = {R package version 0.10.1},
-  url = {https://gt.rstudio.com},
-}
-
-@Manual{R-janitor,
-  title = {janitor: Simple Tools for Examining and Cleaning Dirty Data},
-  author = {Sam Firke},
-  year = {2023},
-  note = {R package version 2.2.0},
-  url = {https://github.com/sfirke/janitor},
-}
-
-@Manual{R-knitr,
-  title = {knitr: A General-Purpose Package for Dynamic Report Generation in R},
-  author = {Yihui Xie},
-  year = {2024},
-  note = {R package version 1.49},
-  url = {https://yihui.org/knitr/},
-}
-
-@Manual{R-lubridate,
-  title = {lubridate: Make Dealing with Dates a Little Easier},
-  author = {Vitalie Spinu and Garrett Grolemund and Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.9.3},
-  url = {https://lubridate.tidyverse.org},
-}
-
-@Manual{R-openxlsx,
-  title = {openxlsx: Read, Write and Edit xlsx Files},
-  author = {Philipp Schauberger and Alexander Walker},
-  year = {2024},
-  note = {R package version 4.2.7},
-  url = {https://ycphs.github.io/openxlsx/index.html},
-}
-
-@Manual{R-purrr,
-  title = {purrr: Functional Programming Tools},
-  author = {Hadley Wickham and Lionel Henry},
-  year = {2023},
-  note = {R package version 1.0.2},
-  url = {https://purrr.tidyverse.org/},
-}
-
-@Manual{R-readr,
-  title = {readr: Read Rectangular Text Data},
-  author = {Hadley Wickham and Jim Hester and Jennifer Bryan},
-  year = {2024},
-  note = {R package version 2.1.5},
-  url = {https://readr.tidyverse.org},
-}
-
-@Manual{R-rlang,
-  title = {rlang: Functions for Base Types and Core R and Tidyverse Features},
-  author = {Lionel Henry and Hadley Wickham},
-  year = {2024},
-  note = {R package version 1.1.4},
-  url = {https://rlang.r-lib.org},
-}
-
-@Manual{R-scales,
-  title = {scales: Scale Functions for Visualization},
-  author = {Hadley Wickham and Thomas Lin Pedersen and Dana Seidel},
-  year = {2023},
-  note = {R package version 1.3.0},
-  url = {https://scales.r-lib.org},
-}
-
-@Manual{R-sf,
-  title = {sf: Simple Features for R},
-  author = {Edzer Pebesma},
-  year = {2024},
-  note = {R package version 1.0-16},
-  url = {https://r-spatial.github.io/sf/},
-}
-
-@Manual{R-sp,
-  title = {sp: Classes and Methods for Spatial Data},
-  author = {Edzer Pebesma and Roger Bivand},
-  year = {2024},
-  note = {R package version 2.1-4},
-  url = {https://github.com/edzer/sp/},
-}
-
-@Manual{R-stringr,
-  title = {stringr: Simple, Consistent Wrappers for Common String Operations},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 1.5.1},
-  url = {https://stringr.tidyverse.org},
-}
-
-@Manual{R-terra,
-  title = {terra: Spatial Data Analysis},
-  author = {Robert J. Hijmans},
-  year = {2024},
-  note = {R package version 1.7-83},
-  url = {https://rspatial.org/},
-}
-
-@Manual{R-tibble,
-  title = {tibble: Simple Data Frames},
-  author = {Kirill Müller and Hadley Wickham},
-  year = {2023},
-  note = {R package version 3.2.1},
-  url = {https://tibble.tidyverse.org/},
-}
-
-@Manual{R-tidyr,
-  title = {tidyr: Tidy Messy Data},
-  author = {Hadley Wickham and Davis Vaughan and Maximilian Girlich},
-  year = {2024},
-  note = {R package version 1.3.1},
-  url = {https://tidyr.tidyverse.org},
-}
-
-@Manual{R-tidyterra,
-  title = {tidyterra: tidyverse Methods and ggplot2 Helpers for terra Objects},
-  author = {Diego Hernangómez},
-  year = {2024},
-  note = {R package version 0.6.1},
-  url = {https://dieghernan.github.io/tidyterra/},
-}
-
-@Manual{R-tidyverse,
-  title = {tidyverse: Easily Install and Load the Tidyverse},
-  author = {Hadley Wickham},
-  year = {2023},
-  note = {R package version 2.0.0},
-  url = {https://tidyverse.tidyverse.org},
-}
-
-@Manual{R-writexl,
-  title = {writexl: Export Data Frames to Excel xlsx Format},
-  author = {Jeroen Ooms},
-  year = {2024},
-  note = {R package version 1.5.0},
-  url = {https://docs.ropensci.org/writexl/},
-}
-
-@Manual{R-zipcodeR,
-  title = {zipcodeR: Data \&amp; Functions for Working with US ZIP Codes},
-  author = {Gavin Rozzi},
-  year = {2022},
-  note = {R package version 0.3.5},
-  url = {https://github.com/gavinrozzi/zipcodeR/},
-}
-
-@Book{ggplot22016,
-  author = {Hadley Wickham},
-  title = {ggplot2: Elegant Graphics for Data Analysis},
-  publisher = {Springer-Verlag New York},
-  year = {2016},
-  isbn = {978-3-319-24277-4},
-  url = {https://ggplot2.tidyverse.org},
-}
-
-@Book{knitr2015,
-  title = {Dynamic Documents with {R} and knitr},
-  author = {Yihui Xie},
-  publisher = {Chapman and Hall/CRC},
-  address = {Boca Raton, Florida},
-  year = {2015},
-  edition = {2nd},
-  note = {ISBN 978-1498716963},
-  url = {https://yihui.org/knitr/},
-}
-
-@InCollection{knitr2014,
-  booktitle = {Implementing Reproducible Computational Research},
-  editor = {Victoria Stodden and Friedrich Leisch and Roger D. Peng},
-  title = {knitr: A Comprehensive Tool for Reproducible Research in {R}},
-  author = {Yihui Xie},
-  publisher = {Chapman and Hall/CRC},
-  year = {2014},
-  note = {ISBN 978-1466561595},
-}
-
-@Article{lubridate2011,
-  title = {Dates and Times Made Easy with {lubridate}},
-  author = {Garrett Grolemund and Hadley Wickham},
-  journal = {Journal of Statistical Software},
-  year = {2011},
-  volume = {40},
-  number = {3},
-  pages = {1--25},
-  url = {https://www.jstatsoft.org/v40/i03/},
-}
-
-@Book{sf2023,
-  author = {Edzer Pebesma and Roger Bivand},
-  title = {{Spatial Data Science: With applications in R}},
-  year = {2023},
-  publisher = {{Chapman and Hall/CRC}},
-  url = {https://r-spatial.org/book/},
-  doi = {10.1201/9780429459016},
-}
-
-@Article{sf2018,
-  author = {Edzer Pebesma},
-  title = {{Simple Features for R: Standardized Support for Spatial Vector Data}},
-  year = {2018},
-  journal = {{The R Journal}},
-  doi = {10.32614/RJ-2018-009},
-  url = {https://doi.org/10.32614/RJ-2018-009},
-  pages = {439--446},
-  volume = {10},
-  number = {1},
-}
-
-@Article{sp2005,
-  author = {Edzer J. Pebesma and Roger Bivand},
-  title = {Classes and methods for spatial data in {R}},
-  journal = {R News},
-  year = {2005},
-  volume = {5},
-  number = {2},
-  pages = {9--13},
-  month = {November},
-  url = {https://CRAN.R-project.org/doc/Rnews/},
-}
-
-@Book{sp2013,
-  author = {Roger S. Bivand and Edzer Pebesma and Virgilio Gomez-Rubio},
-  title = {Applied spatial data analysis with {R}, Second edition},
-  year = {2013},
-  publisher = {Springer, NY},
-  url = {https://asdar-book.org/},
-}
-
-@Article{R-tidyterra,
-  title = {Using the {tidyverse} with {terra} objects: the {tidyterra} package},
-  doi = {10.21105/joss.05751},
-  author = {Diego Hernangómez},
-  year = {2023},
-  url = {https://doi.org/10.21105/joss.05751},
-  publisher = {The Open Journal},
-  volume = {8},
-  number = {91},
-  pages = {5751},
-  journal = {Journal of Open Source Software},
-  issn = {2475-9066},
-}
-
-@Article{tidyverse2019,
-  title = {Welcome to the {tidyverse}},
-  author = {Hadley Wickham and Mara Averick and Jennifer Bryan and Winston Chang and Lucy D'Agostino McGowan and Romain François and Garrett Grolemund and Alex Hayes and Lionel Henry and Jim Hester and Max Kuhn and Thomas Lin Pedersen and Evan Miller and Stephan Milton Bache and Kirill Müller and Jeroen Ooms and David Robinson and Dana Paige Seidel and Vitalie Spinu and Kohske Takahashi and Davis Vaughan and Claus Wilke and Kara Woo and Hiroaki Yutani},
-  year = {2019},
-  journal = {Journal of Open Source Software},
-  volume = {4},
-  number = {43},
-  pages = {1686},
-  doi = {10.21105/joss.01686},
-}
-
-@Article{zipcodeR2021,
-  author = {Gavin C. Rozzi},
-  title = {zipcodeR: Advancing the analysis of spatial data at the ZIP code level in R},
-  journal = {Software Impacts},
-  issn = {2665-9638},
-  volume = {9},
-  pages = {100099},
-  year = {2021},
-  doi = {10.1016/j.simpa.2021.100099},
-  url = {https://www.sciencedirect.com/science/article/pii/S2665963821000373/},
-}</code></pre>
-</div>
-</div>
+</section>
+<section id="r-rstudio.version-versionversion.string-citation-to-display-the-packages-within-the-.qmd-without-creating-another-.bib-knitrwrite_bibsubpackage-greppackage-search-valuetrue-file" class="level1">
+<h1><code>{r} #  # RStudio.Version()  # version$version.string # citation() #  # #### to display the packages within the .qmd without creating another .bib #### # knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='') #  #</code></h1>
 </section>
 
 </main>

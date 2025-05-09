@@ -147,10 +147,7 @@ PROG
 surv <- surv %>%
   filter(PROG >= 70)
 
-psurv <- surv %>% dplyr::select(ID)
-
 ```
-
 ## Functions
 ```{r}
 #| echo: true
@@ -213,11 +210,11 @@ uniFUN <- function(df, columns = NULL) {
 ```{r, echo = TRUE}
 
 #--------- Converting DURATION to minutes -----------
-psurv$DURATION <- surv$DURATION / 60
+surv$DURATIONmin <- surv$DURATION / 60
 
 
 #------------ PROGRESS grouped by 10% intervals --------------
-psurv$PROGRESS = surv$PROG
+surv$PROGint = surv$PROG
 intFUN <- function(df, column = "PROG") {
   require(dplyr)
 
@@ -239,42 +236,44 @@ PROGint = intFUN(surv)
 PROGint
 
 #---------- Duration (min) grouped by 10 minute intervals -----------
-max_min <- ceiling(max(psurv$DURATION, na.rm = TRUE) / 10) * 10
+max_min <- ceiling(max(surv$DURATION, na.rm = TRUE) / 10) * 10
 breaks <- seq(0, max_min, by = 10)
 labels <- paste0(head(breaks, -1), "-", tail(breaks, -1), " min")
-surv$DURATIONBIN <- cut(
-  psurv$DURATION,
+surv$DURATIONint <- cut(
+  surv$DURATION,
   breaks = breaks,
   right = FALSE,
   include.lowest = TRUE,
   labels = labels
 )
-DURbin <- surv %>%
-  count(DURATIONBIN, name = "Respondent_Count") %>%
-  arrange(DURATIONBIN)
-print(DURbin)
-surv <- surv %>% select(-DURATIONBIN)
+DURint <- surv %>%
+  count(DURATIONint, name = "Respondent_Count") %>%
+  arrange(DURATIONint)
+print(DURint)
+surv <- surv %>% select(-DURATIONint)
 
 
 ```
+
+
 #### Descriptive Statistics 
 ```{r, echo = TRUE}
 
 survsum = sumFUN(surv)
 survuni = uniFUN(surv)
-psurvsum = sumFUN(psurv)
-psurvuni = uniFUN(psurv)
+survsum = sumFUN(surv)
+survuni = uniFUN(surv)
 
-psurvsum$DURATION
-psurvsum$PROGRESS
+survsum$DURATION
+survsum$PROGRESS
 
 survsum$FINISHED
 survsum$QSCORE
 survsum$RECDATE
 
 #-------------- RESPONSE COUNT ---------------
-psurvuni$PROGRESS
-psurvuni$DURATION
+survuni$PROGRESS
+survuni$DURATION
 
 ```
 
@@ -285,9 +284,9 @@ psurvuni$DURATION
 ```{r, echo = TRUE}
 
 #--------- Calculating Age -----------
-psurv$AGEnum = 2024 - surv$DOB
+surv$AGEnum = 2024 - surv$DOB
 surv$AGE <- 2024 - surv$DOB
-surv$AGEbin <- cut(
+surv$AGEint <- cut(
   surv$AGE,
   breaks = c(0, 29, 39, 49, 59, Inf),
   labels = c("20–29", "30–39", "40–49", "50–59", "60+"),
@@ -295,11 +294,10 @@ surv$AGEbin <- cut(
   include.lowest = TRUE
 )
 age_summary <- surv %>%
-  dplyr::count(AGEbin, name = "Count") %>%
+  dplyr::count(AGEint, name = "Count") %>%
   dplyr::mutate(
     `Proportion (%)` = round(Count / sum(Count) * 100, 1)
   )
-
 print(age_summary)
 
 #--------- Adding Respondent County -----------
@@ -318,10 +316,10 @@ names(surv)[names(surv) == "county"] <- "LOCATION"
 
 survsum = sumFUN(surv)
 survuni = uniFUN(surv)
-psurvsum = sumFUN(psurv)
-psurvuni = uniFUN(psurv)
+survsum = sumFUN(surv)
+survuni = uniFUN(surv)
 
-psurvsum$AGEnum
+survsum$AGEnum
 survsum$RACE
 survsum$ETHNICITY
 survsum$GENDER
@@ -338,7 +336,7 @@ survsum$ACTIVITYfill
 survsum$LICENSE
 
 #-------------- Count / Category ---------------
-psurvuni$AGEnum
+survuni$AGEnum
 survuni$DOB
 
 #-------------- Other ---------------
@@ -349,59 +347,53 @@ survsum$othAFFILIATE
 ### Variable Processing
 ```{r, echo = TRUE}
 
-demosurv <- surv %>%
+surv <- surv %>%
   mutate(
-    AGEnum = 2024 - DOB,
-    AGE = if_else(AGEnum <= median(2024 - DOB, na.rm = TRUE), 0L, 1L),
-    RACE = case_when(
+    AGEbin = if_else(AGEnum <= median(2024 - DOB, na.rm = TRUE), 0L, 1L),
+    RACEbin = case_when(
       RACE == "White" ~ 1L,
       RACE %in% c("Asian", "Black or African American", "Other") ~ 0L,
       RACE == "I prefer Not to answer" ~ NA_integer_,
       TRUE ~ NA_integer_),
-    GENDER = case_when(
+    GENDERbin = case_when(
       GENDER == "Male" ~ 1L,
       GENDER == "Female" ~ 0L,
       GENDER %in% c("Other", "I prefer Not to answer") ~ NA_integer_,
       TRUE ~ NA_integer_),
-    INCOME = if_else(INCOME > 62200, 1L, 0L),
-    EDUCATION = case_when(
+    INCOMEbin = if_else(INCOME > 62200, 1L, 0L),
+    EDUCATIONbin = case_when(
       EDUCATION %in% c("College Graduate/BA or BS (4-year degree)", "Graduate or Professional School") ~ 1L,
       EDUCATION %in% c("Did Not graduate high school/No GED", "High school graduate/GED",
                        "Some College/AA or AS (2-year degree)", "Technical/Vocational School") ~ 0L,
       TRUE ~ NA_integer_),
-    DEGREE     = if_else(DEGREE == "Yes", 1L, if_else(DEGREE == "No", 0L, NA_integer_)),
-    TWS        = if_else(TWS == "Yes", 1L, if_else(TWS == "No", 0L, NA_integer_)),
-    COURSE     = if_else(COURSE == "Yes", 1L, if_else(COURSE == "No", 0L, NA_integer_)),
-    SELFTITLE  = if_else(SELFTITLE == "Yes", 1L, if_else(SELFTITLE == "No", 0L, NA_integer_)),
-    LICENSE    = if_else(LICENSE == "Yes", 1L, if_else(LICENSE == "No", 0L, NA_integer_)),
-    COURSETIME = case_when(
+    DEGREEbin     = if_else(DEGREE == "Yes", 1L, if_else(DEGREE == "No", 0L, NA_integer_)),
+    TWSbin        = if_else(TWS == "Yes", 1L, if_else(TWS == "No", 0L, NA_integer_)),
+    COURSEbin     = if_else(COURSE == "Yes", 1L, if_else(COURSE == "No", 0L, NA_integer_)),
+    SELFTITLEbin  = if_else(SELFTITLE == "Yes", 1L, if_else(SELFTITLE == "No", 0L, NA_integer_)),
+    LICENSEbin    = if_else(LICENSE == "Yes", 1L, if_else(LICENSE == "No", 0L, NA_integer_)),
+    COURSETIMEbin = case_when(
       COURSETIME %in% c("<5 years", "5-10 years") ~ 1L,
       COURSETIME == ">10 years" ~ 0L,
       TRUE ~ NA_integer_),
-    BIOTIME = case_when(
+    BIOTIMEbin = case_when(
       BIOTIME %in% c("10-20 years", ">20 years") ~ 1L,
       BIOTIME %in% c("<1 year", "1-5 years", "5-10 years") ~ 0L,
-      TRUE ~ NA_integer_)
-  ) %>%
-  select(ID, AGE, AGEnum, RACE, GENDER, INCOME, EDUCATION, DEGREE, TWS, COURSE,
-         SELFTITLE, LICENSE, COURSETIME, BIOTIME)
+      TRUE ~ NA_integer_))
 
-table(demosurv$AGE) 
-table(demosurv$RACE) 
-table(demosurv$GENDER) 
-table(demosurv$INCOME) 
-table(demosurv$EDUCATION) 
-table(demosurv$DEGREE) 
-table(demosurv$TWS)
-table(demosurv$COURSE) 
-table(demosurv$SELFTITLE) 
-table(demosurv$LICENSE) 
-table(demosurv$COURSETIME) 
-table(demosurv$BIOTIME) 
+table(surv$AGEbin)
+table(surv$RACEbin) 
+table(surv$GENDERbin) 
+table(surv$INCOMEbin) 
+table(surv$EDUCATIONbin) 
+table(surv$DEGREEbin) 
+table(surv$TWSbin)
+table(surv$COURSEbin) 
+table(surv$SELFTITLEbin) 
+table(surv$LICENSEbin) 
+table(surv$COURSETIMEbin) 
+table(surv$BIOTIMEbin) 
 
 ```
-
-
 
 
 # KNOWLEDGE
@@ -422,18 +414,18 @@ answers <- list(
 
 for (q in names(answers)) {
   correct <- tolower(str_trim(answers[[q]]))
-  psurv[[paste0(q, "corr")]] <- ifelse(
+  surv[[paste0(q, "corr")]] <- ifelse(
     tolower(str_trim(as.character(surv[[q]]))) == correct, 1, 0)
-  psurv[[paste0(q, "cert")]] <- ifelse(
+  surv[[paste0(q, "cert")]] <- ifelse(
     str_to_lower(str_trim(as.character(surv[[q]]))) != "i don't know" & !is.na(surv[[q]]),
     1, 0)
 }
 
-psurv <- psurv %>%
+surv <- surv %>%
   rowwise() %>%
   mutate(
-    KNOWcorrect = sum(c_across(ends_with("corr")), na.rm = TRUE),
-    KNOWcertain = sum(c_across(ends_with("cert")), na.rm = TRUE)
+    CORRECTnum = sum(c_across(ends_with("corr")), na.rm = TRUE),
+    CORRECTnum = sum(c_across(ends_with("cert")), na.rm = TRUE)
   ) %>%
   ungroup()
 
@@ -444,8 +436,8 @@ psurv <- psurv %>%
 
 survsum = sumFUN(surv)
 survuni = uniFUN(surv)
-psurvsum = sumFUN(psurv)
-psurvuni = uniFUN(psurv)
+survsum = sumFUN(surv)
+survuni = uniFUN(surv)
 
 survsum$PIGS
 survsum$BRUCE
@@ -458,37 +450,38 @@ survsum$RABIES
 survsum$TURKEY
 
 #------------ CORRECT -----------
-psurvsum$PIGScorr
-psurvsum$BRUCEcorr
-psurvsum$CWDcorr
-psurvsum$FLUALcorr
-psurvsum$COVIDcorr
-psurvsum$COVIDSPILLcorr
-psurvsum$RABIEScorr
-psurvsum$RABIESALcorr
-psurvsum$TURKEYcorr
+survsum$PIGScorr
+survsum$BRUCEcorr
+survsum$CWDcorr
+survsum$FLUALcorr
+survsum$COVIDcorr
+survsum$COVIDSPILLcorr
+survsum$RABIEScorr
+survsum$RABIESALcorr
+survsum$TURKEYcorr
 
 
 #------------ CERTAIN -----------
-psurvsum$PIGScert
-psurvsum$BRUCEcert
-psurvsum$CWDcert
-psurvsum$FLUALcert
-psurvsum$COVIDcert
-psurvsum$COVIDSPILLcert
-psurvsum$RABIEScert
-psurvsum$RABIESALcert
-psurvsum$TURKEYcert
+survsum$PIGScert
+survsum$BRUCEcert
+survsum$CWDcert
+survsum$FLUALcert
+survsum$COVIDcert
+survsum$COVIDSPILLcert
+survsum$RABIEScert
+survsum$RABIESALcert
+survsum$TURKEYcert
 
 #------------ TOTAL -----------
-psurvsum$KNOWcorrect
-psurvsum$KNOWcertain
+survsum$CORRRECTnum
+survsum$CERTAINnum
 
 ```
+
 #### Variable Processing
 ```{r, echo = TRUE}
 
-knowsurv <- surv %>%
+surv <- surv %>%
   mutate(across(all_of(names(answers)), as.character)) %>%
   mutate(across(all_of(names(answers)), str_trim)) %>%
   mutate(across(all_of(names(answers)), tolower)) %>%
@@ -500,25 +493,20 @@ knowsurv <- surv %>%
              cert = ~ as.integer(. != "i don't know" & !is.na(.))
            ),
            .names = "{.col}{.fn}"),
-    KNOWcorrect = sum(c_across(ends_with("corr")), na.rm = TRUE),
-    KNOWcertain = sum(c_across(ends_with("cert")), na.rm = TRUE)
+    CORRRECTnum = sum(c_across(ends_with("corr")), na.rm = TRUE),
+    CERTAINnum = sum(c_across(ends_with("cert")), na.rm = TRUE)
   ) %>%
   ungroup() %>%
   mutate(
-    KNOWcorrmed = if_else(KNOWcorrect > median(KNOWcorrect, na.rm = TRUE), 1, 0),
-    KNOWcorravg = if_else(KNOWcorrect > mean(KNOWcorrect, na.rm = TRUE), 1, 0),
-    KNOWcertmed = if_else(KNOWcertain > median(KNOWcertain, na.rm = TRUE), 1, 0),
-    KNOWcertavg = if_else(KNOWcertain > mean(KNOWcertain, na.rm = TRUE), 1, 0)
-  ) %>%
-  select(ID, KNOWcorrect, KNOWcertain, KNOWcorrmed, KNOWcorravg, KNOWcertmed, KNOWcertavg)
+    CORRRECTmed = if_else(CORRRECTnum > median(CORRRECTnum, na.rm = TRUE), 1, 0),
+    CORRRECTavg = if_else(CORRRECTnum >   mean(CORRRECTnum, na.rm = TRUE), 1, 0),
+    CERTAINmed = if_else(CERTAINnum > median(CERTAINnum, na.rm = TRUE), 1, 0),
+    CERTAINavg = if_else(CERTAINnum >   mean(CERTAINnum, na.rm = TRUE), 1, 0))
 
-table(knowsurv$KNOWcorrect)
-table(knowsurv$KNOWcertain)
-table(knowsurv$KNOWcorrmed)
-table(knowsurv$KNOWcorravg)
-table(knowsurv$KNOWcertmed)
-table(knowsurv$KNOWcertavg)
-
+table(surv$CORRRECTmed)
+table(surv$CORRRECTavg)
+table(surv$CERTAINmed)
+table(surv$CERTAINavg)
 
 ```
 
@@ -527,31 +515,44 @@ table(knowsurv$KNOWcertavg)
 #### Data Manipulation
 ```{r, echo = TRUE}
 
-#--------- Agree, Disagree, Neutral Attitudes -----------
-attitude_columns <- c("CWDAL","BATS","PPEREQ","EHD","DARWIN","POPRED","POPPLAN","SURVEY","VACCINE","PREVAL","DIVERSE","CONSEQ","CLIMATE","EDREQ","INFO","HANDSON")
+#--------- More , Neutral , Less -----------
+
+# Define variable groups
+attitudeinvert <- c("DARWIN","POPRED","HANDSON")  # Disagree = more concern
+attitude <- c("CWDAL","BATS","PPEREQ","EHD","POPPLAN","SURVEY",
+              "VACCINE","PREVAL","DIVERSE","CONSEQ","CLIMATE","EDREQ","INFO")  # Agree = more concern
+
+# Recode responses into "More", "Neutral", "Less"
+surv <- surv %>%
+  mutate(across(all_of(attitude), 
+                .fns = ~ case_when(
+                  . %in% c("Strongly Agree", "Agree") ~ "More",
+                  . %in% c("Disagree", "Strongly Disagree") ~ "Less",
+                  . == "Neutral" ~ "Neutral",
+                  TRUE ~ NA_character_),
+                .names = "{.col}ord")) %>%
+  mutate(across(all_of(attitudeinvert),
+                .fns = ~ case_when(
+                  . %in% c("Disagree", "Strongly Disagree") ~ "More",
+                  . %in% c("Agree", "Strongly Agree") ~ "Less",
+                  . == "Neutral" ~ "Neutral",
+                  TRUE ~ NA_character_),
+                .names = "{.col}ord"))
 
 
-labels <- c(
-  "Strongly Agree" = "Agree",
-  "Agree" = "Agree",
-  "Neutral" = "Neutral",
-  "Disagree" = "Disagree",
-  "Strongly Disagree" = "Disagree")
-
-for (col in attitude_columns) {
-  psurv[[col]] <- recode(surv[[col]], !!!labels)
-}
-
-# Count how many Agree, Neutral, Disagree per respondent
-psurv <- psurv %>%
-  rowwise() %>%
-  mutate(
-    totAGREE = sum(c_across(all_of(attitude_columns)) == "Agree", na.rm = TRUE),
-    totNEUTRAL = sum(c_across(all_of(attitude_columns)) == "Neutral", na.rm = TRUE),
-    totDISAGREE = sum(c_across(all_of(attitude_columns)) == "Disagree", na.rm = TRUE)
-  ) %>%
-  ungroup()
-
+table(surv$CWDALord)
+table(surv$BATSord)
+table(surv$PPEREQord)
+table(surv$EHDord)
+table(surv$DARWINord)
+table(surv$POPREDord)
+table(surv$POPPLANord)
+table(surv$SURVEYord)
+table(surv$VACCINEord)
+table(surv$PREVALord)
+table(surv$DIVERSEord)
+table(surv$CONSEQord)
+table(surv$CLIMATEord)
 ```
 
 #### Descriptive Statistics
@@ -559,89 +560,78 @@ psurv <- psurv %>%
 
 survsum = sumFUN(surv)
 survuni = uniFUN(surv)
-psurvsum = sumFUN(psurv)
-psurvuni = uniFUN(psurv)
+survsum = sumFUN(surv)
+survuni = uniFUN(surv)
 
 #----------- 5-level likert -----------------
-survsum$CWDAL
-survsum$BATS
-survsum$PPEREQ
-survsum$EHD
-survsum$DARWIN
-survsum$POPRED
-survsum$POPPLAN
-survsum$SURVEY
-survsum$VACCINE
-survsum$PREVAL
-survsum$DIVERSE
-survsum$CONSEQ
-survsum$CLIMATE
+survsum$CWDAL5
+survsum$BATS5
+survsum$PPEREQ5
+survsum$EHD5
+survsum$DARWIN5
+survsum$POPRED5
+survsum$POPPLAN5
+survsum$SURVEY5
+survsum$VACCINE5
+survsum$PREVAL5
+survsum$DIVERSE5
+survsum$CONSEQ5
+survsum$CLIMATE5
 
-#------------ 3 level likert ---------------
-psurvsum$CWDAL
-psurvsum$BATS
-psurvsum$PPEREQ
-psurvsum$EHD
-psurvsum$DARWIN
-psurvsum$POPRED
-psurvsum$POPPLAN
-psurvsum$SURVEY
-psurvsum$VACCINE
-psurvsum$PREVAL
-psurvsum$DIVERSE
-psurvsum$CONSEQ
-psurvsum$CLIMATE
+#------------ 3 levels ---------------
+survsum$CWDALord
+survsum$BATSord
+survsum$PPEREQord
+survsum$EHDord
+survsum$DARWINord
+survsum$POPREDord
+survsum$POPPLANord
+survsum$SURVEYord
+survsum$VACCINEord
+survsum$PREVALord
+survsum$DIVERSEord
+survsum$CONSEQord
+survsum$CLIMATEord
 
 ```
 #### Variable Processing
 ```{r, echo = TRUE}
+attitude_ord_vars <- c("PREVALord", "DIVERSEord", "CONSEQord", "CLIMATEord", "EHDord", "BATSord", "CWDALord",
+                       "PPEREQord", "SURVEYord", "VACCINEord", "POPPLANord", "EDREQord", "INFOord", "HANDSONord",
+                       "DARWINord", "POPREDord")
 
-attsurv <- surv
-
-# Recode 5-point to 3-point
-labels <- c(
-  "Strongly Agree" = "Agree",
-  "Agree" = "Agree",
-  "Neutral" = "Neutral",
-  "Disagree" = "Disagree",
-  "Strongly Disagree" = "Disagree"
-)
-
-attitude_items <- c("CWDAL", "BATS", "PPEREQ", "EHD", "DARWIN", "POPRED", "POPPLAN",
-                    "SURVEY", "VACCINE", "PREVAL", "DIVERSE", "CONSEQ", "CLIMATE", "EDREQ", "INFO", "HANDSON")
-
-for (col in attitude_items) {
-  attsurv[[col]] <- recode(attsurv[[col]], !!!labels)
-}
-
-attsurv <- attsurv %>%
-  mutate(
-    DARWIN_ord = factor(DARWIN, levels = c("Disagree", "Neutral", "Agree"), ordered = TRUE),
-    POPRED_ord = factor(POPRED, levels = c("Disagree", "Neutral", "Agree"), ordered = TRUE),
-    HANDSON_ord = factor(HANDSON, levels = c("Disagree", "Neutral", "Agree"), ordered = TRUE)
-  ) %>%
+surv <- surv %>%
   rowwise() %>%
   mutate(
-    attCONCERN = sum(c_across(c("PREVAL", "DIVERSE", "CONSEQ", "CLIMATE", "EHD", "BATS", "CWDAL")) == "Agree", na.rm = TRUE),
-    attMGMT = sum(c_across(c("PPEREQ", "SURVEY", "VACCINE", "POPPLAN")) == "Agree", na.rm = TRUE) +
-              sum(c_across(c("DARWIN_ord", "POPRED_ord")) == "Disagree", na.rm = TRUE),
-    attEDU = sum(c_across(c("EDREQ", "INFO")) == "Agree", na.rm = TRUE) +
-             as.numeric(HANDSON_ord == "Disagree")
+    MOREnum    = sum(c_across(all_of(attitude_ord_vars)) == "More", na.rm = TRUE) * 1,
+    NEUTRALnum = sum(c_across(all_of(attitude_ord_vars)) == "Neutral", na.rm = TRUE) * 1,
+    LESSnum    = sum(c_across(all_of(attitude_ord_vars)) == "Less", na.rm = TRUE) * 1
   ) %>%
-  ungroup() %>%
-  mutate(
-    ATTconcern = if_else(attCONCERN >= median(attCONCERN, na.rm = TRUE), 1, 0),
-    ATTmanage = if_else(attMGMT >= median(attMGMT, na.rm = TRUE), 1, 0),
-    ATTeducate = if_else(attEDU >= median(attEDU, na.rm = TRUE), 1, 0)
-  ) %>%
-  select(ID, all_of(attitude_items), attCONCERN, attMGMT, attEDU, ATTconcern, ATTmanage, ATTeducate)
+  ungroup()
 
-table(attsurv$attCONCERN )
-table(attsurv$attMGMT )
-table(attsurv$attEDU )
-table(attsurv$ATTconcern )
-table(attsurv$ATTmanage )
-table(attsurv$ATTeducate )
+
+table(surv$MOREnum)
+table(surv$NEUTRALnum)
+table(surv$LESSnum)
+
+# Calculate medians
+more_median    <- median(surv$MOREnum, na.rm = TRUE)
+neutral_median <- median(surv$NEUTRALnum, na.rm = TRUE)
+less_median    <- median(surv$LESSnum, na.rm = TRUE)
+
+# Create above/below median binary variables
+surv <- surv %>%
+  mutate(
+    MOREbin    = if_else(MOREnum > more_median, 1L, 0L),
+    NEUTRALbin = if_else(NEUTRALnum > neutral_median, 1L, 0L),
+    LESSbin    = if_else(LESSnum > less_median, 1L, 0L))
+
+more_median    
+neutral_median 
+less_median    
+table(surv$MOREbin   )
+table(surv$NEUTRALbin)
+table(surv$LESSbin   )
 
 ```
 
@@ -652,7 +642,7 @@ table(attsurv$ATTeducate )
 ```{r, echo = TRUE}
 
 #--------- Options Selected / Sources used -----------
-psurv <- surv %>%
+surv <- surv %>%
   mutate(
     # Count number of sources selected (comma-separated)
     nSOURCE = case_when(
@@ -673,8 +663,8 @@ psurv <- surv %>%
 
 survsum  <- sumFUN(surv)
 survuni  <- uniFUN(surv)
-psurvsum <- sumFUN(psurv)
-psurvuni <- uniFUN(psurv)
+survsum <- sumFUN(surv)
+survuni <- uniFUN(surv)
 
 survsum$SOURCEfill
 survsum$PPE
@@ -685,13 +675,13 @@ survsum$COLLECT
 survsum$HANDLE
 survsum$STATE
 survsum$COUNTIES
-psurvsum$noSOURCE
+survsum$noSOURCE
 
 #------ Count of Options ------------
-psurvsum$nSOURCE
-psurvuni$nSOURCE
-psurvsum$nCOUNTIES
-psurvuni$nCOUNTIES
+survsum$nSOURCE
+survuni$nSOURCE
+survsum$nCOUNTIES
+survuni$nCOUNTIES
 
 #------ Other ------------
 survsum$othSOURCE
@@ -701,65 +691,50 @@ survsum$othSOURCE
 #### Variable Processing
 ```{r}
 ### Variable Processing
-practsurv <- surv %>%
+surv <- surv %>%
   mutate(
-    nSOURCE = if_else(is.na(SOURCE), NA_integer_, str_count(SOURCE, ",") + 1L),
-    nCOUNTIES = if_else(is.na(COUNTIES), NA_integer_, str_count(COUNTIES, ",") + 1L),
-    noSOURCE = case_when(
-      is.na(SOURCE) ~ NA_real_,
-      str_detect(SOURCE, fixed("I have Not looked for health information")) ~ 0,
-      TRUE ~ 1),
-    COLLECT = if_else(COLLECT == "Yes", 1L, if_else(COLLECT == "No", 0L, NA_integer_)),
-    HANDLE  = if_else(HANDLE == "Yes", 1L, if_else(HANDLE == "No", 0L, NA_integer_)),
-    PPE     = if_else(PPE == "Yes", 0L, if_else(PPE == "No", 1L, NA_integer_)),  # 1 = no PPE use
-    FIELD   = if_else(FIELD >= 50, 1L, 0L),
-    STATE   = case_when(
+    nCOUNTIESbin = if_else(is.na(COUNTIES), NA_integer_, str_count(COUNTIES, ",") + 1L),
+    COLLECTbin = if_else(COLLECT == "Yes", 1L, if_else(COLLECT == "No", 0L, NA_integer_)),
+    HANDLEbin  = if_else(HANDLE == "Yes", 1L, if_else(HANDLE == "No", 0L, NA_integer_)),
+    PPEbin     = if_else(PPE == "Yes", 0L, if_else(PPE == "No", 1L, NA_integer_)),  # 1 = no PPE use
+    FIELDbin   = if_else(FIELD >= 50, 1L, 0L),
+    STATEbin   = case_when(
       STATE == "Dead" ~ 1L,
       STATE %in% c("Alive - Not Sedated", "Alive - Sedated") ~ 0L,
       TRUE ~ NA_integer_),
-    CONTACT = case_when(
+    CONTACTbin = case_when(
       CONTACT %in% c("Daily", "Weekly", "Monthly") ~ 1L,
       CONTACT %in% c("Rarely", "Never") ~ 0L,
-      TRUE ~ NA_integer_)
-  )
+      TRUE ~ NA_integer_))
 
 # Apply median split for SOURCE and COUNTIES
-source_median <- median(practsurv$nSOURCE, na.rm = TRUE)
-counties_median <- median(practsurv$nCOUNTIES, na.rm = TRUE)
-
-practsurv <- practsurv %>%
+counties_median <- median(surv$nCOUNTIES, na.rm = TRUE)
+surv <- surv %>%
   mutate(
-    SOURCE = if_else(nSOURCE > source_median, 1, 0),
-    COUNTIES = if_else(nCOUNTIES > counties_median, 1, 0)
-  )
+    COUNTIESbin = if_else(nCOUNTIES > counties_median, 1, 0))
 
 # Compute PRACscore as sum of binary risk-related behaviors
-practsurv <- practsurv %>%
+surv <- surv %>%
   mutate(
-    PRACscore = rowSums(across(c(CONTACT, FIELD, COLLECT, HANDLE, COUNTIES, PPE)), na.rm = TRUE)
-  )
+    PRACnum = rowSums(across(c(CONTACTbin, FIELDbin, COLLECTbin, HANDLEbin, COUNTIESbin, PPEbin)), na.rm = TRUE))
+prac_median <- median(surv$PRACnum, na.rm = TRUE)
 
-# Compute median and classify into high vs low risk
-prac_median <- median(practsurv$PRACscore, na.rm = TRUE)
-
-practsurv <- practsurv %>%
-  mutate(PRACrisk = if_else(PRACscore >= prac_median, 1L, 0L))
+surv <- surv %>%
+  mutate(PRACbin = if_else(PRACnum >= prac_median, 1L, 0L))
 
 # Tabulate variables
-table(practsurv$PRACscore)
-table(practsurv$PRACrisk)
+table(surv$PRACnum)
+table(surv$PRACbin)
 prac_median
-table(practsurv$CONTACT)
-table(practsurv$nSOURCE)
-table(practsurv$nCOUNTIES)
-table(practsurv$noSOURCE)
-table(practsurv$SOURCE)
-table(practsurv$COUNTIES)
-table(practsurv$COLLECT)
-table(practsurv$HANDLE)
-table(practsurv$PPE)
-table(practsurv$FIELD)
-table(practsurv$STATE)
+counties_median
+table(surv$CONTACTbin)
+table(surv$nCOUNTIESbin)
+table(surv$COUNTIESbin)
+table(surv$COLLECTbin)
+table(surv$HANDLEbin)
+table(surv$PPEbin)
+table(surv$FIELDbin)
+table(surv$STATEbin)
 
 ```
 
@@ -769,22 +744,22 @@ table(practsurv$STATE)
 
 survsum  <- sumFUN(surv)
 survuni  <- uniFUN(surv)
-psurvsum <- sumFUN(psurv)
-psurvuni <- uniFUN(psurv)
+survsum <- sumFUN(surv)
+survuni <- uniFUN(surv)
 
 survsum$ACCESS
 survsum$INTEREST
 survsum$FREEINFOfill
 survsum$TOPICSfill
-psurvsum$INTERESTcert
+survsum$INTERESTcert
 
 
 # ------------ Count of selected options -----------------
-psurvsum$nFREEINFO
-psurvuni$nFREEINFO
-psurvsum$nTOPICS
-psurvuni$nTOPICS
-psurvuni$nSOURCE
+survsum$nFREEINFO
+survuni$nFREEINFO
+survsum$nTOPICS
+survuni$nTOPICS
+survuni$nSOURCE
 
 # ------------ Other -----------------
 survsum$othFREEINFO
@@ -793,50 +768,102 @@ survsum$othSOURCE
 
 ```
 
+
 #### Variable Processing
 ```{r, echo = TRUE}
 
-psurv <- psurv %>%
+### Calculate medians for binarization thresholds
+freeinfo_median <- median(surv$nFREEINFO, na.rm = TRUE)
+topics_median   <- median(surv$nTOPICS, na.rm = TRUE)
+source_median   <- median(surv$nSOURCE, na.rm = TRUE)
+info_median     <- NULL  # placeholder; defined after INFOnum is created
+
+surv <- surv %>%
   mutate(
-    nFREEINFO = if_else(is.na(FREEINFO), NA_integer_, str_count(FREEINFO, ",") + 1L),
-    nTOPICS = if_else(is.na(TOPICS), NA_integer_, str_count(TOPICS, ",") + 1L)
+    nFREEINFO   = if_else(is.na(FREEINFO), NA_integer_, str_count(FREEINFO, ",") + 1L),
+    nTOPICS     = if_else(is.na(TOPICS), NA_integer_, str_count(TOPICS, ",") + 1L),
+    nSOURCE     = if_else(is.na(SOURCE), NA_integer_, str_count(SOURCE, ",") + 1L)
   )
 
-freeinfo_median <- median(psurv$nFREEINFO, na.rm = TRUE)
-topics_median   <- median(psurv$nTOPICS, na.rm = TRUE)
-source_median   <- median(psurv$nSOURCE, na.rm = TRUE)  # already exists
+freeinfo_median <- median(surv$nFREEINFO, na.rm = TRUE)
+topics_median   <- median(surv$nTOPICS, na.rm = TRUE)
+source_median   <- median(surv$nSOURCE, na.rm = TRUE)
 
-psurv <- psurv %>%
+
+surv <- surv %>%
   mutate(
-    FREEINFO = if_else(nFREEINFO >= freeinfo_median, 1L, 0L),
-    TOPICS   = if_else(nTOPICS >= topics_median, 1L, 0L),
-    SOURCE   = if_else(nSOURCE >= source_median, 1L, 0L),
-    ACCESS   = if_else(ACCESS == "Yes", 1L, if_else(ACCESS == "No", 0L, NA_integer_)),
-    INTEREST = case_when(
+    noSOURCEbin = case_when(
+      is.na(SOURCE) ~ NA_real_,
+      str_detect(SOURCE, fixed("I have Not looked for health information")) ~ 0,
+      TRUE ~ 1
+    ),
+    FREEINFObin = if_else(nFREEINFO >= freeinfo_median, 1L, 0L),
+    TOPICSbin   = if_else(nTOPICS >= topics_median, 1L, 0L),
+    SOURCEbin   = if_else(nSOURCE >= source_median, 1L, 0L),
+    ACCESSbin   = if_else(ACCESS == "Yes", 1L,
+                   if_else(ACCESS == "No", 0L, NA_integer_)),
+    INTERESTbin = case_when(
       INTEREST == "Yes" ~ 1L,
       INTEREST %in% c("No", "I don't know") ~ 0L,
       TRUE ~ NA_integer_
-    )
+    ),
+    INFOnum = rowSums(across(c(FREEINFObin, TOPICSbin, SOURCEbin, ACCESSbin, INTERESTbin)), na.rm = TRUE)
   )
+# Compute median of total interest score
+info_median <- median(surv$INFOnum, na.rm = TRUE)
 
-psurv <- psurv %>%
-  mutate(INFOscore = rowSums(across(c(FREEINFO, TOPICS, SOURCE, ACCESS, INTEREST)), na.rm = TRUE))
+# Classify overall interest
+surv <- surv %>%
+  mutate(INFObin = if_else(INFOnum >= info_median, 1L, 0L))
 
-info_median <- median(psurv$INFOscore, na.rm = TRUE)
+### Optional: Summary tables
+table(surv$nFREEINFO)
+table(surv$nTOPICS)
+table(surv$INTEREST)
+table(surv$FREEINFO)
+table(surv$TOPICS)
+table(surv$nSOURCE)
+table(surv$noSOURCEbin)
+table(surv$SOURCEbin)
+table(surv$INFOnum)
+table(surv$INFObin)
 
-psurv <- psurv %>%
-  mutate(INFOgroup = if_else(INFOscore >= info_median, 1L, 0L))
-
-
-### Output tables and medians
+# Output medians for reference
 freeinfo_median
-topics_median  
-source_median  
-table(psurv$nFREEINFO)
-table(psurv$nTOPICS)
-table(psurv$INTEREST)
-table(psurv$FREEINFO)
-table(psurv$TOPICS)
+topics_median
+source_median
+info_median
+
+
+```
+## Cronbach's Alpha Calculations
+```{r}
+
+
+knowledge_items <- surv %>%
+  select(PIGScorr, BRUCEcorr, CWDcorr, FLUALcorr, FLUcorr, 
+         COVIDcorr, COVIDSPILLcorr, RABIESALcorr, RABIEScorr, TURKEYcorr)
+attitude_ord_vars <- c("CWDALord", "BATSord", "PPEREQord", "EHDord",
+                       "POPPLANord", "SURVEYord", "VACCINEord", "PREVALord", 
+                       "DIVERSEord", "CONSEQord", "CLIMATEord", "EDREQord", "INFOord",
+                       "HANDSONord", "DARWINord", "POPREDord")
+
+# Recode More = 1, Neutral/Less = 0
+attitude_binary <- surv %>%
+  select(all_of(attitude_ord_vars)) %>%
+  mutate(across(everything(), ~ if_else(. == "More", 1, 0)))
+practice_items <- surv %>%
+  select(CONTACTbin, FIELDbin, COLLECTbin, HANDLEbin, COUNTIESbin, PPEbin)
+library(psych)
+
+alpha_knowledge <- psych::alpha(knowledge_items, check.keys = TRUE)
+alpha_attitudes <- psych::alpha(attitude_binary, check.keys = TRUE)
+alpha_practices <- psych::alpha(practice_items, check.keys = TRUE)
+
+# Print summary alpha values
+cat("Knowledge α: ", round(alpha_knowledge$total$raw_alpha, 2), "\n")
+cat("Attitudes α: ", round(alpha_attitudes$total$raw_alpha, 2), "\n")
+cat("Practices α: ", round(alpha_practices$total$raw_alpha, 2), "\n")
 
 
 ```
@@ -847,43 +874,23 @@ table(psurv$TOPICS)
 ```{r}
 #| include: false
 
-finalsurv <- demosurv %>%
-  left_join(knowsurv,  by = "ID") %>%
-  left_join(attsurv,   by = "ID") %>%
-  left_join(practsurv, by = "ID") %>%
-  left_join(intsurv,   by = "ID")
-
-# Optional: arrange by ID
-finalsurv <- finalsurv %>% arrange(ID)
-
-# Summary of missingness (optional QA check)
-finalsurv %>% summarise(across(everything(), ~sum(is.na(.))))
-finalsurv <- finalsurv %>%
-  mutate(across(where(is.character), as.factor)) %>%
-  mutate(across(where(is.logical), as.numeric)) 
-
 ###### Processed Responses ######
 oup = file.path(analyses, "outputs")
-write.csv(surv, file.path(oup, "surv.csv"), row.names = FALSE)
-write.csv(finalsurv, file.path(oup, "finalsurv.csv"), row.names = FALSE)
+write.csv(surv, file.path(oup, "processedsurv.csv"), row.names = FALSE)
 
 ```
 
 
 
 # References
-```{r bib}
-#| echo: false
-
-RStudio.Version() 
-version$version.string
-citation()
-
-#### To write a bib file
-# knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='pckg.bib')
-
-#### to display the packages within the .qmd without creating another .bib ####
-knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
-
+```{r}
+# 
+# RStudio.Version() 
+# version$version.string
+# citation()
+# 
+# #### to display the packages within the .qmd without creating another .bib ####
+# knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+# 
 ```
 

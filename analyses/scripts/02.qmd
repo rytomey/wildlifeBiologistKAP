@@ -1,0 +1,100 @@
+---
+title: "Data Analyses"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    number_sections: true
+    fig_caption: true
+    theme: flatly
+    css: styles.css
+    highlight: tango
+    df_print: paged
+    code_folding: hide
+    self_contained: true
+    mathjax: default
+fontsize: 12pt
+mainfont: "Times New Roman"
+linestretch: 1.5
+---
+
+# Initialization
+```{r}
+#| include: false
+css_text <- "
+/* Basic page settings */
+body {
+  font-family: 'Times New Roman', serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  color: #000000;
+  background: #ffffff;
+  margin: 2em;
+}
+/* Styled table (scientific, clean) */
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+  font-size: 12pt;
+  color: #000;
+}
+.styled-table thead {
+  background-color: #f9f9f9;
+  font-weight: bold;
+  border-bottom: 2px solid black;
+}
+.styled-table th, .styled-table td {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: center;
+}
+.styled-table tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+.styled-table tbody tr:hover {
+  background-color: #f0f0f0;
+}
+/* Code block formatting */
+pre, code {
+  background-color: #f8f8f8;
+  border: 1px solid #e1e1e1;
+  font-size: 11pt;
+  font-family: Consolas, monospace;
+  padding: 6px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+/* Caption styling */
+caption, figcaption {
+  font-size: 11pt;
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.5em;
+}
+/* Headings */
+h1, h2, h3, h4 {
+  color: #222;
+  font-weight: bold;
+}
+"
+# Write the CSS string to the styles.css file
+writeLines(css_text, "styles.css")
+
+```
+
+
+### Data Import
+```{r}
+
+base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
+analyses = file.path(base, "analyses")
+oup = file.path(analyses, "outputs")
+surv = read.csv(file.path(oup, "finalsurv.csv"))
+surv 
+
+```
