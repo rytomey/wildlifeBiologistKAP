@@ -1,100 +1,458 @@
 ---
 title: "Data Analyses"
-date: "`r Sys.Date()`"
+author: "Your Name"
 output: 
   html_document:
     toc: true
-    toc_depth: 3
-    toc_float:
-      collapsed: false
-      smooth_scroll: true
+    toc_float: true
     number_sections: true
-    fig_caption: true
-    theme: flatly
-    css: styles.css
-    highlight: tango
-    df_print: paged
-    code_folding: hide
-    self_contained: true
-    mathjax: default
-fontsize: 12pt
-mainfont: "Times New Roman"
-linestretch: 1.5
+    theme: readable
 ---
 
-# Initialization
-```{r}
-#| include: false
-css_text <- "
-/* Basic page settings */
-body {
-  font-family: 'Times New Roman', serif;
-  font-size: 12pt;
-  line-height: 1.5;
-  color: #000000;
-  background: #ffffff;
-  margin: 2em;
-}
-/* Styled table (scientific, clean) */
-.styled-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 1em 0;
-  font-size: 12pt;
-  color: #000;
-}
-.styled-table thead {
-  background-color: #f9f9f9;
-  font-weight: bold;
-  border-bottom: 2px solid black;
-}
-.styled-table th, .styled-table td {
-  border: 1px solid #ddd;
-  padding: 8px 12px;
-  text-align: center;
-}
-.styled-table tbody tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-.styled-table tbody tr:hover {
-  background-color: #f0f0f0;
-}
-/* Code block formatting */
-pre, code {
-  background-color: #f8f8f8;
-  border: 1px solid #e1e1e1;
-  font-size: 11pt;
-  font-family: Consolas, monospace;
-  padding: 6px;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-/* Caption styling */
-caption, figcaption {
-  font-size: 11pt;
-  font-style: italic;
-  text-align: center;
-  margin-top: 0.5em;
-}
-/* Headings */
-h1, h2, h3, h4 {
-  color: #222;
-  font-weight: bold;
-}
-"
-# Write the CSS string to the styles.css file
-writeLines(css_text, "styles.css")
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+### Packages
+```{r}
+#| include: false
+
+require(dplyr)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(vcd)
+library(Hmisc)
+library(broom)
+library(effsize)
+library(rcompanion)
+library(ggplot2)
+library(writexl)
+library(janitor)
+require(effectsize)
+
+```
 
 ### Data Import
 ```{r}
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp      <- file.path(analyses, "inputs")
+oup      <- file.path(analyses, "outputs")
+surv <- read.csv(file.path(oup, "processedsurv.csv"))
+biv  <- read.csv(file.path(inp, "bivcomparisons.csv")) %>% janitor::clean_names()
+```
 
-base = normalizePath(file.path("..", ".."), mustWork = FALSE)  
-analyses = file.path(base, "analyses")
-oup = file.path(analyses, "outputs")
-surv = read.csv(file.path(oup, "finalsurv.csv"))
-surv 
+# Bivariate Analyses 
+### Functions 
+```{r}
+# Chi-squared + Cramer's V
+binFUN <- function(var1, var2, data) {
+  if (!all(c(var1, var2) %in% names(data))) return(tibble())
+  x <- droplevels(factor(data[[var1]]))
+  y <- droplevels(factor(data[[var2]]))
+  tab <- table(x, y)
+  if (any(dim(tab) < 2)) return(tibble())
+  chi <- tryCatch(chisq.test(tab, simulate.p.value = TRUE, B = 999), error = function(e) NULL)
+  if (is.null(chi)) return(tibble())
+  assoc <- tryCatch(suppressWarnings(vcd::assocstats(tab)), error = function(e) NULL)
+  cramv <- if (!is.null(assoc)) as.numeric(assoc$cramer) else NA
+  get_val <- function(a, b) if (a %in% rownames(tab) && b %in% colnames(tab)) tab[a, b] else NA
+  tibble(
+    var1 = var1, var2 = var2, test = "Chi-squared",
+    chi_stat = unname(chi$statistic), chi_df = unname(chi$parameter),
+    p_value = unname(chi$p.value), cramersV = cramv,
+    dim1 = nrow(tab), dim2 = ncol(tab),
+    n_00 = get_val("0", "0"), n_01 = get_val("0", "1"),
+    n_10 = get_val("1", "0"), n_11 = get_val("1", "1")
+  )
+}
+
+# Pearson/Spearman Correlation
+corrFUN <- function(var1, var2, data, method = c("spearman", "pearson")) {
+  method <- match.arg(method)
+  x <- suppressWarnings(as.numeric(data[[var1]]))
+  y <- suppressWarnings(as.numeric(data[[var2]]))
+  keep <- complete.cases(x, y); x <- x[keep]; y <- y[keep]
+  if (length(unique(x)) < 2 || length(unique(y)) < 2) return(tibble())
+  test <- tryCatch(cor.test(x, y, method = method), error = function(e) NULL)
+  if (is.null(test)) return(tibble())
+  tibble(
+    var1 = var1, var2 = var2, test = stringr::str_to_title(method),
+    cor_coef = unname(test$estimate), statistic = unname(test$statistic),
+    p_value = test$p.value, n = length(x),
+    conf_low = test$conf.int[1], conf_high = test$conf.int[2]
+  )
+}
+
+# t-test
+testFUN <- function(var1, var2, data) {
+  if (!all(c(var1, var2) %in% names(data))) return(tibble())
+
+  x <- factor(data[[var1]])
+  y <- data[[var2]]
+
+  keep <- complete.cases(x, y)
+  x <- droplevels(x[keep])
+  y <- y[keep]
+
+  if (!is.numeric(y) || length(unique(x)) != 2) return(tibble())
+
+  test <- tryCatch(t.test(y ~ x), error = function(e) NULL)
+  if (is.null(test)) return(tibble())
+
+  tibble(
+    var1 = var1,
+    var2 = var2,
+    test = "t-test",
+    group1 = levels(x)[1],
+    group2 = levels(x)[2],
+    mean1 = mean(y[x == levels(x)[1]], na.rm = TRUE),
+    mean2 = mean(y[x == levels(x)[2]], na.rm = TRUE),
+    t_stat = unname(test$statistic),
+    df = unname(test$parameter),
+    p_value = unname(test$p.value)
+  )
+}
+
+# Wilcoxon
+coxFUN <- function(var1, var2, data) {
+  if (!all(c(var1, var2) %in% names(data))) return(tibble())
+  x <- factor(data[[var1]])
+  y <- data[[var2]]
+  keep <- complete.cases(x, y)
+  x <- droplevels(x[keep]); y <- y[keep]
+  if (!is.numeric(y) || length(unique(x)) != 2) return(tibble())
+  w <- tryCatch(wilcox.test(y ~ x), error = function(e) NULL)
+  if (is.null(w)) return(tibble())
+  tibble(
+    var1 = var1, var2 = var2, test = "Wilcoxon",
+    group1 = levels(x)[1], group2 = levels(x)[2],
+    median1 = median(y[x == levels(x)[1]]), median2 = median(y[x == levels(x)[2]]),
+    W_stat = unname(w$statistic), p_value = w$p.value
+  )
+}
+```
+
+### Variables
+```{r}
+
+# Demographics ---------------------------------
+demoBIN <- c("AGEbin", "RACEbin", "GENDERbin", "INCOMEbin",
+             "EDUCATIONbin", "DEGREEbin", "TWSbin", "COURSEbin",
+             "SELFTITLEbin", "LICENSEbin", "COURSETIMEbin", "BIOTIMEbin")
+
+demoNUM <- c("AGEnum")
+
+# Knowledge ---------------------------------
+knowBIN <- c("CORRRECTmed", "CORRRECTavg", "CERTAINmed", "CERTAINavg",
+             "PIGScorr", "BRUCEcorr", "CWDcorr", "FLUALcorr", "COVIDcorr",
+             "COVIDSPILLcorr", "RABIEScorr", "RABIESALcorr", "TURKEYcorr",
+             "PIGScert", "BRUCEcert", "CWDcert", "FLUALcert", "COVIDcert",
+             "COVIDSPILLcert", "RABIEScert", "RABIESALcert", "TURKEYcert")
+
+knowNUM <- c("CORRRECTnum", "CERTAINnum")
+
+# Attitudes ---------------------------------
+tudesBIN <- c("MOREbin", "NEUTRALbin", "LESSbin")
+tudesNUM <- c("MOREnum", "NEUTRALnum", "LESSnum")
+tudesORD <- c("CWDALord", "BATSord", "PPEREQord", "EHDord", "DARWINord",
+              "HANDSONord", "POPREDord", "POPPLANord", "SURVEYord",
+              "VACCINEord", "PREVALord", "DIVERSEord", "CONSEQord", "CLIMATEord")
+
+# Practices ---------------------------------
+practBIN <- c("CONTACTbin", "COUNTIESbin", "COLLECTbin", "HANDLEbin",
+              "PPEbin", "FIELDbin", "STATEbin", "PRACbin")
+
+practNUM <- c("nCOUNTIES", "PRACnum")
+
+# Interest ---------------------------------
+interBIN <- c("noSOURCE", "INTERESTbin", "FREEINFObin",
+              "TOPICSbin", "SOURCEbin", "noSOURCEbin", "INFObin")
+
+interNUM <- c("nFREEINFO", "nTOPICS", "nSOURCE", "INFOnum")
 
 ```
+
+### Comparisons 
+```{r}
+
+binLIST <- list(
+  DEMO_KNOW  = expand.grid(var1 = demoBIN,  var2 = knowBIN, stringsAsFactors = FALSE),
+  EXP_KNOW   = expand.grid(var1 = demoBIN,  var2 = tudesBIN, stringsAsFactors = FALSE),
+  DEMO_ATT   = expand.grid(var1 = demoBIN,  var2 = practBIN, stringsAsFactors = FALSE),
+  EXP_ATT    = expand.grid(var1 = demoBIN,  var2 = interBIN, stringsAsFactors = FALSE),
+  DEMO_PRACT = expand.grid(var1 = knowBIN,  var2 = practBIN, stringsAsFactors = FALSE),
+  EXP_PRACT  = expand.grid(var1 = knowBIN,  var2 = interBIN, stringsAsFactors = FALSE))
+
+### --- t-test comparisons (binary factor vs numeric outcome)
+ttestLIST <- list(
+  DEMO_KNOW = expand.grid(var1 = demoBIN,  var2 = knowNUM, stringsAsFactors = FALSE),
+  DEMO_TUDES = expand.grid(var1 = demoBIN,  var2 = tudesNUM, stringsAsFactors = FALSE),
+  DEMO_PRACT = expand.grid(var1 = demoBIN,  var2 = practNUM, stringsAsFactors = FALSE),
+  DEMO_INTER = expand.grid(var1 = demoBIN,  var2 = interNUM, stringsAsFactors = FALSE),
+  EXP_KNOW = expand.grid(var1 = practBIN, var2 = knowNUM, stringsAsFactors = FALSE)
+)
+
+### --- Wilcoxon tests (same structure)
+wilcoxLIST <- ttestLIST  # same pairs but non-parametric
+
+### --- Correlation comparisons (numeric vs numeric)
+corrLIST <- list(
+  KNOW_KNOW = expand.grid(var1 = knowNUM, var2 = knowNUM, stringsAsFactors = FALSE),
+  TUDES_KNOW = expand.grid(var1 = tudesNUM, var2 = knowNUM, stringsAsFactors = FALSE),
+  TUDES_TUDES = expand.grid(var1 = tudesNUM, var2 = tudesNUM, stringsAsFactors = FALSE),
+  INTER_KNOW = expand.grid(var1 = interNUM, var2 = knowNUM, stringsAsFactors = FALSE),
+  INTER_TUDES = expand.grid(var1 = interNUM, var2 = tudesNUM, stringsAsFactors = FALSE)
+)
+
+
+```
+
+### Run Tests 
+```{r}
+
+run_test_pairs <- function(varlist, FUN) {
+  purrr::map_dfr(names(varlist), function(cat) {
+    df <- varlist[[cat]]
+    purrr::pmap_dfr(df, function(var1, var2) {
+      result <- FUN(var1, var2, surv)
+      if (nrow(result) > 0) result$category <- cat
+      result
+    })
+  })
+}
+
+ttestRESULTS <- purrr::map_dfr(names(ttestLIST), function(category) {
+  df <- ttestLIST[[category]]
+  purrr::pmap_dfr(df, function(var1, var2) {
+    out <- testFUN(var1, var2, surv)
+    if (nrow(out) > 0) {
+      out$category <- category
+    }
+    out
+  })
+})
+
+
+wilcoxRESULTS <- purrr::map_dfr(names(wilcoxLIST), function(category) {
+  df <- wilcoxLIST[[category]]
+  purrr::pmap_dfr(df, function(var1, var2) {
+    out <- coxFUN(var1, var2, surv)
+    if (nrow(out) > 0) {
+      out$category <- category
+    }
+    out
+  })
+})
+
+corrRESULTS <- purrr::map_dfr(names(corrLIST), function(category) {
+  df <- corrLIST[[category]]
+  spearman <- purrr::pmap_dfr(df, function(var1, var2) {
+    out <- corrFUN(var1, var2, surv, method = "spearman")
+    if (nrow(out) > 0) {
+      out$category <- category
+    }
+    out
+  })
+  pearson <- purrr::pmap_dfr(df, function(var1, var2) {
+    out <- corrFUN(var1, var2, surv, method = "pearson")
+    if (nrow(out) > 0) {
+      out$category <- category
+    }
+    out
+  })
+  bind_rows(spearman, pearson)
+})
+
+all_biv_results <- bind_rows(
+  binRESULTS,
+  ttestRESULTS,
+  wilcoxRESULTS,
+  corrRESULTS
+)
+
+
+# Optional: write to Excel
+# writexl::write_xlsx(all_biv_results, file.path(oup, "all_bivariate_results.xlsx"))
+
+# View first few
+print(head(all_biv_results))
+
+
+
+```
+
+#### Filters: Significant Results & Effect Sizes
+```{r}
+
+sig_results <- all_biv_results %>%
+  filter(!is.na(p_value)) %>%
+  filter(p_value < 0.05)
+
+sig_chisq   <- sig_results %>% filter(test == "Chi-squared")
+sig_ttest   <- sig_results %>% filter(test == "t-test")
+sig_wilcox  <- sig_results %>% filter(test == "Wilcoxon")
+sig_corr    <- sig_results %>% filter(test %in% c("Pearson", "Spearman"))
+
+# Filter significant results
+sig_results <- all_biv_results %>%
+  filter(!is.na(p_value), p_value < 0.05)
+
+# Apply effect size filter for Chi-squared results
+sig_chisq_effect <- sig_results %>%
+  filter(test == "Chi-squared", !is.na(cramersV), cramersV >= 0.1)
+
+# Apply effect size threshold for correlation
+sig_corr_effect <- sig_results %>%
+  filter(test %in% c("Pearson", "Spearman")) %>%
+  filter(abs(cor_coef) >= 0.2)  # moderate effect
+
+library(effsize)
+
+# Add Cohen's d to t-test results
+sig_ttest_effect <- all_biv_results %>%
+  filter(test == "t-test", !is.na(p_value), p_value < 0.05) %>%
+  rowwise() %>%
+  mutate(
+    cohens_d = tryCatch({
+      group1_vals <- surv[[var2]][surv[[var1]] == group1]
+      group2_vals <- surv[[var2]][surv[[var1]] == group2]
+      if (length(group1_vals) > 1 && length(group2_vals) > 1) {
+        effsize::cohen.d(group1_vals, group2_vals)$estimate
+      } else {
+        NA_real_
+      }
+    }, error = function(e) NA_real_)
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(cohens_d), abs(cohens_d) >= 0.3)  # small-to-moderate effect
+
+# Rank-biserial for Wilcoxon
+sig_wilcox_effect <- all_biv_results %>%
+  filter(test == "Wilcoxon", !is.na(p_value), p_value < 0.05) %>%
+  rowwise() %>%
+  mutate(
+    rank_biserial = tryCatch({
+      group1_vals <- surv[[var2]][surv[[var1]] == group1]
+      group2_vals <- surv[[var2]][surv[[var1]] == group2]
+      if (length(group1_vals) > 1 && length(group2_vals) > 1) {
+        rcompanion::wilcoxonR(group1_vals, group2_vals)
+      } else {
+        NA_real_
+      }
+    }, error = function(e) NA_real_)
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(rank_biserial), abs(rank_biserial) >= 0.3)
+
+
+```
+
+# Export
+```{r}
+
+writexl::write_xlsx(
+  list(
+    All_Significant = sig_results,
+    ChiSq_EffectSize = sig_chisq_effect,
+    Correlations_EffectSize = sig_corr_effect,
+    TTest_EffectSize = sig_ttest_effect,
+    Wilcoxon_EffectSize = sig_wilcox_effect
+  ),
+  file.path(oup, "bivariateRESULTS.xlsx")
+)
+```
+
+
+# Tables 
+```{r}
+library(knitr)
+
+sig_chisq_clean <- sig_chisq %>%
+  mutate(across(c(chi_stat, p_value, cramersV), round, 3),
+         var1_label = var_labels[var1],
+         var2_label = var_labels[var2]) %>%
+  select(var1_label, var2_label, chi_stat, chi_df, p_value, cramersV) %>%
+  arrange(desc(cramersV))
+
+summary_table <- sig_results %>%
+  count(test, sort = TRUE) %>%
+  rename(`Test Type` = test, `Significant Comparisons` = n)
+
+# Display tables
+kable(sig_chisq_clean, caption = "Significant Chi-Squared Results with Cramer's V")
+kable(sig_corr, caption = "Significant Correlations (|r| ≥ 0.2)")
+kable(sig_ttest_effect, caption = "Significant t-tests (Cohen’s d ≥ 0.3)")
+kable(summary_table, caption = "Summary of Significant Tests")
+
+```
+
+```{r}
+
+var_labels <- c(
+  AGEbin = "Age (Bin)", RACEbin = "Race", GENDERbin = "Gender", INCOMEbin = "Income",
+  EDUCATIONbin = "Education", DEGREEbin = "Degree", TWSbin = "TWS Membership",
+  COURSEbin = "Course Completed", LICENSEbin = "Hunting License",
+  CWDcorr = "CWD Knowledge", CWDcert = "CWD Certainty",
+  RABIEScorr = "Rabies Knowledge", RABIEScert = "Rabies Certainty",
+  PPEbin = "PPE Use", HANDLEbin = "Handling", 
+  cramersV = "Cramer's V", chi_stat = "Chi-sq", chi_df = "df", p_value = "p-value"
+)
+
+sig_chisq_clean <- sig_chisq %>%
+  mutate(across(c(chi_stat, p_value, cramersV), round, digits = 3)) %>%
+  mutate(var1_label = var_labels[var1],
+         var2_label = var_labels[var2]) %>%
+  select(var1_label, var2_label, chi_stat, chi_df, p_value, cramersV) %>%
+  arrange(desc(cramersV))
+
+kable(sig_chisq_clean, caption = "Significant Chi-Squared Results with Cramer's V")
+
+sig_corr <- corrRESULTS %>%
+  filter(p_value < 0.05, abs(cor_coef) >= 0.2) %>%
+  mutate(across(c(cor_coef, p_value), round, 3)) %>%
+  mutate(var1_label = var_labels[var1],
+         var2_label = var_labels[var2]) %>%
+  select(var1_label, var2_label, method, cor_coef, p_value)
+
+kable(sig_corr, caption = "Significant Correlations (|r| ≥ 0.2)")
+
+sig_ttest_effect <- ttestRESULTS %>%
+  filter(!is.na(p_value), p_value < 0.05) %>%
+  rowwise() %>%
+  mutate(
+    cohens_d = tryCatch({
+      g1 <- surv[[var2]][surv[[var1]] == group1]
+      g2 <- surv[[var2]][surv[[var1]] == group2]
+      if (length(g1) > 1 && length(g2) > 1) effsize::cohen.d(g1, g2)$estimate else NA_real_
+    }, error = function(e) NA_real_)
+  ) %>%
+  ungroup() %>%
+  filter(!is.na(cohens_d), abs(cohens_d) >= 0.3) %>%
+  mutate(across(c(mean1, mean2, t_stat, p_value, cohens_d), round, 3)) %>%
+  mutate(var1_label = var_labels[var1], var2_label = var_labels[var2]) %>%
+  select(var1_label, var2_label, mean1, mean2, t_stat, df, p_value, cohens_d)
+
+kable(sig_ttest_effect, caption = "Significant t-tests (Cohen’s d ≥ 0.3)")
+
+
+writexl::write_xlsx(
+  list(
+    ChiSq = sig_chisq_clean,
+    Correlation = sig_corr,
+    TTest = sig_ttest_effect
+  ),
+  file.path(oup, "publication_ready_bivariate_tables.xlsx")
+)
+
+summary_table <- sig_results %>%
+  count(test, sort = TRUE) %>%
+  rename(`Test Type` = test, `Significant Comparisons` = n)
+
+kable(summary_table, caption = "Summary of Significant Tests")
+
+
+
+```
+

@@ -360,7 +360,7 @@ surv <- surv %>%
       GENDER == "Female" ~ 0L,
       GENDER %in% c("Other", "I prefer Not to answer") ~ NA_integer_,
       TRUE ~ NA_integer_),
-    INCOMEbin = if_else(INCOME > 62200, 1L, 0L),
+    INCOMEbin = if_else(INCOME > 62027, 1L, 0L),
     EDUCATIONbin = case_when(
       EDUCATION %in% c("College Graduate/BA or BS (4-year degree)", "Graduate or Professional School") ~ 1L,
       EDUCATION %in% c("Did Not graduate high school/No GED", "High school graduate/GED",
@@ -381,6 +381,7 @@ surv <- surv %>%
       TRUE ~ NA_integer_))
 
 table(surv$AGEbin)
+table(surv$AGEint)
 table(surv$RACEbin) 
 table(surv$GENDERbin) 
 table(surv$INCOMEbin) 
@@ -400,6 +401,7 @@ table(surv$BIOTIMEbin)
 #### Data Manipulation
 ```{r, echo = TRUE}
 
+# PIGS, BRUCE, CWD, FLUAL, FLU, COVID, COVIDSPILL, RABIESAL, RABIES, TURKEY
 answers <- list(
   PIGS       = "True",       
   BRUCE      = "False",      
@@ -503,10 +505,22 @@ surv <- surv %>%
     CERTAINmed = if_else(CERTAINnum > median(CERTAINnum, na.rm = TRUE), 1, 0),
     CERTAINavg = if_else(CERTAINnum >   mean(CERTAINnum, na.rm = TRUE), 1, 0))
 
+ CORRRECTmed   <- median(surv$CORRRECTnum, na.rm = TRUE)
+ CORRRECTavg   <-   mean(surv$CORRRECTnum, na.rm = TRUE)
+ CERTAINmed    <- median(surv$CERTAINnum, na.rm = TRUE)
+ CERTAINavg    <- mean(surv$CERTAINnum, na.rm = TRUE)
+CORRRECTmed 
+ CORRRECTavg 
+ CERTAINmed  
+ CERTAINavg  
+
+
 table(surv$CORRRECTmed)
 table(surv$CORRRECTavg)
 table(surv$CERTAINmed)
 table(surv$CERTAINavg)
+table(surv$CORRRECTnum)
+table(surv$CERTAINnum )
 
 ```
 
@@ -541,6 +555,7 @@ surv <- surv %>%
 
 
 table(surv$CWDALord)
+table(surv$HANDSONord)
 table(surv$BATSord)
 table(surv$PPEREQord)
 table(surv$EHDord)
@@ -632,6 +647,9 @@ less_median
 table(surv$MOREbin   )
 table(surv$NEUTRALbin)
 table(surv$LESSbin   )
+table(surv$MOREnum   )
+table(surv$NEUTRALnum)
+table(surv$LESSnum   )
 
 ```
 
@@ -644,17 +662,9 @@ table(surv$LESSbin   )
 #--------- Options Selected / Sources used -----------
 surv <- surv %>%
   mutate(
-    # Count number of sources selected (comma-separated)
-    nSOURCE = case_when(
-      is.na(SOURCE) ~ NA_integer_,
-      TRUE ~ str_count(SOURCE, ",") + 1),
     nCOUNTIES = case_when(
       is.na(COUNTIES) ~ NA_integer_,
-      TRUE ~ str_count(COUNTIES, ",") + 1),
-    noSOURCE = case_when(
-      is.na(SOURCE) ~ NA_real_,
-      str_detect(SOURCE, fixed("I have Not looked for health information")) ~ 0,
-      TRUE ~ 1))
+      TRUE ~ str_count(COUNTIES, ",") + 1))
 
 ```
 
@@ -666,7 +676,10 @@ survuni  <- uniFUN(surv)
 survsum <- sumFUN(surv)
 survuni <- uniFUN(surv)
 
-survsum$SOURCEfill
+survsum$MOREnum
+survsum$NEUTRALnum
+survsum$LESSnum
+
 survsum$PPE
 survsum$PPETIME
 survsum$CONTACT
@@ -675,16 +688,11 @@ survsum$COLLECT
 survsum$HANDLE
 survsum$STATE
 survsum$COUNTIES
-survsum$noSOURCE
 
 #------ Count of Options ------------
-survsum$nSOURCE
-survuni$nSOURCE
 survsum$nCOUNTIES
 survuni$nCOUNTIES
 
-#------ Other ------------
-survsum$othSOURCE
 
 ```
 
@@ -694,13 +702,13 @@ survsum$othSOURCE
 surv <- surv %>%
   mutate(
     nCOUNTIESbin = if_else(is.na(COUNTIES), NA_integer_, str_count(COUNTIES, ",") + 1L),
-    COLLECTbin = if_else(COLLECT == "Yes", 1L, if_else(COLLECT == "No", 0L, NA_integer_)),
-    HANDLEbin  = if_else(HANDLE == "Yes", 1L, if_else(HANDLE == "No", 0L, NA_integer_)),
-    PPEbin     = if_else(PPE == "Yes", 0L, if_else(PPE == "No", 1L, NA_integer_)),  # 1 = no PPE use
-    FIELDbin   = if_else(FIELD >= 50, 1L, 0L),
-    STATEbin   = case_when(
-      STATE == "Dead" ~ 1L,
-      STATE %in% c("Alive - Not Sedated", "Alive - Sedated") ~ 0L,
+    COLLECTbin  = if_else(COLLECT == "Yes", 1L, if_else(COLLECT == "No", 0L, NA_integer_)),
+    HANDLEbin   = if_else(HANDLE == "Yes", 1L, if_else(HANDLE == "No", 0L, NA_integer_)),
+    PPEbin      = if_else(PPE == "Yes", 0L, if_else(PPE == "No", 1L, NA_integer_)),  # 1 = no PPE use
+    FIELDbin    = if_else(FIELD >= 50, 1L, 0L),
+    STATEbin    = case_when(
+      STATE == "Dead" ~ 0L,
+      STATE %in% c("Alive - Not Sedated", "Alive - Sedated") ~ 1L,
       TRUE ~ NA_integer_),
     CONTACTbin = case_when(
       CONTACT %in% c("Daily", "Weekly", "Monthly") ~ 1L,
@@ -727,6 +735,7 @@ table(surv$PRACnum)
 table(surv$PRACbin)
 prac_median
 counties_median
+survsum$CONTACTbin
 table(surv$CONTACTbin)
 table(surv$nCOUNTIESbin)
 table(surv$COUNTIESbin)
@@ -739,6 +748,23 @@ table(surv$STATEbin)
 ```
 
 # INTEREST
+#### Data Manipulation
+```{r, echo = TRUE}
+
+#--------- Options Selected / Sources used -----------
+surv <- surv %>%
+  mutate(
+    nSOURCE = case_when(
+      is.na(SOURCE) ~ NA_integer_,
+      TRUE ~ str_count(SOURCE, ",") + 1),
+        nSOURCE = case_when(
+      is.na(TOPICS) ~ NA_integer_,
+      TRUE ~ str_count(TOPICS, ",") + 1),
+        nFREEINFO = case_when(
+      is.na(FREEINFO) ~ NA_integer_,
+      TRUE ~ str_count(FREEINFO, ",") + 1))
+
+```
 #### Descriptive Statistics
 ```{r, echo = TRUE}
 
@@ -750,6 +776,7 @@ survuni <- uniFUN(surv)
 survsum$ACCESS
 survsum$INTEREST
 survsum$FREEINFOfill
+survsum$SOURCEfill
 survsum$TOPICSfill
 survsum$INTERESTcert
 
@@ -760,6 +787,8 @@ survuni$nFREEINFO
 survsum$nTOPICS
 survuni$nTOPICS
 survuni$nSOURCE
+survsum$nSOURCE
+survsum$noSOURCE
 
 # ------------ Other -----------------
 survsum$othFREEINFO
@@ -818,16 +847,20 @@ surv <- surv %>%
 
 ### Optional: Summary tables
 table(surv$nFREEINFO)
+table(surv$nFREEINFObin)
 table(surv$nTOPICS)
-table(surv$INTEREST)
-table(surv$FREEINFO)
-table(surv$TOPICS)
+table(surv$nTOPICSbin)
+table(surv$INTERESTbin)
+survsum$INTERESTbin
+table(surv$FREEINFObin)
+table(surv$TOPICSbin)
 table(surv$nSOURCE)
+table(surv$nSOURCEbin)
 table(surv$noSOURCEbin)
 table(surv$SOURCEbin)
 table(surv$INFOnum)
 table(surv$INFObin)
-
+survsum$INFOnum
 # Output medians for reference
 freeinfo_median
 topics_median
