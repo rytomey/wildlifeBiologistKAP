@@ -48,37 +48,33 @@ oup      <- file.path(analyses, "outputs")
 surv <- read.csv(file.path(oup, "processedsurv.csv"))
 
 surv <- surv %>%
-  mutate(across(c(AGEnum, CORRRECTnum, CERTAINnum, nCOUNTIES, PRACnum,
+  mutate(across(c(AGE, CORRECTnum, CERTAINnum, nCOUNTIES, PRACnum,
                   nFREEINFO, nTOPICS, nSOURCE, INFOnum), as.numeric))
+
 
 ```
 
 # Bivariate Analyses 
 ### Functions 
 ```{r}
+
 # Chi-squared + Cramer's V
 binFUN <- function(var1, var2, data) {
-  if (!all(c(var1, var2) %in% names(data))) return(tibble())
   x <- droplevels(factor(data[[var1]]))
   y <- droplevels(factor(data[[var2]]))
   tab <- table(x, y)
   if (any(dim(tab) < 2)) return(tibble())
   chi <- tryCatch(chisq.test(tab, simulate.p.value = TRUE, B = 999), error = function(e) NULL)
-  if (is.null(chi)) return(tibble())
-  assoc <- tryCatch(suppressWarnings(vcd::assocstats(tab)), error = function(e) NULL)
-  cramv <- if (!is.null(assoc)) as.numeric(assoc$cramer) else NA
-  get_val <- function(a, b) if (a %in% rownames(tab) && b %in% colnames(tab)) tab[a, b] else NA
+  assoc <- tryCatch(suppressWarnings(assocstats(tab)), error = function(e) NULL)
+  cramers_v <- if (!is.null(assoc)) as.numeric(assoc$cramer) else NA
   tibble(
     var1 = var1, var2 = var2, test = "Chi-squared",
-    chi_stat = unname(chi$statistic), chi_df = unname(chi$parameter),
-    p_value = unname(chi$p.value), cramersV = cramv,
-    dim1 = nrow(tab), dim2 = ncol(tab),
-    n_00 = get_val("0", "0"), n_01 = get_val("0", "1"),
-    n_10 = get_val("1", "0"), n_11 = get_val("1", "1")
+    p_value = unname(chi$p.value), cramers_v = cramers_v,
+    dim1 = nrow(tab), dim2 = ncol(tab)
   )
 }
 
-# Wilcoxon
+# Wilcoxon Rank-Sum Test
 coxFUN <- function(var1, var2, data) {
   if (!all(c(var1, var2) %in% names(data))) return(tibble())
   x <- factor(data[[var1]])
@@ -91,49 +87,38 @@ coxFUN <- function(var1, var2, data) {
   tibble(
     var1 = var1, var2 = var2, test = "Wilcoxon",
     group1 = levels(x)[1], group2 = levels(x)[2],
-    median1 = median(y[x == levels(x)[1]]), median2 = median(y[x == levels(x)[2]]),
+    median1 = median(y[x == levels(x)[1]], na.rm = TRUE),
+    median2 = median(y[x == levels(x)[2]], na.rm = TRUE),
     W_stat = unname(w$statistic), p_value = w$p.value
   )
 }
+
+
 ```
 
 ### Variables
 ```{r}
 
-# Demographics ---------------------------------
-demoBIN <- c("AGEbin", "RACEbin", "GENDERbin", "INCOMEbin",
-             "EDUCATIONbin", "DEGREEbin", "TWSbin", "COURSEbin",
-             "SELFTITLEbin", "LICENSEbin", "COURSETIMEbin", "BIOTIMEbin")
+demoBIN <- c("AGEbin", "RACEbin", "GENDERbin", "INCOMEbin", "EDUCATIONbin",
+             "DEGREEbin", "TWSbin", "COURSEbin", "SELFTITLEbin", "LICENSEbin",
+             "COURSETIMEbin", "BIOTIMEbin")
 
-demoNUM <- c("AGEnum")
+knowBIN <- c("CORRECTmed", "CORRECTavg", "CERTAINmed", "CERTAINavg",
+             "PIGScorr", "BRUCEcorr", "CWDcorr", "FLUALcorr", "FLUcorr",
+             "COVIDcorr", "COVIDSPILLcorr", "RABIEScorr", "RABIESALcorr", "TURKEYcorr")
 
-# Knowledge ---------------------------------
-knowBIN <- c("CORRRECTmed", "CORRRECTavg", "CERTAINmed", "CERTAINavg",
-             "PIGScorr", "BRUCEcorr", "CWDcorr", "FLUALcorr", "COVIDcorr",
-             "COVIDSPILLcorr", "RABIEScorr", "RABIESALcorr", "TURKEYcorr",
-             "PIGScert", "BRUCEcert", "CWDcert", "FLUALcert", "COVIDcert",
-             "COVIDSPILLcert", "RABIEScert", "RABIESALcert", "TURKEYcert")
+attBIN  <- c("FAVbin", "NEUTRALbin", "UNFAVbin", "ATTITUDEbin")
+pracBIN <- c("CONTACTbin", "COUNTIESbin", "COLLECTbin", "HANDLEbin",
+             "PPEbin", "FIELDbin", "STATEbin", "PRACbin", "nCOUNTIESbin")
+interBIN <- c("FREEINFOedu", "TOPICSedu", "SOURCEedu", "ACCESSedu",
+              "INTERESTedu", "INFObin", "EDREQedu", "INFOedu", "HANDSONedu")
 
-knowNUM <- c("CORRRECTnum", "CERTAINnum")
+knowNUM <- c("CORRECTnum", "CERTAINnum")
+attNUM  <- c("FAVnum", "NEUTRALnum", "UNFAVnum", "ATTITUDEnum")
+pracNUM <- c("nCOUNTIES", "PRACnum")
+interNUM <- c("nFREEINFO", "nTOPICS", "nSOURCE", "INFOnum",
+              "EDREQedunum", "INFOedunum", "HANDSONedunum")
 
-# Attitudes ---------------------------------
-tudesBIN <- c("MOREbin", "NEUTRALbin", "LESSbin")
-tudesNUM <- c("MOREnum", "NEUTRALnum", "LESSnum")
-tudesORD <- c("CWDALord", "BATSord", "PPEREQord", "EHDord", "DARWINord",
-              "HANDSONord", "POPREDord", "POPPLANord", "SURVEYord",
-              "VACCINEord", "PREVALord", "DIVERSEord", "CONSEQord", "CLIMATEord")
-
-# Practices ---------------------------------
-practBIN <- c("CONTACTbin", "COUNTIESbin", "COLLECTbin", "HANDLEbin",
-              "PPEbin", "FIELDbin", "STATEbin", "PRACbin")
-
-practNUM <- c("nCOUNTIES", "PRACnum")
-
-# Interest ---------------------------------
-interBIN <- c("noSOURCE", "INTERESTbin", "FREEINFObin",
-              "TOPICSbin", "SOURCEbin", "noSOURCEbin", "INFObin")
-
-interNUM <- c("nFREEINFO", "nTOPICS", "nSOURCE", "INFOnum")
 
 ```
 
@@ -142,29 +127,25 @@ interNUM <- c("nFREEINFO", "nTOPICS", "nSOURCE", "INFOnum")
 
 binLIST <- list(
   DEMO_KNOW  = expand.grid(var1 = demoBIN,  var2 = knowBIN, stringsAsFactors = FALSE),
-  EXP_KNOW   = expand.grid(var1 = demoBIN,  var2 = tudesBIN, stringsAsFactors = FALSE),
-  DEMO_ATT   = expand.grid(var1 = demoBIN,  var2 = practBIN, stringsAsFactors = FALSE),
-  EXP_ATT    = expand.grid(var1 = demoBIN,  var2 = interBIN, stringsAsFactors = FALSE),
-  DEMO_PRACT = expand.grid(var1 = knowBIN,  var2 = practBIN, stringsAsFactors = FALSE),
-  EXP_PRACT  = expand.grid(var1 = knowBIN,  var2 = interBIN, stringsAsFactors = FALSE))
+  DEMO_ATT   = expand.grid(var1 = demoBIN,  var2 = attBIN, stringsAsFactors = FALSE),
+  DEMO_PRACT = expand.grid(var1 = demoBIN,  var2 = pracBIN, stringsAsFactors = FALSE),
+  DEMO_INTER = expand.grid(var1 = demoBIN,  var2 = interBIN, stringsAsFactors = FALSE),
+  KNOW_PRACT = expand.grid(var1 = knowBIN,  var2 = pracBIN, stringsAsFactors = FALSE),
+  KNOW_INTER = expand.grid(var1 = knowBIN,  var2 = interBIN, stringsAsFactors = FALSE)
+)
 
-### --- t-test comparisons (binary factor vs numeric outcome)
-ttestLIST <- list(
-  DEMO_KNOW = expand.grid(var1 = demoBIN,  var2 = knowNUM, stringsAsFactors = FALSE),
-  DEMO_TUDES = expand.grid(var1 = demoBIN,  var2 = tudesNUM, stringsAsFactors = FALSE),
-  DEMO_PRACT = expand.grid(var1 = demoBIN,  var2 = practNUM, stringsAsFactors = FALSE),
+wilcoxLIST <- list(
+  DEMO_KNOW  = expand.grid(var1 = demoBIN,  var2 = knowNUM, stringsAsFactors = FALSE),
+  DEMO_ATT   = expand.grid(var1 = demoBIN,  var2 = attNUM, stringsAsFactors = FALSE),
+  DEMO_PRACT = expand.grid(var1 = demoBIN,  var2 = pracNUM, stringsAsFactors = FALSE),
   DEMO_INTER = expand.grid(var1 = demoBIN,  var2 = interNUM, stringsAsFactors = FALSE),
-  EXP_KNOW = expand.grid(var1 = practBIN, var2 = knowNUM, stringsAsFactors = FALSE))
-
-### --- Wilcoxon tests (same structure)
-wilcoxLIST <- ttestLIST  # same pairs but non-parametric
+  KNOW_PRACT = expand.grid(var1 = knowBIN,  var2 = pracNUM, stringsAsFactors = FALSE)
+)
 
 ```
-
-### Run Tests 
+### Run Tests
 ```{r}
-
-# Chi-squared
+# Run Chi-squared tests
 binRESULTS <- purrr::map_dfr(names(binLIST), function(category) {
   df <- binLIST[[category]]
   purrr::pmap_dfr(df, function(var1, var2) {
@@ -174,7 +155,7 @@ binRESULTS <- purrr::map_dfr(names(binLIST), function(category) {
   })
 })
 
-# Wilcoxon
+# Run Wilcoxon tests
 wilcoxRESULTS <- purrr::map_dfr(names(wilcoxLIST), function(category) {
   df <- wilcoxLIST[[category]]
   purrr::pmap_dfr(df, function(var1, var2) {
@@ -184,18 +165,10 @@ wilcoxRESULTS <- purrr::map_dfr(names(wilcoxLIST), function(category) {
   })
 })
 
-
-binRESULTS
-wilcoxRESULTS
 ```
 
 #### Filters: Significant Results & Effect Sizes
 ```{r}
-
-# Combine all results
-all_biv_results <- bind_rows(
-  binRESULTS,
-  wilcoxRESULTS)
 
 # Filter for significant p-values
 sig_results <- all_biv_results %>%
@@ -203,7 +176,7 @@ sig_results <- all_biv_results %>%
 
 # ------------------------ Chi-squared + Cramer's V ------------------------
 sig_chisq_effect <- binRESULTS %>%
-  filter(!is.na(p_value), p_value < 0.05, !is.na(cramersV), cramersV >= 0.1)
+  filter(!is.na(p_value), p_value < 0.05, !is.na(cramers_v), cramers_v >= 0.1)
 
 # ------------------------ Wilcoxon + Rank-Biserial ------------------------
 sig_wilcox_effect <- wilcoxRESULTS %>%
@@ -225,178 +198,36 @@ sig_wilcox_effect <- wilcoxRESULTS %>%
 
 ```
 
-
-# Exports
+## Export
 ```{r}
 
-writexl::write_xlsx(
-  list(
-    All_Bivariate = all_biv_results,
-    All_Significant = sig_results,
-    ChiSq_EffectSize = sig_chisq_effect,
-    Wilcoxon_EffectSize = sig_wilcox_effect),
-  file.path(oup, "bivariateRESULTS.xlsx"))
-
-```
-
-```{r}
-
-kable(sig_results, caption = "Significant Chi-Squared Tests with Cramer's V ≥ 0.1")
-
-test_summary <- sig_results %>%
-  count(test, sort = TRUE) %>%
-  rename(`Test Type` = test, `Significant Comparisons` = n)
-
-kable(test_summary, caption = "Summary of Significant Bivariate Comparisons by Test Type")
-
-```
-
-# Regression Analyses 
-## Linear
-### CORRECTnum
-| Variable       | Reason for Inclusion                                              |
-| -------------- | ----------------------------------------------------------------- |
-| `BIOTIMEbin`   | Significant in both Wilcoxon and Chi-sq; strong effect (V = 0.26) |
-| `AGEbin`       | Wilcoxon p = 0.048, rank\_biserial = -0.707                       |
-| `EDUCATIONbin` | Chi-sq p = 0.016, Cramér’s V = 0.20                               |
-| `DEGREEbin`    | Chi-sq p = 0.033–0.035, V = 0.176–0.265                           |
-| `LICENSEbin`   | Very strong predictor; Chi-sq p < 0.001, V = 0.346                |
-| `STATEbin`     | Institutional relevance; p = 0.018, V = 0.33                      |
-| `COUNTIESbin`  | Field exposure proxy; Wilcoxon p = 0.009, rank\_biserial = 0.408  |
-| `COLLECTbin`   | Field practice; p = 0.007, rank\_biserial = 0.705                 |
-```{r}
-
-glm1 = glm(CORRECTnum ~ AGEbin + BIOTIMEbin + DEGREEbin + LICENSEbin + COUNTIESbin + COLLECTbin, family = poisson, data = surv)
-summary(glm1)
-glm1t <- broom::tidy(glm1, conf.int = TRUE)
-gt(glm1t) %>%
-  tab_header(
-    title = "Linear Regression Summary: Predictors of CERTAINnum"
-  ) %>%
-  fmt_number(
-    columns = vars(estimate, std.error, statistic, p.value, conf.low, conf.high),
-    decimals = 3
-  ) %>%
-  cols_label(
-    term = "Predictor",
-    estimate = "Estimate",
-    std.error = "SE",
-    statistic = "t",
-    p.value = "p",
-    conf.low = "95% CI (Lower)",
-    conf.high = "95% CI (Upper)"
-  )
+# ---- Export to CSV ----
+write_csv(sig_chisq_effect, file.path(oup, "significant_chisq_results.csv"))
+write_csv(sig_wilcox_effect, file.path(oup, "significant_wilcox_results.csv"))
 
 
-par(mfrow = c(2, 2))
-plot(glm1)
+# ---- Summary Statistics ----
+n_chisq <- nrow(sig_chisq_effect)
+n_wilcox <- nrow(sig_wilcox_effect)
 
-simres <- simulateResiduals(glm1)
-plot(simres)
-testZeroInflation(simres)
-testDispersion(simres)
-testZeroInflation(simres)
-check_zeroinflation(glm1)
-testOutliers(simres)
-check_collinearity(glm1)
-check_outliers(glm1)
-
-model_performance(glm1)
-
-write.csv(glm1t,  file.path(oup, "CORRECTnum_GLM.csv"), row.names = FALSE)
-
-```
+cat("## Summary of Significant Bivariate Results\n")
+cat(glue::glue("
+- **{n_chisq} significant Chi-squared tests** had both p < 0.05 and Cramer's V ≥ 0.1.
+- **{n_wilcox} Wilcoxon tests** had p < 0.05 and rank-biserial correlation ≥ 0.3, indicating moderate to strong group differences.\n\n"))
+cat("Effect size thresholds follow Cohen's guidelines (Cramer's V ≥ 0.1; Rank-biserial ≥ 0.3).\n\n")
 
 
-### CERTAINnum
-| Variable       | Reason for Inclusion                                           |
-| -------------- | -------------------------------------------------------------- |
-| `BIOTIMEbin`   | Strongest effect; Wilcoxon p = 0.00016, rank\_biserial = -1.15 |
-| `COURSEbin`    | Wilcoxon p = 0.01, rank\_biserial = -0.342                     |
-| `LICENSEbin`   | Chi-sq p = 0.002, V = 0.292                                    |
-| `EDUCATIONbin` | Chi-sq p = 0.007, V = 0.248                                    |
-| `DEGREEbin`    | Chi-sq p = 0.002, V = 0.260                                    |
-| `STATEbin`     | Chi-sq p = 0.008, V = 0.374                                    |
-| `COUNTIESbin`  | Both knowledge and certainty; Wilcoxon p = 0.0016, V = 0.26    |
-```{r}
+# ---- Formatted Tables ----
+cat("### Table: Significant Chi-squared Results (Cramer's V ≥ 0.1)\n")
+sig_chisq_effect %>%
+  dplyr::select(var1, var2, category, p_value, cramers_v) %>%
+  arrange(p_value) %>%
+  knitr::kable(digits = 3)
 
-glm2 = glm(CERTAINnum ~ COURSEbin + BIOTIMEbin + COUNTIESbin + LICENSEbin + HANDLEbin + STATEbin, family = poisson, data = surv)
-summary(glm2)
-glm2t <- broom::tidy(glm2, conf.int = TRUE)
-gt(glm2t) %>%
-  tab_header(
-    title = "Linear Regression Summary: Predictors of CERTAINnum"
-  ) %>%
-  fmt_number(
-    columns = vars(estimate, std.error, statistic, p.value, conf.low, conf.high),
-    decimals = 3
-  ) %>%
-  cols_label(
-    term = "Predictor",
-    estimate = "Estimate",
-    std.error = "SE",
-    statistic = "t",
-    p.value = "p",
-    conf.low = "95% CI (Lower)",
-    conf.high = "95% CI (Upper)"
-  )
-
-par(mfrow = c(2, 2))
-plot(glm2)
-
-simres <- simulateResiduals(glm2)
-plot(simres)
-testZeroInflation(simres)
-testDispersion(simres)
-testZeroInflation(simres)
-check_zeroinflation(glm2)
-testOutliers(simres)
-check_collinearity(glm2)
-check_outliers(glm2)
-
-model_performance(glm2)
-write.csv(glm2t,  file.path(oup, "CERTAINnum_GLM.csv"), row.names = FALSE)
-
-```
-### Ordinal ATTITUDE
-```{r}
-
-# Ensure consistent ordering: LESS < NEUTRAL < MORE
-attitude_ord_vars <- c(
-  "CWDALord", "BATSord", "PPEREQord", "EHDord", "DARWINord", "HANDSONord",
-  "POPREDord", "POPPLANord", "SURVEYord", "VACCINEord", "PREVALord", 
-  "DIVERSEord", "CONSEQord", "CLIMATEord")
-
-surv <- surv %>%
-  mutate(across(all_of(attitude_ord_vars), ~ factor(., levels = c("LESS", "NEUTRAL", "MORE"), ordered = TRUE)))
-
-# Define formulas (manually refined from your chi-squared outputs)
-# Create your list of named formulas (with unique names!)
-models <- list(
-  demo = CWDALord ~ AGEbin + GENDERbin + INCOMEbin,
-  exp = CWDALord ~ BIOTIMEbin + SELFTITLEbin +  TWSbin,
-  edu = CWDALord ~ EDUCATIONbin + DEGREEbin + COURSEbin,
-  prac = CWDALord ~ LICENSEbin + CONTACTbin + HANDLEbin,
-  collect = CWDALord ~ COLLECTbin + FIELDbin + PPEbin,
-  info = CWDALord ~ SOURCEbin + TOPICSbin + INTERESTbin,
-  know = CWDALord ~ BIOTIMEbin + CORRECTnum + CERTAINnum + EDUCATIONbin,
-  field = CWDALord ~ FIELDbin + COLLECTbin + STATEbin + INTERESTbin,
-  mixed1 = CWDALord ~ AGEbin + INTERESTbin + CONTACTbin + COURSEbin + PPEbin,
-  mixed2 = CWDALord ~ AGEbin + LICENSEbin + EDUCATIONbin,
-  mixed3 = CWDALord ~ EDUCATIONbin + COUNTIESbin + LICENSEbin + AGEbin,
-  mixed4 = CWDALord ~ BIOTIMEbin + HANDLEbin + LICENSEbin + SOURCEbin + INTERESTbin
-)
-surv
-" CWDALord " %in% names(surv)
-# Fit all models
-cwdal_fits <- map(models, function(formula) {
-  polr(formula = formula, data = surv, method = "logistic")
-})
-
-# Summarize all
-library(broom)
-cwdal_summaries <- purrr::map(cwdal_fits, ~ tidy(.x, conf.int = TRUE))
-
-
+cat("\n\n### Table: Significant Wilcoxon Results (|Rank Biserial| ≥ 0.3)\n")
+sig_wilcox_effect %>%
+  dplyr::select(var1, var2, category, p_value, rank_biserial, median1, median2) %>%
+  arrange(p_value) %>%
+  knitr::kable(digits = 3)
 ```
 
