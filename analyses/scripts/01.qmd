@@ -260,12 +260,19 @@ surv <- surv %>%
       GENDER == "Female" ~ 0L,
       GENDER %in% c("Other", "I prefer not to answer") ~ NA_integer_,
       TRUE ~ NA_integer_),
-    INCOMEbin = if_else(INCOME > 62027, 1L, 0L),
+    INCOMEbin = case_when(
+      income %in% c("$70,001-80,000", "$80,001-90,000", "$90,001-100,000", "$100,001+") ~ 1,
+      income %in% c("$0-20,000", "$20,001-30,000", "$30,001-40,000",
+                    "$40,001-50,000", "$50,001-60,000", "$60,001-70,000") ~ 0,
+      TRUE ~ NA_real_),
     EDUCATIONbin = case_when(
-      EDUCATION %in% c("College Graduate/BA or BS (4-year degree)", "Graduate or Professional School") ~ 1L,
-      EDUCATION %in% c("Did not graduate high school/no GED", "High school graduate/GED",
-                       "Technical/Vocational School", "Some College/AA or AS (2-year degree)") ~ 0L,
-      TRUE ~ NA_integer_),
+      education %in% c("College Graduate/BA or BS (4-year degree)",
+                       "Graduate or Professional School") ~ 1,
+      education %in% c("Did not graduate high school/no GED",
+                       "High school graduate/GED",
+                       "Technical/Vocational School",
+                       "Some College/AA or AS (2-year degree)") ~ 0,
+      TRUE ~ NA_real_),
     DEGREEbin     = if_else(DEGREE == "Yes", 1L, if_else(DEGREE == "No", 0L, NA_integer_)),
     TWSbin        = if_else(TWS == "Yes", 1L, if_else(TWS == "No", 0L, NA_integer_)),
     COURSEbin     = if_else(COURSE == "Yes", 1L, if_else(COURSE == "No", 0L, NA_integer_)),
@@ -314,8 +321,12 @@ answers <- list(
   COVIDSPILL = "False",      
   RABIESAL   = "False",      
   RABIES     = "Bites",      
-  TURKEY     = "Incinerate"
-)
+  TURKEY     = "Incinerate")
+
+knowledge_answers <- list(
+  pigs = "TRUE", bruce = "FALSE", cwd = "FALSE", flual = "TRUE",
+  flu = "FALSE", covid = "TRUE", covidspill = "FALSE",
+  rabiesal = "TRUE", rabies = "Bites", turkey = "Incinerate")
 
 # Scoring knowledge items
 surv <- surv %>%

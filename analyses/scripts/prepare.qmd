@@ -1,109 +1,255 @@
 ---
-title: "Descriptive Statistiscs & Data Processing"
-output: 
-  html_document:
-    toc: true
-    toc_float: true
-    number_sections: true
-    theme: litera
+title: "KAP Survey Data Cleaning and Scoring"
+format: html
+editor: visual
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(janitor)
+library(psych)
 ```
 
+## Load Data
 
-### Packages
-```{r include=FALSE}
-
-require(dplyr)  
-require(tidyr)  
-require(stringr)
-require(tibble) 
-require(zipcodeR)
-require(janitor)
-require(writexl)
-require(ggplot2)
-require(rlang)
-require(knitr)  
-require(volker)
-
-
-```
-
-### Data Import
-```{r, echo= TRUE}
-
-# ---- Set Paths ----
+```{r}
+# Adjust path to match your folder structure
 base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
 analyses <- file.path(base, "analyses")
 inp      <- file.path(analyses, "inputs")
 
-# ---- Load Raw Datasets ----
-surv <- read.csv(file.path(inp, "progover60.csv"))   # Main Qualtrics dataset
-prog <- read.csv(file.path(inp, "prog.csv"))         # Optional secondary file
-
+# Load CSV
+surv <- read.csv(file.path(inp, "progover60.csv")) %>%
+  clean_names()
 ```
 
-# QUALTRICS METADATA
-#### Data Manipulation
-```{r, echo = TRUE}
+## Demographic Recoding
 
-# ---- Bin Completion Scores ----
-intFUN <- function(df, column = "PROG") {
-  df %>%
-    mutate(
-      prog_bin = cut(
-        .data[[column]],
-        breaks = seq(0, 100, by = 10),
-        include.lowest = TRUE,
-        right = FALSE,
-        labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%"))) %>%
-    count(prog_bin, name = "Respondent_Count") %>%
-    arrange(prog_bin)
+```{r}
+surv <- surv %>%
+  mutate(
+    age = 2024 - as.numeric(dob),
+    age_bin = ifelse(age > 36, 1, 0),
+    race_bin = case_when(
+      str_detect(race, "White") ~ 1,
+      str_detect(race, "prefer") ~ NA_real_,
+      TRUE ~ 0),
+    gender_bin = case_when(
+      gender == "Male" ~ 1,
+      gender == "Female" ~ 0,
+      TRUE ~ NA_real_),
+    income_bin = case_when(
+      income %in% c("$70,001-80,000", "$80,001-90,000", "$90,001-100,000", "$100,001+") ~ 1,
+      income %in% c("$0-20,000", "$20,001-30,000", "$30,001-40,000",
+                    "$40,001-50,000", "$50,001-60,000", "$60,001-70,000") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    education_bin = case_when(
+      education %in% c("College Graduate/BA or BS (4-year degree)",
+                       "Graduate or Professional School") ~ 1,
+      education %in% c("Did not graduate high school/no GED",
+                       "High school graduate/GED",
+                       "Technical/Vocational School",
+                       "Some College/AA or AS (2-year degree)") ~ 0,
+      TRUE ~ NA_real_
+    ),
+    degree_bin = ifelse(degree == "Yes", 1,
+                 ifelse(degree == "No", 0, NA)),
+    tws_bin = ifelse(tws == "Yes", 1,
+              ifelse(tws == "No", 0, NA))
+  )
+```
+
+## Knowledge Scoring
+
+```{r}
+knowledge_answers <- list(
+  pigs = "TRUE", bruce = "FALSE", cwd = "FALSE", flual = "TRUE",
+  flu = "FALSE", covid = "TRUE", covidspill = "FALSE",
+  rabiesal = "FALSE", rabies = "Bites", turkey = "Incinerate"
+)
+
+for (q in names(knowledge_answers)) {
+  correct <- tolower(knowledge_answers[[q]])
+  surv[[paste0(q, "corr")]] <- ifelse(
+    tolower(trimws(surv[[q]])) == correct, 1, 0)
 }
 
-TPROG <- intFUN(prog)
-PROG  <- intFUN(surv)
-TPROG
-PROG
+for (q in names(knowledge_answers)) {
+  resp <- tolower(trimws(surv[[q]]))
+  correct <- tolower(knowledge_answers[[q]])
+  surv[[paste0(q, "cert")]] <- case_when(
+    resp == correct ~ 1,
+    resp == "I don't know" ~ -1,
+    is.na(resp) ~ NA_real_,
+    TRUE ~ 0
+  )
+}
+```
 
-# ---- Filter out responses ----
+## Attitude Scoring
+
+```{r}
+likert_map <- c(
+  "Strongly Disagree" = 1,
+  "Disagree" = 2,
+  "Neutral" = 3,
+  "Agree" = 4,
+  "Strongly Agree" = 5
+)
+
+attitude_items <- c(
+  "cwdal", "bats", "ppereq", "ehd", "darwin",
+  "popred", "popplan", "survey", "vaccine",
+  "preval", "diverse", "conseq", "climate")
+
+for (item in attitude_items) {
+  surv[[paste0(item, "_num")]] <- likert_map[surv[[item]]]
+}
+
+negative_items <- c("popred", "popplan", "darwin", "ehd")
+
+for (item in negative_items) {
+  surv[[paste0(item, "_rev")]] <- 6 - surv[[paste0(item, "_num")]]
+}
+for (item in setdiff(attitude_items, negative_items)) {
+  surv[[paste0(item, "_rev")]] <- surv[[paste0(item, "_num")]]
+}
+
+attitude_classify <- function(x) {
+  case_when(
+    x %in% 1:2 ~ "Unfavorable",
+    x == 3 ~ "Neutral",
+    x %in% 4:5 ~ "Favorable",
+    TRUE ~ NA_character_
+  )
+}
+for (item in attitude_items) {
+  surv[[paste0(item, "_cat")]] <- attitude_classify(surv[[paste0(item, "_rev")]])
+}
+```
+
+## Practice & Interest Scores
+
+```{r}
 surv <- surv %>%
-  filter(PROG >= 70) %>%                        # 70%+ completion
-  mutate(DURATIONmin = DURATION / 60) %>%       # Convert seconds to minutes
-  filter(DURATIONmin >= 5)                      # At least 5 minutes spent
+  mutate(
+    contact_bin = ifelse(contact %in% c("Daily", "Weekly", "Monthly", "Rarely"), 1,
+                         ifelse(contact == "Never", 0, NA)),
+    field_bin = ifelse(!is.na(field), 1, 0),
+    collect_bin = ifelse(collect == "Yes", 1,
+                         ifelse(collect == "No", 0, NA)),
+    state_bin = ifelse(state == "Yes", 1,
+                       ifelse(state == "No", 0, NA)),
+    ppe_bin = ifelse(ppe == "Yes", 1,
+                     ifelse(ppe %in% c("No", "Not Applicable"), 0, NA))
+  )
 
+practice_items <- c("contact_bin", "field_bin", "collect_bin", "ppe_bin")
+surv$practice_score <- rowSums(select(surv, all_of(practice_items)), na.rm = FALSE)
 
-# ---- Duration intervals for visual summaries ----
-MD <- surv %>%
-  filter(DURATIONmin < 45)  # Remove outliers
+interest_items <- c("edreq", "info", "handson")
+surv <- surv %>%
+  mutate(across(all_of(interest_items), ~ likert_map[.], .names = "{.col}_num"))
 
-max_min <- ceiling(max(MD$DURATIONmin, na.rm = TRUE) / 10) * 10
-breaks <- seq(0, max_min, by = 5)
-labels <- paste0(head(breaks, -1), "-", tail(breaks, -1), " min")
+interest_items_num <- names(surv)[str_detect(names(surv), "^(edreq|info|handson)_num$")]
+surv$interest_score <- rowMeans(select(surv, all_of(interest_items_num)), na.rm = TRUE)
+```
 
-MD <- MD %>%
-  mutate(DURATIONminint = cut(
-    DURATIONmin,
-    breaks = breaks,
-    include.lowest = TRUE,
-    right = FALSE,
-    labels = labels))
+## Source Composite Score
 
-table(MD$DURATIONminint)
+```{r}
+if ("sourcefill" %in% names(surv)) {
+
+  source_options <- c("Friends/Family", "State Wildlife Agency", "Academic Publications",
+                      "Social Media", "News Sources", "Conferences",
+                      "I have not looked for health information", "Other")
+
+  for (opt in source_options) {
+    varname <- str_replace_all(tolower(opt), "[^a-z]", "")
+    surv[[paste0("source_", varname)]] <- ifelse(
+      !is.na(surv$sourcefill) & str_detect(surv$sourcefill, fixed(opt)), 1, 0)
+  }
+
+  source_vars <- names(surv)[str_starts(names(surv), "source_")]
+  surv$source_score <- rowSums(select(surv, all_of(source_vars)), na.rm = TRUE)
+
+}
+```
+
+## Reliability Analysis (Cronbach's Alpha)
+
+```{r}
+library(psych)
+
+get_alpha_value <- function(vars) {
+  if (length(vars) > 1) {
+    alpha(select(surv, all_of(vars)), check.keys = TRUE)$total$raw_alpha
+  } else {
+    warning("Not enough items to compute alpha.")
+    return(NA_real_)
+  }
+}
+
+# Define variable groups
+knowledge_corr_items <- c("pigscorr", "brucecorr", "cwdcorr", "flualcorr", "flucorr", "covidcorr", "covidspillcorr", "rabiesalcorr", "rabiescorr", "turkeycorr")
+
+knowledge_cert_items <- c("pigscert", "brucecert", "cwdcert", "flualcert", "flucert","covidcert", "covidspillcert", "rabiesalcert", "rabiescert", "turkeycert")
+
+practice_items <- c("contact_bin", "collect_bin", "ppe_bin")  # field_bin removed due to zero variance
+
+interest_items_num <- names(surv)[str_detect(names(surv), "^(edreq|info|handson)_num$")]
+
+attitude_rev_items <- c("cwdal_rev", "bats_rev", "ppereq_rev", "ehd_rev", "darwin_rev",
+                        "popred_rev", "popplan_rev", "survey_rev", "vaccine_rev",
+                        "preval_rev", "diverse_rev", "conseq_rev", "climate_rev")
+
+att_beliefs <- c("popred_rev", "popplan_rev", "survey_rev", "vaccine_rev")
+att_concern <- c("preval_rev", "diverse_rev", "conseq_rev", "climate_rev")
+att_threat  <- c("cwdal_rev", "bats_rev", "ppereq_rev", "ehd_rev", "darwin_rev")
+
+# Build alpha summary table
+alpha_summary <- tibble::tibble(
+  Scale = c("Knowledge (Correct)",
+            "Knowledge Certainty",
+            "Practice",
+            "Interest",
+            "Attitudes (All)",
+            "Attitudes: Beliefs",
+            "Attitudes: Concern",
+            "Attitudes: Threats"),
+  Cronbach_Alpha = c(
+    get_alpha_value(knowledge_corr_items),
+    get_alpha_value(knowledge_cert_items),
+    get_alpha_value(practice_items),
+    get_alpha_value(interest_items_num),
+    get_alpha_value(attitude_rev_items),
+    get_alpha_value(att_beliefs),
+    get_alpha_value(att_concern),
+    get_alpha_value(att_threat)
+  )
+)
+
+# Print the summary table
+alpha_summary
 
 ```
+
+## Export for Download
 
 ```{r}
 
-
-names <- setNames(
-  paste0(surv$COLUMNID, "_", surv$SUBCAT),
-  column_map$COLUMNID)
-surv <- surv %>%
-  rename_with(.cols = any_of(names(names)), .fn = ~ names[.])
-report_counts(surv)
-
+oup = file.path(analyses, "outputs")
+write_csv(surv, file.path(oup, "recodeSURV.csv"))
 ```
 
+```{r}
+table(surv$field_bin, useNA = "ifany")
+# Check for malformed variable names
+which(names(surv) == "")     # any empty names?
+which(is.na(names(surv)))    # any NA names?
+
+names(surv)[names(surv) == "" | is.na(names(surv))]
+select(surv, all_of(character(0)))
+
+```
