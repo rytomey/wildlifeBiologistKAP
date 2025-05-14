@@ -5,7 +5,7 @@ output:
     toc: true
     toc_float: true
     number_sections: true
-    theme: readable
+    theme: litera
 ---
 
 ```{r setup, include=FALSE}
@@ -29,6 +29,7 @@ require(knitr)
 
 ### Data Import
 ```{r, echo= TRUE}
+
 # ---- Set Paths ----
 base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
 analyses <- file.path(base, "analyses")
@@ -47,16 +48,15 @@ intFUN <- function(df, column = "PROG") {
         breaks = seq(0, 100, by = 10),
         include.lowest = TRUE,
         right = FALSE,
-        labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%")
-      )
-    ) %>%
+        labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%"))) %>%
     count(prog_bin, name = "Respondent_Count") %>%
     arrange(prog_bin)
 }
 
 TPROG <- intFUN(prog)
 PROG  <- intFUN(surv)
-
+TPROG
+PROG
 
 ```
 ## Functions
@@ -134,7 +134,7 @@ compute_alpha <- function(df, vars, label = "Scale") {
 #### Data Manipulation
 ```{r, echo = TRUE}
 
-# ---- Filter out partial or rushed responses ----
+# ---- Filter out responses ----
 surv <- surv %>%
   filter(PROG >= 70) %>%                        # 70%+ completion
   mutate(DURATIONmin = DURATION / 60) %>%       # Convert seconds to minutes
@@ -155,8 +155,7 @@ MD <- MD %>%
     breaks = breaks,
     include.lowest = TRUE,
     right = FALSE,
-    labels = labels
-  ))
+    labels = labels))
 
 ```
 
@@ -197,9 +196,7 @@ surv <- surv %>%
       breaks = c(0, 29, 39, 49, 59, Inf),
       labels = c("20–29", "30–39", "40–49", "50–59", "60+"),
       right = TRUE,
-      include.lowest = TRUE
-    )
-  )
+      include.lowest = TRUE))
 
 # ---- Add County from ZIP ----
 zip_info <- zipcodeR::zip_code_db %>%
@@ -257,21 +254,18 @@ surv <- surv %>%
       RACE == "White" ~ 1L,
       RACE %in% c("Asian", "Black or African American", "Other") ~ 0L,
       RACE == "I prefer not to answer" ~ NA_integer_,
-      TRUE ~ NA_integer_
-    ),
+      TRUE ~ NA_integer_),
     GENDERbin = case_when(
       GENDER == "Male" ~ 1L,
       GENDER == "Female" ~ 0L,
       GENDER %in% c("Other", "I prefer not to answer") ~ NA_integer_,
-      TRUE ~ NA_integer_
-    ),
+      TRUE ~ NA_integer_),
     INCOMEbin = if_else(INCOME > 62027, 1L, 0L),
     EDUCATIONbin = case_when(
       EDUCATION %in% c("College Graduate/BA or BS (4-year degree)", "Graduate or Professional School") ~ 1L,
       EDUCATION %in% c("Did not graduate high school/no GED", "High school graduate/GED",
                        "Technical/Vocational School", "Some College/AA or AS (2-year degree)") ~ 0L,
-      TRUE ~ NA_integer_
-    ),
+      TRUE ~ NA_integer_),
     DEGREEbin     = if_else(DEGREE == "Yes", 1L, if_else(DEGREE == "No", 0L, NA_integer_)),
     TWSbin        = if_else(TWS == "Yes", 1L, if_else(TWS == "No", 0L, NA_integer_)),
     COURSEbin     = if_else(COURSE == "Yes", 1L, if_else(COURSE == "No", 0L, NA_integer_)),
@@ -280,14 +274,11 @@ surv <- surv %>%
     COURSETIMEbin = case_when(
       COURSETIME %in% c("<5 years", "5-10 years") ~ 1L,
       COURSETIME == ">10 years" ~ 0L,
-      TRUE ~ NA_integer_
-    ),
+      TRUE ~ NA_integer_),
     BIOTIMEbin = case_when(
       BIOTIME %in% c("10-20 years", ">20 years") ~ 1L,
       BIOTIME %in% c("<1 year", "1-5 years", "5-10 years") ~ 0L,
-      TRUE ~ NA_integer_
-    )
-  )
+      TRUE ~ NA_integer_))
 
 # Frequency tables
 table(surv$AGEbin)
@@ -675,7 +666,7 @@ surv <- surv %>%
 
 # Reverse: INFOedu — More = 0, Neutral = 1, Less = 2
 surv <- surv %>%
-  mutate(INFOedunum = recode(INFOedu, "More" = 0L, "Neutral" = 1L, "Less" = 2L))
+  mutate(INFOedunum = recode(INFOedu, "More" = 0L, "Neutral" = 0L, "Less" = 1L))
 
 # Binary indicators for info-seeking behavior
 freeinfo_median <- median(surv$nFREEINFO, na.rm = TRUE)
@@ -693,8 +684,8 @@ surv <- surv %>%
       TRUE ~ NA_integer_
     ),
     INTERESTedu = case_when(
-      INTEREST == "Yes"    ~ 2L,
-      INTEREST == "Unsure" ~ 1L,
+      INTEREST == "Yes"    ~ 1L,
+      INTEREST == "Unsure" ~ 0L,
       INTEREST == "No"     ~ 0L,
       TRUE                 ~ NA_integer_
     )
@@ -738,36 +729,57 @@ info_median
 
 ## Cronbach's Alpha Calculations
 ```{r, echo= TRUE}
-
+# Load required package
 require(psych)
+
+# Function to compute alpha and return named list with results
+compute_alpha <- function(data, vars, domain, check.keys = TRUE) {
+  df_subset <- data[, vars]
+  alpha_result <- psych::alpha(df_subset, check.keys = check.keys)
+  cat(paste0("\n\n--- Cronbach's Alpha for ", domain, " ---\n"))
+  print(alpha_result$total)
+  return(alpha_result)
+}
+
 #---------------------- KNOWLEDGE ----------------------
 knowledge_vars <- c("PIGScorr", "BRUCEcorr", "CWDcorr", "FLUALcorr",
                     "COVIDcorr", "COVIDSPILLcorr", "RABIESALcorr", 
                     "RABIEScorr", "TURKEYcorr")
-
+knowalpha <- psych::alpha(surv[, knowledge_vars], check.keys = TRUE)
 knowledge_alpha <- compute_alpha(surv, knowledge_vars, "Knowledge")
-
+knowledge_alpha
+knowledge_alpha$item.stats
+knowalpha$total$raw_alpha
 #---------------------- ATTITUDES ----------------------
 attitude_vars <- c("CWDALattnum", "BATSattnum", "PPEREQattnum", "EHDattnum",
                    "POPPLANattnum", "SURVEYattnum", "VACCINEattnum",
                    "PREVALattnum", "DIVERSEattnum", "CONSEQattnum",
                    "CLIMATEattnum", "EDREQattnum", "INFOattnum",
                    "DARWINattnum", "POPREDattnum", "HANDSONattnum")
-
-attitude_alpha <- compute_alpha(surv, attitude_vars, "Attitudes")
-
+attalpha <- compute_alpha(surv, attitude_vars, "Attitudes")
+attitude_alpha <- psych::alpha(surv[, attitude_vars], check.keys = TRUE)
+attitude_alpha <- compute_alpha(surv, attitude_vars, "attitude")
+attitude_alpha
+attitude_alpha$item.stats
+attalpha$total$raw_alpha
 #---------------------- PRACTICES ----------------------
 practice_vars <- c("CONTACTbin", "FIELDbin", "COLLECTbin", "HANDLEbin",
                    "COUNTIESbin", "PPEbin")
-
-practice_alpha <- compute_alpha(surv, practice_vars, "Practices")
-
+practalpha <- compute_alpha(surv, practice_vars, "Practices")
+practices_alpha <- psych::alpha(surv[, practices_vars], check.keys = TRUE)
+practices_alpha <- compute_alpha(surv, practices_vars, "practices")
+practices_alpha
+practices_alpha$item.stats
+practalpha$total$raw_alpha
 #---------------------- INTEREST ----------------------
-interest_vars <- c("FREEINFOedu", "TOPICSedu", "SOURCEedu", "ACCESSedu", "INTERESTedu",
-                   "HANDSONedunum", "INFOedunum", "EDREQedunum")
-
-interest_alpha <- compute_alpha(surv, interest_vars, "Interest")
-
+interest_vars <- c("FREEINFOedu", "TOPICSedu", "SOURCEedu", "ACCESSedu",
+                   "INTERESTedu")
+intalpha <- compute_alpha(surv, interest_vars, "Interest")
+interest_alpha <- psych::alpha(surv[, interest_vars], check.keys = TRUE)
+interest_alpha <- compute_alpha(surv, interest_vars, "interest")
+interest_alpha
+interest_alpha$item.stats
+intalpha$total$raw_alpha
 
 ```
 

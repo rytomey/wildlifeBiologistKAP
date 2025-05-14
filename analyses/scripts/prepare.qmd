@@ -1,0 +1,109 @@
+---
+title: "Descriptive Statistiscs & Data Processing"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: litera
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+### Packages
+```{r include=FALSE}
+
+require(dplyr)  
+require(tidyr)  
+require(stringr)
+require(tibble) 
+require(zipcodeR)
+require(janitor)
+require(writexl)
+require(ggplot2)
+require(rlang)
+require(knitr)  
+require(volker)
+
+
+```
+
+### Data Import
+```{r, echo= TRUE}
+
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp      <- file.path(analyses, "inputs")
+
+# ---- Load Raw Datasets ----
+surv <- read.csv(file.path(inp, "progover60.csv"))   # Main Qualtrics dataset
+prog <- read.csv(file.path(inp, "prog.csv"))         # Optional secondary file
+
+```
+
+# QUALTRICS METADATA
+#### Data Manipulation
+```{r, echo = TRUE}
+
+# ---- Bin Completion Scores ----
+intFUN <- function(df, column = "PROG") {
+  df %>%
+    mutate(
+      prog_bin = cut(
+        .data[[column]],
+        breaks = seq(0, 100, by = 10),
+        include.lowest = TRUE,
+        right = FALSE,
+        labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%"))) %>%
+    count(prog_bin, name = "Respondent_Count") %>%
+    arrange(prog_bin)
+}
+
+TPROG <- intFUN(prog)
+PROG  <- intFUN(surv)
+TPROG
+PROG
+
+# ---- Filter out responses ----
+surv <- surv %>%
+  filter(PROG >= 70) %>%                        # 70%+ completion
+  mutate(DURATIONmin = DURATION / 60) %>%       # Convert seconds to minutes
+  filter(DURATIONmin >= 5)                      # At least 5 minutes spent
+
+
+# ---- Duration intervals for visual summaries ----
+MD <- surv %>%
+  filter(DURATIONmin < 45)  # Remove outliers
+
+max_min <- ceiling(max(MD$DURATIONmin, na.rm = TRUE) / 10) * 10
+breaks <- seq(0, max_min, by = 5)
+labels <- paste0(head(breaks, -1), "-", tail(breaks, -1), " min")
+
+MD <- MD %>%
+  mutate(DURATIONminint = cut(
+    DURATIONmin,
+    breaks = breaks,
+    include.lowest = TRUE,
+    right = FALSE,
+    labels = labels))
+
+table(MD$DURATIONminint)
+
+```
+
+```{r}
+
+
+names <- setNames(
+  paste0(surv$COLUMNID, "_", surv$SUBCAT),
+  column_map$COLUMNID)
+surv <- surv %>%
+  rename_with(.cols = any_of(names(names)), .fn = ~ names[.])
+report_counts(surv)
+
+```
+
