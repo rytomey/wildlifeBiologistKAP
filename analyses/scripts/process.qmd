@@ -1,0 +1,715 @@
+---
+title: "Data Cleaning & Processing"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: litera
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Initialization
+#### Packages
+```{r include=FALSE}
+require(dplyr)  
+require(tidyr)  
+require(stringr)
+require(tibble) 
+require(janitor)
+require(writexl)
+require(ggplot2)
+require(rlang)
+require(knitr)  
+require(tidyverse)
+require(lubridate)
+require(zipcodeR)
+require(skimr)
+```
+#### Data Import
+```{r, echo= TRUE}
+
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp <- file.path(analyses, "inputs")
+oup = file.path(analyses, "outputs")
+
+# ---- Load Raw Dataset ----
+Rsurv <- read.csv(file.path(inp, "progover60.csv"))  
+#colnames(Rsurv)
+#glimpse(Rsurv)
+
+```
+
+# Processing
+### Metadata
+```{r}
+
+# Removal Criteria ---------------------
+surv <- Rsurv %>%
+  mutate(
+    START = mdy_hms(paste(SDATE, STIME)),   # Correct US date format
+    END = mdy_hms(paste(EDATE, ETIME)),
+    DURATION = as.numeric(DURATION) / 60,   # Convert seconds to minutes
+    PROG = as.numeric(PROG)) %>%
+  filter(
+    !is.na(START), !is.na(END), !is.na(DURATION),
+    DURATION >= 5,  # At least 5 minutes
+    PROG >= 70,     # At least 70% completed
+    FINISHED == 1)
+
+# ---- Summary of Cleaned Metadata ----
+summary(surv$DURATION)
+summary(surv$PROG)
+
+# ---- Retention Stats ----
+retained_n <- nrow(surv)
+original_n <- nrow(Rsurv)
+removed_n  <- original_n - retained_n
+# Count total original responses
+original_n <- nrow(Rsurv)
+# Individual criteria failure counts
+removed_short_duration <- Rsurv %>%
+  mutate(DURATION = as.numeric(DURATION) / 60) %>%
+  filter(DURATION < 5) %>%
+  nrow()
+removed_low_prog <- Rsurv %>%
+  filter(PROG < 70) %>%
+  nrow()
+# Both criteria failed (overlap) 
+removed_both <- Rsurv %>%
+  mutate(DURATION = as.numeric(DURATION) / 60) %>%
+  filter(DURATION < 5, PROG < 70) %>%
+  nrow()
+
+# Outputs -----------
+cat("Total responses:", original_n, "\n")
+cat("Removed for short duration (< 5 min):", removed_short_duration, "\n")
+cat("Removed for low completion (< 70%):", removed_low_prog, "\n")
+cat("Removed for both criteria:", removed_both, "\n")
+cat("Original responses:", original_n, "\n")
+cat("Retained responses:", retained_n, "\n")
+cat("Removed responses:", removed_n, "\n")
+
+```
+
+### Demographics
+```{r}
+# --- Initial Demographic Processing ----------------------------------------
+surv <- surv %>%
+  mutate(
+    # Calculate age and filter invalid ranges
+    AGE = if_else(between(2024 - DOB, 19, 100), 2024 - DOB, NA_integer_),
+
+    # Clean and recode categorical variables
+    RACE = na_if(RACE, "I prefer not to answer") %>% as_factor(),
+    ETHNICITY = na_if(ETHNICITY, "I prefer not to answer") %>% as_factor(),
+
+    GENDER = case_when(
+      GENDER %in% c("I prefer not to answer", "Other") ~ NA_character_,
+      TRUE ~ GENDER) %>% as_factor(),
+
+    INCOME = factor(INCOME, levels = c(
+      "$0-20,000", "$20,001-30,000", "$30,001-40,000", "$40,001-50,000",
+      "$50,001-60,000", "$60,001-70,000", "$70,001-80,000", "$80,001-90,000",
+      "$90,001-100,000", "$100,001+"), ordered = TRUE),
+
+    EDUCATION = factor(EDUCATION, levels = c(
+      "Did not graduate high school/no GED", "High school graduate/GED",
+      "Technical/Vocational School", "Some College/AA or AS (2-year degree)",
+      "College Graduate/BA or BS (4-year degree)", "Graduate or Professional School"), ordered = TRUE),
+
+    COURSETIME = factor(COURSETIME, levels = c("<5 years", "5-10 years", ">10 years"), ordered = TRUE),
+    BIOTIME    = factor(BIOTIME, levels = c("<1 year", "1-5 years", "5-10 years", "10-20 years", ">20 years"), ordered = TRUE),
+    AFFILIATE = as_factor(AFFILIATE),
+    ACTIVITY  = as_factor(ACTIVITY))
+
+# --- Create Binary Demographic Variables -----------------------------------
+median_age <- median(surv$AGE, na.rm = TRUE)
+
+surv <- surv %>%
+  mutate(
+    AGEbin = if_else(AGE >= median_age, 1, 0),
+
+    RACEbin = case_when(
+      RACE == "White" ~ 1,
+      !is.na(RACE)    ~ 0,
+      TRUE            ~ NA_real_),
+
+    GENDERbin = case_when(
+      GENDER == "Male"   ~ 1,
+      GENDER == "Female" ~ 0,
+      TRUE               ~ NA_real_),
+
+    RESIDENTbin   = if_else(RESIDENT   == "Yes", 1, 0),
+    DEGREEbin     = if_else(DEGREE     == "Yes", 1, 0),
+    TWSbin        = if_else(TWS        == "Yes", 1, 0),
+    COURSEbin     = if_else(COURSE     == "Yes", 1, 0),
+    SELFTITLEbin  = if_else(SELFTITLE  == "Yes", 1, 0))
+
+```
+### Knowledge
+```{r}
+
+surv <- surv %>%
+  mutate(
+    # Knowledge: correct answers coded as 1, incorrect as 0, IDK as NA
+    PIGS_K = case_when(
+      PIGS == "TRUE" ~ 1,
+      PIGS == "FALSE" ~ 0,
+      PIGS == "I don't know" ~ 0),
+    BRUCE_K = case_when(
+      BRUCE == "FALSE" ~ 1,  # correct: brucellosis does affect wildlife
+      BRUCE == "TRUE" ~ 0,
+      BRUCE == "I don't know" ~ 0),
+    CWD_K = case_when(
+      CWD == "FALSE" ~ 1,  # correct: CWD is not tick-borne
+      CWD == "TRUE" ~ 0,
+      CWD == "I don't know" ~ 0),
+    FLUAL_K = case_when(
+      FLUAL == "TRUE" ~ 1,
+      FLUAL == "FALSE" ~ 0,
+      FLUAL == "I don't know" ~ 0),
+    FLU_K = case_when(
+      FLU == "FALSE" ~ 1,
+      FLU == "TRUE" ~ 0,
+      FLU == "I don't know" ~ 0),
+    COVID_K = case_when(
+      COVID == "TRUE" ~ 1,
+      COVID == "FALSE" ~ 0,
+      COVID == "I don't know" ~ 0),
+    COVIDSPILL_K = case_when(
+      COVIDSPILL == "TRUE" ~ 1,
+      COVIDSPILL == "FALSE" ~ 0,
+      COVIDSPILL == "I don't know" ~ 0),
+    RABIESAL_K = case_when(
+      RABIESAL == "TRUE" ~ 1,
+      RABIESAL == "FALSE" ~ 0,
+      RABIESAL == "I don't know" ~ 0),
+    RABIES_K = case_when(
+      RABIES == "Bites" ~ 1,
+      RABIES == "I don't know" ~ 0,
+      TRUE ~ 0),
+    TURKEY_K = case_when(
+      TURKEY %in% c("Bury", "Incinerate") ~ 1,
+      TURKEY == "I don't know" ~ 0,
+      TRUE ~ 0),
+
+ # Confidence: IDK = 1 (low confidence), others = 0
+    PIGS_C = if_else(PIGS == "I don't know", 0, 1),
+    BRUCE_C = if_else(BRUCE == "I don't know", 0, 1),
+    CWD_C = if_else(CWD == "I don't know", 0, 1),
+    FLUAL_C = if_else(FLUAL == "I don't know", 0, 1),
+    FLU_C = if_else(FLU == "I don't know", 0, 1),
+    COVID_C = if_else(COVID == "I don't know", 0, 1),
+    COVIDSPILL_C = if_else(COVIDSPILL == "I don't know", 0, 1),
+    RABIESAL_C = if_else(RABIESAL == "I don't know", 0, 1),
+    RABIES_C = if_else(RABIES == "I don't know", 0, 1),
+    TURKEY_C = if_else(TURKEY == "I don't know", 0, 1))
+
+
+# Cronbachs Alpha ------------------------------------------------------------------
+knowledge_items <- c("BRUCE_K", "CWD_K", "FLUAL_K", "FLU_K","COVIDSPILL_K",
+  "COVID_K", "TURKEY_K", "PIGS_K")
+# Removed "PIGS_K", 
+confidence_items <- c(
+  "BRUCE_C", "CWD_C", "FLUAL_C", "FLU_C",
+  "COVID_C", "COVIDSPILL_C", "RABIESAL_C", "TURKEY_C")
+
+alpha_know <- psych::alpha(select(surv, all_of(knowledge_items)), check.keys = TRUE)
+alpha_conf <- psych::alpha(select(surv, all_of(confidence_items)), check.keys = TRUE)
+alpha_know$alpha.drop %>%
+  arrange(desc(raw_alpha))  # Items that increase alpha if dropped
+alpha_conf$alpha.drop %>%
+  arrange(desc(raw_alpha))  # Items that increase alpha if dropped
+
+alpha_know$total$raw_alpha
+alpha_conf$total$raw_alpha
+
+# Optional: View detailed item statistics
+alpha_know
+alpha_conf
+
+# Composite -------------------------------------------------------------
+surv <- surv %>%
+  mutate(
+    KNOWLEDGE_SCORE = rowMeans(select(., all_of(knowledge_items)), na.rm = TRUE),
+    CONFIDENCE_SCORE = rowMeans(select(., all_of(confidence_items)), na.rm = TRUE))
+
+# Calculate median and mean
+median_know <- median(surv$KNOWLEDGE_SCORE, na.rm = TRUE)
+mean_know   <- mean(surv$KNOWLEDGE_SCORE, na.rm = TRUE)
+median_conf <- median(surv$CONFIDENCE_SCORE, na.rm = TRUE)
+mean_conf   <- mean(surv$CONFIDENCE_SCORE, na.rm = TRUE)
+median_know
+mean_know  
+median_conf
+mean_conf  
+
+# Create binary variables based on both median and mean
+surv <- surv %>%
+  mutate(
+    # Median split
+    KNOWmedbin = if_else(KNOWLEDGE_SCORE >= median_know, 1, 0),
+    CONFmedbin = if_else(CONFIDENCE_SCORE >= median_conf, 1, 0),
+    # Mean split
+    KNOWavgbin = if_else(KNOWLEDGE_SCORE >= mean_know, 1, 0),
+    CONFavgbin = if_else(CONFIDENCE_SCORE >= mean_conf, 1, 0),
+    # Labeled versions (optional)
+    KNOWmedcat = if_else(KNOWLEDGE_SCORE >= median_know, "More Knowledge", "Less Knowledge"),
+    CONFmedcat = if_else(CONFIDENCE_SCORE >= median_conf, "More Confidence", "Less Confidence"),
+    KNOWmeancat = if_else(KNOWLEDGE_SCORE >= mean_know, "More Knowledge", "Less Knowledge"),
+    CONFmeancat = if_else(CONFIDENCE_SCORE >= mean_conf, "More Confidence", "Less Confidence"))
+
+
+```
+### Attitudes
+```{r}
+
+# Recode Schemes ----------------------------------------------------------
+likert_pos <- c("Strongly Disagree" = 1, "Disagree" = 2, "Neutral" = 3, "Agree" = 4, "Strongly Agree" = 5)
+likert_neg <- c("Strongly Agree" = 1, "Agree" = 2, "Neutral" = 3, "Disagree" = 4, "Strongly Disagree" = 5)
+
+# Recode Attitude Items ---------------------------------------------------
+surv <- surv %>%
+  mutate(
+    SURVEY_A   = recode(SURVEY, !!!likert_pos),
+    VACCINE_A  = recode(VACCINE, !!!likert_pos),
+    PREVAL_A   = recode(PREVAL, !!!likert_pos),
+    DIVERSE_A  = recode(DIVERSE, !!!likert_pos),
+    CONSEQ_A   = recode(CONSEQ, !!!likert_pos),
+    CLIMATE_A  = recode(CLIMATE, !!!likert_pos),
+    PPEREQ_A   = recode(PPEREQ, !!!likert_pos),
+    POPPLAN_A  = recode(POPPLAN, !!!likert_neg),
+    EDREQ_A    = recode(EDREQ, !!!likert_pos),
+    INFO_A     = recode(INFO, !!!likert_neg),
+    HANDSON_A  = recode(HANDSON, !!!likert_neg),
+    ACCESSbin   = if_else(ACCESS == "Yes", 0, if_else(ACCESS == "No", 1, NA_real_)),
+    INTERESTbin   = if_else(INTEREST   == "Yes", 1, 0),
+    BATS_A     = recode(BATS, !!!likert_pos),
+    POPRED_A   = recode(POPRED, !!!likert_neg),
+    CWDAL_A    = recode(CWDAL, !!!likert_neg),
+    EHD_A      = recode(EHD, !!!likert_neg),
+    DARWIN_A   = recode(DARWIN, !!!likert_neg))
+
+# Cronbach's Alpha --------------------------------------------------------
+
+# Select all attitude-related variables
+attitude_items <- c("POPRED_A", "POPPLAN_A", "SURVEY_A", "VACCINE_A", "PPEREQ_A",
+                    "PREVAL_A", "DIVERSE_A", "CONSEQ_A",
+                    "EDREQ_A", "HANDSON_A", "BATS_A", "ACCESSbin", "INTERESTbin")
+
+# Compute Cronbach's Alpha
+alpha_att <- psych::alpha(select(surv, all_of(attitude_items)), check.keys = TRUE)
+
+# Output results
+alpha_att$total$raw_alpha
+alpha_att
+
+alpha_att$alpha.drop %>%
+  arrange(desc(raw_alpha))  # Items that increase alpha if dropped
+
+
+# Composite Score ----------------------------------------------------------
+# Compute composite score
+surv <- surv %>%
+  mutate(
+    ATTITUDE_SCORE = rowMeans(select(., all_of(attitude_items)), na.rm = TRUE)
+  )
+
+# Calculate summary stats
+median_att <- median(surv$ATTITUDE_SCORE, na.rm = TRUE)
+mean_att <- mean(surv$ATTITUDE_SCORE, na.rm = TRUE)
+median_att
+mean_att
+
+# Print stats
+cat("Median Attitude Score:", median_att, "\n")
+cat("Mean Attitude Score:", mean_att, "\n")
+
+# Create binary and categorical variables
+surv <- surv %>%
+  mutate(
+    # Binary splits
+    ATTITUDEmedbin = if_else(ATTITUDE_SCORE >= median_att, 1, 0),
+    ATTITUDEavgbin = if_else(ATTITUDE_SCORE >= mean_att, 1, 0),
+    ATTITUDEmedcat = if_else(ATTITUDE_SCORE >= median_att, "More Positive", "Less Positive"),
+    ATTITUDEavgcat = if_else(ATTITUDE_SCORE >= mean_att, "More Positive", "Less Positive"))
+
+
+```
+
+### Practices 
+```{r}
+
+# ---- Recoding ------------------------------------------------
+surv <- surv %>%
+  mutate(
+    LICENSEbin = case_when(
+      LICENSE == "Yes" ~ 1L,
+      LICENSE == "No"  ~ 0L,
+      TRUE             ~ NA_integer_),
+    COLLECTbin   = if_else(COLLECT == "Yes", 1L, if_else(COLLECT == "No", 0L, NA_integer_)),
+    HANDLEbin    = if_else(HANDLE == "Yes", 1L, if_else(HANDLE == "No", 0L, NA_integer_)),
+    PPEbin       = if_else(PPE == "No", 1L, if_else(PPE == "Yes", 0L, NA_integer_)),
+   PPETIMEbin = case_when(
+     PPETIME %in% c("Never (0%)", "Rarely (1%-24%)") ~ 0L,
+     PPETIME %in% c("Sometimes (25%-75%)", "Usually (76%-99%)", "Always (100%)") ~ 1L,
+     TRUE ~ NA_integer_),
+    FIELDbin     = if_else(FIELD >= 24, 1L, 0L),  # ≥50% time in field
+    STATEbin     = case_when(
+      STATE == "Dead" ~ 0L,
+      STATE %in% c("Alive - Sedated", "Alive - Not Sedated") ~ 1L,
+      TRUE ~ NA_integer_),
+    CONTACTbin = case_when(
+      CONTACT %in% c("Daily", "Weekly", "Monthly") ~ 1L,
+      CONTACT %in% c("Rarely", "Never") ~ 0L,
+      TRUE ~ NA_integer_))
+
+# Cronbachs Alpha ------------------------------------------------------------
+practice_vars <- c("COLLECTbin", "HANDLEbin")
+alpha_prac <- psych::alpha(select(surv, all_of(practice_vars)), check.keys = TRUE)
+
+# Output reliability metrics
+print(alpha_prac$total$raw_alpha)  # Raw Cronbach's alpha value
+print(alpha_prac)  # Full reliability report
+
+alpha_prac$alpha.drop %>%
+  arrange(desc(raw_alpha))  # Items that increase alpha if dropped
+
+
+# ---- Practice Composite Score Calculation -----------------------------------
+# Calculate composite score (mean of binary practice indicators)
+surv <- surv %>%
+  mutate(
+    PRACTICE_SCORE = rowMeans(select(., all_of(practice_vars)), na.rm = TRUE))
+
+
+median_practice <- median(surv$PRACTICE_SCORE, na.rm = TRUE)
+mean_practice <- mean(surv$PRACTICE_SCORE, na.rm = TRUE)
+cat("Median Practice Score:", median_practice, "\n")
+cat("Mean Practice Score:", mean_practice, "\n")
+
+surv <- surv %>%
+  mutate(
+    PRACTICEmedbin = if_else(PRACTICE_SCORE >= median_practice, 1, 0),
+    PRACTICEavgbin = if_else(PRACTICE_SCORE >= mean_practice, 1, 0),
+    PRACTICEmedcat = if_else(PRACTICE_SCORE >= median_practice, "More Practice", "Less Practice"),
+    PRACTICEavgcat = if_else(PRACTICE_SCORE >= mean_practice, "More Practice", "Less Practice"))
+
+```
+
+# Additional
+### Processed Skimr
+```{r}
+
+# Desmographic ------------------------------------------------------------
+Dskim = skim(select(surv, AGE, RACE, ETHNICITY, GENDER, INCOME, EDUCATION, 
+            COURSETIME, BIOTIME, AFFILIATE, ACTIVITY, AGEbin, RACEbin, 
+            GENDERbin, RESIDENTbin, DEGREEbin, TWSbin, COURSEbin, SELFTITLEbin))
+
+# Knowledge and confidence variables -------------------------------------------
+knowledge_vars <- c("PIGS_K", "BRUCE_K", "CWD_K", "FLUAL_K", "FLU_K", 
+                    "COVID_K", "COVIDSPILL_K", "RABIESAL_K", "RABIES_K", 
+                    "TURKEY_K", "KNOWLEDGE_SCORE", 
+                    "KNOWmedbin", "KNOWavgbin", "KNOWmedcat", "KNOWmeancat")
+
+confidence_vars <- c("PIGS_C", "BRUCE_C", "CWD_C", "FLUAL_C", "FLU_C", 
+                     "COVID_C", "COVIDSPILL_C", "RABIESAL_C", "RABIES_C", 
+                     "TURKEY_C", "CONFIDENCE_SCORE", 
+                     "CONFmedbin", "CONFavgbin", "CONFmedcat", "CONFmeancat")
+
+Kskim = skim(select(surv, all_of(c(knowledge_vars, confidence_vars))))
+
+# Attitudes Processed Variables --------------------------------------------
+attitude_vars <- grep("_A$|ATTITUDE_", names(surv), value = TRUE)
+Askim = skim(select(surv, all_of(attitude_vars)))
+
+# Practices Processed Variables ------------------------------------
+practice_vars <- grep("bin$|PRACTICE_", names(surv), value = TRUE)
+Pskim = skim(select(surv, all_of(practice_vars)))
+
+# Export -----------------
+skim <- list(
+  Demographics = Dskim,
+  Knowledge    = Kskim,
+  Attitudes    = Askim,
+  Practices    = Pskim)
+write_xlsx(skim, path = file.path(oup, "SKIMsummaries.xlsx"))
+
+```
+
+### Spatial
+```{r}
+require(terra)
+require(zipcodeR)
+# Transforming Zipcode to County -------------------------------------------
+zip_info <- zipcodeR::zip_code_db %>%
+  select(zipcode, county, state)
+
+surv <- surv %>%
+  mutate(ZIPCODE = as.character(ZIPCODE)) %>%
+  left_join(zip_info, by = c("ZIPCODE" = "zipcode")) %>%
+  rename(LOCATION = county) %>%
+  select(-state)
+
+```
+
+### Select-All Qs
+```{r}
+
+# Function to summarize checkbox responses ---------------------------
+multiFUN <- function(df, varname) {
+  # Count how many options each respondent selected
+  df <- df %>%
+    mutate(!!paste0(varname, "_n") := str_count(!!sym(varname), ",") + 1)
+
+  # Split and count total times each option is selected across all respondents
+  option_counts <- df %>%
+    pull(!!sym(varname)) %>%
+    str_split(",\\s*") %>%
+    unlist() %>%
+    table() %>%
+    sort(decreasing = TRUE)
+
+  list(per_respondent = df[[paste0(varname, "_n")]], option_totals = option_counts)
+}
+
+# Number of Respodents Selected per Option ------------------------------
+freeinfo_summary <- multiFUN(surv, "FREEINFOfill")
+topics_summary   <- multiFUN(surv, "TOPICSfill")
+source_summary   <- multiFUN(surv, "SOURCEfill")
+counties_summary <- multiFUN(surv, "COUNTIES")
+freeinfo_summary$option_totals
+topics_summary$option_totals
+source_summary$option_totals
+counties_summary$option_totals
+
+# Number of Options Selected Per Respondent ----------------------
+surv <- surv %>%
+  mutate(
+    FREEINFOn = freeinfo_summary$per_respondent,
+    TOPICSn   = topics_summary$per_respondent,
+    SOURCEn   = source_summary$per_respondent,
+    COUNTYn    = counties_summary$per_respondent)
+
+freeinfo_avg    <- mean(surv$FREEINFOn, na.rm = TRUE)
+freeinfo_med <- median(surv$FREEINFOn, na.rm = TRUE)
+topics_avg      <- mean(surv$TOPICSn, na.rm = TRUE)
+topics_med   <- median(surv$TOPICSn, na.rm = TRUE)
+source_avg      <- mean(surv$SOURCEn, na.rm = TRUE)
+source_med   <- median(surv$SOURCEn, na.rm = TRUE)
+county_avg      <- mean(surv$COUNTYn, na.rm = TRUE)
+county_med  <- median(surv$COUNTYn, na.rm = TRUE)
+table(surv$FREEINFOn)
+table(surv$TOPICSn)
+table(surv$SOURCEn)
+table(surv$COUNTYn)
+cat("Average FREEINFO selections per respondent:", round(freeinfo_avg, 2), "\n")
+cat("Median FREEINFO selections per respondent:", freeinfo_med, "\n")
+cat("Average TOPICS selections per respondent:", round(topics_avg, 2), "\n")
+cat("Median TOPICS selections per respondent:", topics_med, "\n")
+cat("Average SOURCE selections per respondent:", round(source_avg, 2), "\n")
+cat("Median SOURCE selections per respondent:", source_med, "\n")
+cat("Average COUNTIES per respondent:", round(county_avg, 2), "\n")
+cat("Median COUNTIES per respondent:", county_med, "\n")
+
+```
+
+# Fomatting
+```{r}
+
+# METADATA ---------------------------------------------------------------------
+meta <- surv %>%
+  select(
+    START, END, DURATION, EMONTH, QSCORE, PROG, FINISHED,
+    ID, LOCATION, COUNTYn) %>%
+  mutate(
+    EMONTH = factor(EMONTH, levels = 1:12, labels = month.name),
+    FINISHED = as.logical(FINISHED))
+
+# DEMOGRAPHIC -----------------------------------------------------------------
+# Select and format Demographic variables (original and derived)
+demo <- surv %>%
+  select(
+    AGE, AGEbin,
+    GENDER, GENDERbin,
+    RACE, RACEbin,
+    ETHNICITY,
+    EDUCATION,
+    INCOME,
+    DEGREE, DEGREEbin,
+    RESIDENT, RESIDENTbin,
+    ZIPCODE,
+    COURSE, COURSEbin, COURSETIME,
+    TWS, TWSbin,
+    SELFTITLE, SELFTITLEbin,
+    AFFILIATE,
+    EXPERIENCE = BIOTIME,
+    LOCATION  # ← Include this!
+  ) %>%
+  mutate(
+    GENDER = factor(GENDER),
+    LOCATION = factor(LOCATION),
+    RACE = factor(RACE),
+    ETHNICITY = factor(ETHNICITY),
+    EDUCATION = factor(EDUCATION, ordered = TRUE, levels = c(
+      "Did not graduate high school/no GED", "High school graduate/GED",
+      "Technical/Vocational School", "Some College/AA or AS (2-year degree)",
+      "College Graduate/BA or BS (4-year degree)", "Graduate or Professional School")),
+    INCOME = factor(INCOME, ordered = TRUE),
+    DEGREE = factor(DEGREE),
+    RESIDENT = factor(RESIDENT),
+    COURSE = factor(COURSE),
+    COURSETIME = factor(COURSETIME, ordered = TRUE, levels = c("<5 years", "5-10 years", 
+                                                               ">10 years")),
+    TWS = factor(TWS),
+    SELFTITLE = factor(SELFTITLE),
+    AFFILIATE = factor(AFFILIATE),
+    EXPERIENCE = factor(EXPERIENCE, ordered = TRUE, levels = c("<1 year", "1-5 years", 
+                                                               "5-10 years", "10-20 years", 
+                                                               ">20 years")))
+
+
+# KNOWLEDGE & CONFIDENCE ------------------------------------------------------------------
+know <- surv %>%
+  select(
+    KNOWLEDGE_SCORE, CONFIDENCE_SCORE,
+    starts_with("KNOWmed"), starts_with("KNOWavg"),
+    starts_with("CONFmed"), starts_with("CONFmean"),
+    ends_with("_K"), ends_with("_C"),
+    FREEINFOn, TOPICSn, SOURCEn) %>%
+  mutate(
+    across(ends_with("cat"), ~ factor(., levels = c("Less Knowledge", "More Knowledge"))),
+    CONFmedcat = factor(CONFmedcat, levels = c("Less Confidence", "More Confidence")),
+    CONFmeancat = factor(CONFmeancat, levels = c("Less Confidence", "More Confidence")))
+
+# ATTITUDE ------------------------------------------------------------------
+# Attitude variables
+tude <- surv %>%
+  select(
+    ATTITUDE_SCORE, starts_with("ATTITUDEmed"), starts_with("ATTITUDEavg"),
+    ends_with("_A"), ACCESS,
+    matches("ATTITUDE.*cat$")) %>%
+  mutate(
+    ATTITUDEmedcat = factor(ATTITUDEmedcat, levels = c("Less Positive", "More Positive")),
+    ATTITUDEavgcat = factor(ATTITUDEavgcat, levels = c("Less Positive", "More Positive")),
+    ACCESS = factor(ACCESS, levels = c("Yes", "No")))
+
+
+# PRACTICE -----------------------------------------------------------------
+prac <- surv %>%
+  select(
+    PRACTICE_SCORE, starts_with("PRACTICE"), ends_with("bin"),
+    LICENSEbin, COLLECTbin, HANDLEbin, PPEbin, PPETIMEbin,
+    FIELDbin, STATEbin, CONTACTbin, COUNTYn) %>%
+  mutate(
+    PRACTICEmedcat = factor(PRACTICEmedcat, levels = c("Less Practice", "More Practice")),
+    PRACTICEavgcat = factor(PRACTICEavgcat, levels = c("Less Practice", "More Practice")))
+
+# MISC ---------------------------------------------------------------------
+all_vars <- names(surv)
+used_vars <- c(names(metadata), names(demographics), names(knowledge), names(attitude),
+               names(practice))
+dvars <- unique(dict$Variable)
+remaining_vars <- setdiff(dvars, used_vars)
+
+misc <- Psurv %>%
+  select(any_of(remaining_vars))
+glimpse(misc)
+
+misc <- surv %>%
+mutate(
+    # Dates and times
+    across(c(SDATE, STIME, EDATE, ETIME), as.character),
+    # Open text and multi-select fields
+    across(contains("oth"), as.factor),
+    across(contains("fill"), as.factor),
+    # Factors and ordered responses
+    ACTIVITY = factor(ACTIVITY),
+    AFFILIATEfill = factor(AFFILIATEfill),
+    CONTACT = factor(CONTACT, levels = c("Never", "Rarely", "Monthly", "Weekly", "Daily"), ordered = TRUE),
+    STATE = factor(STATE),
+    PPETIME = factor(PPETIME, levels = c("Never (0%)", "Rarely (1%-24%)", "Sometimes (25%-75%)", "Usually (76%-99%)", "Always (100%)"), ordered = TRUE),
+
+    # Binary recoding
+    COLLECT = factor(COLLECT, levels = c("No", "Yes")),
+    HANDLE = factor(HANDLE, levels = c("No", "Yes")),
+    LICENSE = factor(LICENSE, levels = c("No", "Yes")),
+    PPE = factor(PPE, levels = c("No", "Yes")),
+    INTEREST = factor(INTEREST, levels = c("No", "Yes", "Unsure")),
+
+    # Knowledge (TRUE/FALSE/IDK)
+    across(c(PIGS, BRUCE, CWD, FLUAL, FLU, COVID, COVIDSPILL, RABIESAL), ~ factor(., levels = c("FALSE", "TRUE", "I don't know"))),
+    RABIES = factor(RABIES),
+    TURKEY = factor(TURKEY),
+
+    # Attitudes and beliefs (Likert: Strongly Disagree to Strongly Agree)
+    across(c(CWDAL, BATS, PPEREQ, EHD, DARWIN, POPRED, POPPLAN, SURVEY, VACCINE, PREVAL, DIVERSE, CONSEQ, CLIMATE, EDREQ, INFO, HANDSON),
+           ~ factor(., levels = c("Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"), ordered = TRUE)),
+
+    # Multi-select (retained as character for later recoding or tokenization)
+    SOURCE = as.factor(SOURCE),
+    FREEINFO = as.factor(FREEINFO),
+    TOPICS = as.factor(TOPICS))
+
+# Identify misc variable names
+misc_vars <- names(misc)
+meta_vars <- c("SDATE", "STIME", "EDATE", "ETIME", "PROG", "DURATION", "FINISHED", "EMONTH", "ID", "QSCORE", "START", "END")
+demo_vars <- c("DOB", "RESIDENT", "ZIPCODE", "RACE", "ETHNICITY", "GENDER", "INCOME", "EDUCATION", 
+               "DEGREE", "TWS", "COURSE", "COURSETIME", "SELFTITLE", "BIOTIME", "AGE", "AGEbin", 
+               "RACEbin", "GENDERbin", "RESIDENTbin", "DEGREEbin", "TWSbin", "COURSEbin", 
+               "SELFTITLEbin", "LOCATION")
+prac_vars <- c("ACTIVITY", "ACTIVITYfill", "othACTIVITY", "AFFILIATE", "AFFILIATEfill", "othAFFILIATE",
+               "CONTACT", "FIELD", "COLLECT", "HANDLE", "STATE", "PPE", "PPETIME", "COUNTIES", "LICENSE",
+               "ACCESS", "ACCESSbin", "LICENSEbin", "COLLECTbin", "HANDLEbin", "PPEbin", "PPETIMEbin", 
+               "FIELDbin", "STATEbin", "CONTACTbin", "PRACTICE_SCORE", "PRACTICEmedbin", "PRACTICEavgbin", 
+               "PRACTICEmedcat", "PRACTICEavgcat", "COUNTYn")
+know_vars <- c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY",
+               "PIGS_K", "BRUCE_K", "CWD_K", "FLUAL_K", "FLU_K", "COVID_K", "COVIDSPILL_K", "RABIESAL_K", 
+               "RABIES_K", "TURKEY_K", "PIGS_C", "BRUCE_C", "CWD_C", "FLUAL_C", "FLU_C", "COVID_C", 
+               "COVIDSPILL_C", "RABIESAL_C", "RABIES_C", "TURKEY_C", "KNOWLEDGE_SCORE", "CONFIDENCE_SCORE",
+               "KNOWmedbin", "CONFmedbin", "KNOWavgbin", "CONFavgbin", "KNOWmedcat", "CONFmedcat", 
+               "KNOWmeancat", "CONFmeancat", "FREEINFOn", "TOPICSn", "SOURCEn")
+tude_vars <- c("CWDAL", "BATS", "PPEREQ", "EHD", "DARWIN", "POPRED", "POPPLAN", "SURVEY", "VACCINE", 
+               "PREVAL", "DIVERSE", "CONSEQ", "CLIMATE", "EDREQ", "INFO", "HANDSON", "SURVEY_A", 
+               "VACCINE_A", "PREVAL_A", "DIVERSE_A", "CONSEQ_A", "CLIMATE_A", "PPEREQ_A", "POPPLAN_A", 
+               "EDREQ_A", "INFO_A", "HANDSON_A", "BATS_A", "POPRED_A", "CWDAL_A", "EHD_A", "DARWIN_A", 
+               "ATTITUDE_SCORE", "ATTITUDEmedbin", "ATTITUDEavgbin", "ATTITUDEmedcat", "ATTITUDEavgcat", 
+               "INTEREST", "INTERESTbin")
+misc_vars <- c("SOURCE", "SOURCEfill", "othSOURCE", "FREEINFO", "FREEINFOfill", "othFREEINFO", 
+               "TOPICS", "TOPICSfill", "othTOPICS", "QSNCS")
+
+```
+# Exporting DF
+```{r}
+#| include: false
+
+glimpse(surv)
+colSums(is.na(surv))
+write.csv(surv, file.path(oup, "processedsurv.csv"), row.names = FALSE)
+
+
+
+dictionary <- tibble(
+  Variable = names(surv),
+  Description = sapply(surv, function(x) attr(x, "label") %||% class(x)[1]),
+  DataType = sapply(surv, class) %>% sapply(`[`, 1),
+  IsFactor = sapply(surv, is.factor),
+  IsOrdered = sapply(surv, is.ordered))
+
+glimpse(dictionary)
+write_csv(dictionary, file.path(oup, "datadictionary.csv"))
+
+```
+
+RStudio.Version() 
+version$version.string
+citation()
+knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+
+
+

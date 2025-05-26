@@ -1,0 +1,550 @@
+---
+title: "Descriptive Statistics & Visualization"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: litera
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Notes
+additional data sources for AL (projected, same extent) - https://github.com/rytomey/geo4AL
+
+https://jtr13.github.io/cc19/likert.html - Reporting Likert / Attitude Results
+
+
+## Useful Links
+
+https://bioinformatics.ccr.cancer.gov/docs/data-visualization-with-r/pdf/combined.pdf
+
+# Initialization
+
+#### Packages
+
+```{r include=FALSE}
+require(sf)
+require(tidyverse)
+require(skimr)      # For comprehensive summaries
+require(janitor)    # For tabulations
+require(gtsummary)  # For publication-ready tables
+require(gt)
+require(dplyr)
+require(writexl)
+require(openxlsx)
+require(scales)
+require(ggplot2)
+require(lubridate)
+require(plotly)
+require(forcats)
+require(tidycensus)
+require(ggiraph)
+require(tmaptools)
+require(tidyverse)
+require(patchwork)
+require(scales)
+require(sf)
+```
+
+#### Data Import
+
+```{r, echo= TRUE}
+
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp <- file.path(analyses, "inputs")
+oup = file.path(analyses, "outputs")
+
+# ---- Load Raw Dataset ----
+psurv <- read.csv(file.path(oup, "processedsurv.csv"))  
+dict <- read.csv(file.path(oup, "datadictionary.csv"))
+rsurv <- read.csv(file.path(inp, "progressover60.csv"))
+
+```
+
+# Summary Statistics
+
+### Skim
+
+1.  Numeric variables
+
+    -   Mean and Standard Deviation (SD): central tendency and dispersion
+    -   Min and Max: range of responses
+    -   Median: central point, robust to outliers
+    -   Histogram: text-based distribution overview
+
+2.  Factor and Character Variables
+
+    -   For categorical or Likert-style variables: Number of unique levels
+    -   Most frequent value (mode)
+    -   Frequency of most frequent value Missing values count
+
+3.  Logical Variables
+
+    -   Proportion of TRUE/FALSE
+    -   Number of missing values
+
+4.  Date/Time Variables
+
+    -   Minimum and maximum dates: useful for survey timing or duration analysis
+
+    ```{r}
+
+    # Variables ----------------
+    ovars <- colnames(rsurv)
+    pvars <- colnames(psurv)
+    derived <- setdiff(pvars, ovars)
+    original <- intersect(pvars, ovars)
+
+    # Original -----------------------------------------------------
+    oskim <- psurv %>%
+      select(any_of(original)) %>%
+      skim()
+    print(oskim)
+
+    # Derived ----------------------------------------------------------
+    dskim <- psurv %>%
+      select(any_of(derived)) %>%
+      skim()
+    print(dskim)
+
+    # Export ---------------------------------------------------------
+    oskim_df <- as.data.frame(oskim)
+    dskim_df <- as.data.frame(dskim)
+    wb <- createWorkbook()
+    addWorksheet(wb, "Original Variables")
+    addWorksheet(wb, "Derived Variables")
+    writeData(wb, sheet = "Original Variables", oskim_df)
+    writeData(wb, sheet = "Derived Variables", dskim_df)
+    saveWorkbook(wb, file.path(oup, "SKIMsummary.xlsx"), overwrite = TRUE)
+
+    ```
+
+### GT - Individual
+
+```{r}
+
+# Identifying varibles ----------------------------
+glimpse(dict)
+catVAR <- dict %>%
+  filter(IsFactor) %>%
+  pull(Variable)
+
+# Function -----------------------
+catTAB <- lapply(cat_vars, function(var) {
+  tab <- tabyl(psurv[[var]])
+  tab <- adorn_totals(tab)
+  tab <- adorn_percentages(tab, "col") %>%
+         adorn_pct_formatting()
+  names(tab)[1] <- var
+  return(tab)
+})
+names(catTAB) <- catVAR
+
+# Export -------------------------------
+wb <- createWorkbook()
+for (var in names(catTAB)) {
+  addWorksheet(wb, var)
+  writeData(wb, var, catTAB[[var]])
+}
+saveWorkbook(wb, file.path(oup, "categoricTables.xlsx"), overwrite = TRUE)
+
+```
+
+### GT - By Section
+
+```{r}
+
+# Variables -----------------------------------------------------------
+demo_vars <- c("RACE", "ETHNICITY", "GENDER", "INCOME", "EDUCATION", "RESIDENT", "DEGREE", "COURSE", "COURSETIME", "SELFTITLE", "AFFILIATE", "ACTIVITY", "BIOTIME")
+know_vars <- c("PIGS", "BRUCE", "CWD", "FLUAL", "FLU", "COVID", "COVIDSPILL", "RABIESAL", "RABIES", "TURKEY")
+conf_vars <- c("PIGS_K", "BRUCE_K", "CWD_K", "FLUAL_K", "FLU_K", "COVID_K", "COVIDSPILL_K", "RABIESAL_K", "RABIES_K", "TURKEY_K")
+tude_vars <- c("POPRED", "POPPLAN", "SURVEY", "VACCINE", "PREVAL", "DIVERSE", "CONSEQ", "CLIMATE", "EDREQ", "INFO", "HANDSON", "CWDAL", "BATS", "PPEREQ", "EHD", "DARWIN", "ACCESS", "INTEREST")
+prac_vars <- c("LICENSE", "CONTACT", "FIELD", "COLLECT", "HANDLE", "STATE", "PPE", "PPETIME")
+
+# Function -----------------------
+gtSUM <- function(data, vars, title) {
+  data %>%
+    select(any_of(vars)) %>%
+    mutate(across(everything(), ~ if (is.character(.)) as.factor(.) else .)) %>%
+    tbl_summary(
+      by = NULL,
+      statistic = list(all_categorical() ~ "{n} ({p}%)"),
+      missing_text = "Missing",
+      digits = all_categorical() ~ c(0, 1)) %>%
+    modify_caption(title) %>%
+    modify_header(label ~ "**Variable**", stat_0 ~ "**n (%)**") %>%
+    bold_labels() %>%
+    italicize_levels() %>%
+    as_gt() %>%
+    gt::tab_options(
+      table.font.size = "small",
+      data_row.padding = gt::px(2),
+      table.align = "left")
+}
+
+# Generate gtsummary tables ------------------------------
+gtTABd <- gtSUM(psurv, demo_vars, "**Demographic Summary**")
+gtTABk <- gtSUM(psurv, know_vars, "**Knowledge Summary**")
+gtTABc <- gtSUM(psurv, conf_vars, "**Confidence Summary**")
+gtTABa <- gtSUM(psurv, tude_vars, "**Attitude Summary**")
+gtTABp <- gtSUM(psurv, prac_vars, "**Practice Summary**")
+gtTABd
+gtTABk
+gtTABc
+gtTABa
+gtTABp
+
+# Export to Excel -----------------------------
+wb <- createWorkbook()
+tables <- list(
+  Demographics = gtTABd,
+  Knowledge = gtTABk,
+  Confidence = gtTABc,
+  Attitudes = gtTABa,
+  Practices = gtTABp)
+for (name in names(tables)) {
+  df <- as.data.frame(tables[[name]]$table_body)
+  addWorksheet(wb, name)
+  writeData(wb, name, df)
+}
+saveWorkbook(wb, file.path(oup, "CategoricalTables.xlsx"), overwrite = TRUE)
+
+```
+
+
+# Specific
+
+#### progress
+
+```{r}
+# Progress / 10% Intervals ------------------------------
+prog <- read.csv(file.path(inp, "prog.csv")) # 215 responses - all progress made 
+intFUN <- function(df, column = "PROG") {
+  df %>%
+    mutate(
+      prog_bin = cut(
+        .data[[column]],
+        breaks = seq(0, 100, by = 10),
+        include.lowest = TRUE,
+        right = FALSE,
+        labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%"))) %>%
+    count(prog_bin, name = "Respondent_Count") %>%
+    arrange(prog_bin)
+}
+TPROG <- intFUN(prog)
+TPROG
+```
+
+#### duration (min)
+
+```{r}
+# Duration Summary ---------------------------------------------
+psurv <- psurv %>% mutate(DURATION = as.numeric(DURATION))
+total_responses <- nrow(psurv)
+above_60 <- sum(psurv$DURATION > 60)
+summary(psurv$DURATION)
+duration_table <- psurv %>%
+  filter(DURATION <= 60) %>%
+  mutate(duration_bin = cut(DURATION, breaks = seq(0, 60, by = 5), include.lowest = TRUE, right = FALSE,
+                            labels = paste0(seq(0, 55, 5), "-", seq(5, 60, 5), " Minutes"))) %>%
+  count(duration_bin, name = "Respondent_Count") %>%
+  mutate(Proportion = Respondent_Count / total_responses)
+duration_table_gt <- duration_table %>%
+  gt() %>%
+  tab_header(
+    title = md("**Survey Completion Time (≤ 60 Minutes)**"),
+    subtitle = md(glue::glue("Distribution of responses in 5-minute intervals ({total_responses} total; {above_60} >60 min excluded)"))) %>%
+  cols_label(duration_bin = md("**Duration Interval**"), Respondent_Count = md("**Number of Respondents**"), Proportion = md("**Proportion of Total**")) %>%
+  fmt_number(columns = vars(Respondent_Count), decimals = 0) %>%
+  fmt_percent(columns = vars(Proportion), decimals = 1) %>%
+  tab_options(table.font.size = "small", heading.title.font.size = 14, heading.subtitle.font.size = 12, data_row.padding = px(3), table.align = "left")
+duration_table_gt
+
+# End Date ------------------
+psurv <- psurv %>% mutate(EDATE = as.Date(EDATE, format = "%m/%d/%Y"))
+monthly_summary <- psurv %>%
+  mutate(Month = format(EDATE, "%Y-%m")) %>%
+  count(Month, name = "Respondent_Count") %>%
+  mutate(Proportion = Respondent_Count / sum(Respondent_Count))
+monthly_summary_gt <- monthly_summary %>%
+  gt() %>%
+  tab_header(
+    title = md("**Survey Responses by Month**"),
+    subtitle = md(glue::glue("Distribution of responses over time ({sum(monthly_summary$Respondent_Count)} total responses)"))) %>%
+  cols_label(Month = md("**Month**"), Respondent_Count = md("**Number of Respondents**"), Proportion = md("**Proportion of Total**")) %>%
+  fmt_number(columns = vars(Respondent_Count), decimals = 0) %>%
+  fmt_percent(columns = vars(Proportion), decimals = 1) %>%
+  tab_options(table.font.size = "small", heading.title.font.size = 14, heading.subtitle.font.size = 12, data_row.padding = px(3), table.align = "left")
+monthly_summary_gt
+
+```
+
+### date ended
+
+```{r}
+# END DATE (SURVEY) -------------------------
+# https://r-graph-gallery.com/163-interactive-area-chart-plotly.html
+psurv <- psurv %>%
+  mutate(EDATE = as.Date(EDATE, format = "%m/%d/%Y"))
+daily_responses <- psurv %>%
+  count(EDATE, name = "Respondent_Count") %>%
+  arrange(EDATE)
+timeP <- plot_ly(daily_responses,
+               x = ~EDATE,
+               y = ~Respondent_Count,
+               type = 'scatter',
+               mode = 'lines',
+               fill = 'tozeroy',
+               line = list(color = 'rgba(0,100,80,1)'),
+               fillcolor = 'rgba(0,100,80,0.2)',
+               hoverinfo = 'x+y',
+               name = 'Responses') %>%
+  layout(title = "Daily Survey Responses Over Time",
+         xaxis = list(title = "Date"),
+         yaxis = list(title = "Number of Responses"),
+         hovermode = "x unified")
+timeP
+require(htmlwidgets)
+saveWidget(timeP, file="timeP.html")
+```
+
+# Spatial
+https://walker-data.com/census-r/index.html
+
+
+### Setup
+
+```{r}
+
+# Set Census API Key
+census_api_key("fc56686276a91cda05036e565b41bbb3a65010c8", install = TRUE, overwrite = TRUE)
+
+clean_theme <- theme_minimal(base_family = "serif") +
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank(), 
+    axis.text = element_blank(), 
+    axis.title = element_blank(), 
+    axis.ticks = element_blank(),       
+    panel.border = element_blank(),     
+    plot.title = element_text(size = 16, face = "bold"),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10))
+
+theme_map <- theme_void(base_family = "serif") +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10))
+```
+
+## ACS Data
+
+| **Survey Variable** | **ACS Equivalent** | **ACS Table(s)** | **Description** |
+|--------------|--------------|--------------|-------------------------------|
+| `DOB` | Age distribution | B01001, B01002 | Age is reported in bands; B01001 provides detailed breakdowns, B01002 gives median age by county. |
+| `RESIDENT`, `ZIPCODE` | Geographic identification | GEOID, NAME | GEOID and NAME provide standardized geographic identifiers at the county level; ZIP codes are not directly matched in ACS. |
+| `RACE` | Race categories | B02001 | Detailed breakdowns of self-identified race categories. |
+| `ETHNICITY` | Hispanic or Latino origin | B03003 | Captures ethnicity separate from race, as per Census classification. |
+| `GENDER` | Sex | B01001 | Provides male and female population counts. |
+| `INCOME` | Household income and poverty | B19013, B17001 | B19013 offers median household income; B17001 details poverty status by age and sex. |
+| `EDUCATION` | Educational attainment | B15003 | Comprehensive breakdown of highest level of education completed. |
+| `ATTITUDEbin` | Health insurance coverage | B27001 | Shows coverage status by age and sex, serving as a proxy for healthcare access. |
+
+### Retrieve + Clean Tables
+
+```{r}
+# List of relevant ACS tables
+acs_tables <- c("B01001", "B01002", "B02001", "B03003", "B19013", "B17001", "B15003", "B27001")
+
+# Retrieve 2022 5-year ACS data for all counties in Alabama
+acs_data <- lapply(acs_tables, function(table) {
+  get_acs(geography = "county", state = "AL", table = table, year = 2022, survey = "acs1", geometry = FALSE)
+})
+
+# Assign names to the list elements
+names(acs_data) <- acs_tables
+
+
+# Clean and prepare each table -----------------------
+
+sex_data <- acs_data[["B01001"]] %>%
+  filter(variable %in% c("B01001_002", "B01001_026")) %>%
+  mutate(sex = case_when(
+    variable == "B01001_002" ~ "Male",
+    variable == "B01001_026" ~ "Female"
+  )) %>%
+  select(GEOID, sex, estimate) %>%
+  pivot_wider(names_from = sex, values_from = estimate) %>%
+  mutate(total_sex_count = Male + Female)
+
+
+# Age distribution
+age_data <- acs_data[["B01001"]] %>%
+  group_by(GEOID, NAME) %>%
+  summarize(total_population = sum(estimate), .groups = "drop")
+
+# Median age
+median_age <- acs_data[["B01002"]] %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(median_age = estimate)
+
+# Race
+race_data <- acs_data[["B02001"]] %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+
+# Ethnicity
+ethnicity_data <- acs_data[["B03003"]] %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+
+# Median household income
+income_data <- acs_data[["B19013"]] %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(median_household_income = estimate)
+
+# Poverty status
+poverty_data <- acs_data[["B17001"]] %>%
+  filter(variable == "B17001_002") %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(pop_below_poverty = estimate)
+
+# Education
+education_data <- acs_data[["B15003"]] %>%
+  filter(variable %in% c("B15003_022", "B15003_023", "B15003_024", "B15003_025")) %>%
+  group_by(GEOID, NAME) %>%
+  summarize(edu_bachelor_plus = sum(estimate), .groups = "drop")
+# Education: Bachelor's degree or higher
+# B15003_022: Bachelor's degree
+# B15003_023: Master's degree
+# B15003_024: Professional school degree
+# B15003_025: Doctorate degree
+
+# Health insurance
+insurance_data <- acs_data[["B27001"]] %>%
+  filter(variable == "B27001_001") %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(total_insured = estimate)
+
+```
+
+### Merge + Export
+
+```{r}
+
+acs_combined <- age_data %>%
+  left_join(median_age, by = c("GEOID", "NAME")) %>%
+  left_join(race_data, by = c("GEOID", "NAME")) %>%
+  left_join(ethnicity_data, by = c("GEOID", "NAME")) %>%
+  left_join(income_data, by = c("GEOID", "NAME")) %>%
+  left_join(poverty_data, by = c("GEOID", "NAME")) %>%
+  left_join(education_data, by = c("GEOID", "NAME")) %>%
+  left_join(insurance_data, by = c("GEOID", "NAME")) %>%
+  left_join(sex_data, by = c("GEOID"))
+
+
+gsurv <- read.csv(file.path(oup, "processedsurv.csv"))  
+county <- st_read('/vsicurl/https://github.com/rytomey/geo4al/raw/main/boundaries/alabama/countyAlabama.shp')
+
+gsurv <- gsurv %>%
+  mutate(LOCATION = str_to_upper(str_trim(LOCATION)) %>%
+           str_remove_all(" COUNTY$"))
+acs_combined <- acs_combined %>%
+  mutate(LOCATION = str_to_upper(NAME) %>%
+           str_remove_all(", ALABAMA") %>%
+           str_remove_all(" COUNTY$")) # %>% 
+       #    str_trim()) %>%
+      #  group_by(LOCATION) %>%
+  #  summarize(across(everything(), first), .groups = "drop")
+county_clean <- county %>%
+  mutate(LOCATION = str_to_upper(str_trim(NAMELSAD)) %>%
+           str_remove_all(" COUNTY$"))
+
+gsurv$LOCATION
+acs_combined$LOCATION
+county_clean$LOCATION
+
+acs_geo <- county_clean %>%
+  st_join(acs_geo, by = "LOCATION")
+st_write(acs_geo, file.path(oup, "acs_combined.gpkg"), delete_layer = TRUE) 
+
+acs_combined <- acs_combined %>%
+  mutate(LOCATION = str_to_upper(NAME) %>%
+           str_remove_all(", ALABAMA") %>%
+           str_remove_all(" COUNTY$")  %>% 
+           str_trim()) %>%
+       group_by(LOCATION) %>%
+    summarize(across(everything(), first), .groups = "drop")
+acs_geo <- acs_combined %>%
+  left_join(county_clean, "geometry", by = "LOCATION")
+gsurv <- acs_geo %>%
+  left_join(gsurv, by = "LOCATION")
+gsurv
+st_write(gsurv, file.path(oup, "psurv_geo_data.gpkg"), delete_layer = TRUE)
+
+```
+
+### E.g. of potential uses
+
+```{r}
+# Bubble Chart --------------
+ggplot(gsurv, aes(x = median_age, 
+                         y = median_household_income, 
+                         size = pop_below_poverty, 
+                         label = LOCATION)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  scale_size_continuous(range = c(2, 12), name = "Population Below Poverty") +
+  scale_y_continuous(labels = label_dollar()) +
+  labs(
+    title = "County Demographics: Age, Income & Poverty",
+    subtitle = "2022 ACS 1-Year Estimates, Alabama Counties",
+    x = "Median Age",
+    y = "Median Household Income",
+    caption = "Source: U.S. Census Bureau, ACS 1-Year Estimates"
+  ) +
+  theme_minimal(base_family = "serif") +
+  theme(
+    plot.title = element_text(size = 16, face = "bold"),
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10))
+
+# Map ------------------------------------------------
+# Count respondents by county
+respondents_count <- gsurv %>%
+  count(LOCATION, name = "RESPONDENTS")
+
+# Merge with county geometry data
+map_data <- county_clean %>%
+  left_join(respondents_count, by = "LOCATION") %>%
+  mutate(RESPONDENTS = factor(RESPONDENTS))
+
+# Plot map
+countyn = ggplot(map_data) +
+  geom_sf(aes(fill = RESPONDENTS), color = "white") +
+  scale_fill_viridis_d(
+    option = "plasma",
+    na.value = "grey",
+    name = "Count") +
+  labs(title = "Survey Respondents by County") +
+  clean_theme
+countyn
+
+```
+# National election mapping with tigris shapes
+```{r}
+
+# Data source: https://cookpolitical.com/2020-national-popular-vote-tracker
+vote2020 <- read_csv("data/us_vote_2020.csv")
+us_states <- states(cb = TRUE, resolution = "20m") %>%
+  filter(NAME != "Alabama") %>%
+  shift_geometry()
+
+```

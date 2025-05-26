@@ -1,0 +1,504 @@
+﻿State,County
+Alabama,Lauderdale
+Arkansas,Benton
+Arkansas,Boone
+Arkansas,Carroll
+Arkansas,Crawford
+Arkansas,Franklin
+Arkansas,Independence
+Arkansas,Johnson
+Arkansas,Logan
+Arkansas,Madison
+Arkansas,Marion
+Arkansas,Newton
+Arkansas,Pope
+Arkansas,Randolph
+Arkansas,Scott
+Arkansas,Searcy
+Arkansas,Sebastian
+Arkansas,Union
+Arkansas,Van Buren
+Arkansas,Washington
+Colorado,Adams
+Colorado,Boulder
+Colorado,Delta
+Colorado,Douglas
+Colorado,Eagle
+Colorado,El Paso
+Colorado,Garfield
+Colorado,Grand
+Colorado,Jackson
+Colorado,Jefferson
+Colorado,Kit Carson
+Colorado,Larimer
+Colorado,Logan
+Colorado,Mesa
+Colorado,Moffat
+Colorado,Montrose
+Colorado,Morgan
+Colorado,Park
+Colorado,Phillips
+Colorado,Pueblo
+Colorado,Rio Blanco
+Colorado,Routt
+Colorado,Sedgwick
+Colorado,Summit
+Colorado,Washington
+Colorado,Weld
+Colorado,Yuma
+Florida,Holmes
+Idaho,Adams
+Idaho,Idaho
+Illinois,Boone
+Illinois,Carroll
+Illinois,Cook
+Illinois,De Kalb
+Illinois,Du Page
+Illinois,Grundy
+Illinois,Jo Daviess
+Illinois,Kane
+Illinois,Kankakee
+Illinois,Kendall
+Illinois,La Salle
+Illinois,Lake
+Illinois,Lee
+Illinois,Livingston
+Illinois,McHenry
+Illinois,Ogle
+Illinois,Stephenson
+Illinois,Will
+Illinois,Winnebago
+Iowa,Allamakee
+Iowa,Appanoose
+Iowa,Clayton
+Iowa,Decatur
+Iowa,Dubuque
+Iowa,Fayette
+Iowa,Fremont
+Iowa,Greene
+Iowa,Grundy
+Iowa,Jackson
+Iowa,Jasper
+Iowa,Jones
+Iowa,Lucas
+Iowa,Marshall
+Iowa,Wayne
+Iowa,Winneshiek
+Iowa,Woodbury
+Kansas,Barton
+Kansas,Bourbon
+Kansas,Butler
+Kansas,Cheyenne
+Kansas,Clark
+Kansas,Clay
+Kansas,Cowley
+Kansas,Decatur
+Kansas,Edwards
+Kansas,Ellis
+Kansas,Ellsworth
+Kansas,Finney
+Kansas,Ford
+Kansas,Franklin
+Kansas,Gove
+Kansas,Graham
+Kansas,Gray
+Kansas,Hamilton
+Kansas,Haskell
+Kansas,Hodgeman
+Kansas,Jackson
+Kansas,Jewell
+Kansas,Kearny
+Kansas,Kingman
+Kansas,Kiowa
+Kansas,Lane
+Kansas,Logan
+Kansas,Marshall
+Kansas,McPherson
+Kansas,Meade
+Kansas,Mitchell
+Kansas,Ness
+Kansas,Norton
+Kansas,Osborne
+Kansas,Pawnee
+Kansas,Phillips
+Kansas,Pratt
+Kansas,Rawlins
+Kansas,Reno
+Kansas,Republic
+Kansas,Rice
+Kansas,Rooks
+Kansas,Rush
+Kansas,Russell
+Kansas,Saline
+Kansas,Scott
+Kansas,Sedgwick
+Kansas,Seward
+Kansas,Shawnee
+Kansas,Sheridan
+Kansas,Sherman
+Kansas,Smith
+Kansas,Stafford
+Kansas,Stevens
+Kansas,Sumner
+Kansas,Thomas
+Kansas,Trego
+Kansas,Wabaunsee
+Kansas,Wallace
+Kansas,Washington
+Kansas,Wichita
+Kansas,Woodson
+Kentucky,Ballard
+Louisiana,Tensas
+Maryland,Allegany
+Maryland,Carroll
+Maryland,Frederick
+Maryland,Washington
+Michigan,Clinton
+Michigan,Dickinson
+Michigan,Eaton
+Michigan,Gratiot
+Michigan,Hillsdale
+Michigan,Ingham
+Michigan,Ionia
+Michigan,Isabella
+Michigan,Jackson
+Michigan,Kent
+Michigan,Midland
+Michigan,Montcalm
+Michigan,Ogemaw
+Minnesota,Crow Wing
+Minnesota,Dakota
+Minnesota,Fillmore
+Minnesota,Houston
+Minnesota,Hubbard
+Minnesota,Itasca
+Minnesota,Olmsted
+Minnesota,Polk
+Minnesota,Scott
+Minnesota,Wabasha
+Minnesota,Winona
+Mississippi,Alcorn
+Mississippi,Benton
+Mississippi,Claiborne
+Mississippi,De Soto
+Mississippi,Harrison
+Mississippi,Issaquena
+Mississippi,Lafayette
+Mississippi,Marshall
+Mississippi,Panola
+Mississippi,Pontotoc
+Mississippi,Tallahatchie
+Mississippi,Tippah
+Mississippi,Tishomingo
+Mississippi,Tunica
+Mississippi,Warren
+Missouri,Adair
+Missouri,Barry
+Missouri,Barton
+Missouri,Carroll
+Missouri,Cedar
+Missouri,Chariton
+Missouri,Christian
+Missouri,Clark
+Missouri,Cole
+Missouri,Crawford
+Missouri,Dallas
+Missouri,Franklin
+Missouri,Gasconade
+Missouri,Grundy
+Missouri,Hickory
+Missouri,Howell
+Missouri,Jasper
+Missouri,Jefferson
+Missouri,Linn
+Missouri,Livingston
+Missouri,Macon
+Missouri,Maries
+Missouri,Mercer
+Missouri,Oregon
+Missouri,Osage
+Missouri,Perry
+Missouri,Polk
+Missouri,Pulaski
+Missouri,Putnam
+Missouri,Randolph
+Missouri,Ray
+Missouri,Scotland
+Missouri,St. Clair
+Missouri,St. Francois
+Missouri,Ste. Genevieve
+Missouri,Stone
+Missouri,Sullivan
+Missouri,Taney
+Missouri,Washington
+Montana,Beaverhead
+Montana,Big Horn
+Montana,Blaine
+Montana,Carbon
+Montana,Cascade
+Montana,Custer
+Montana,Daniels
+Montana,Fallon
+Montana,Gallatin
+Montana,Glacier
+Montana,Hill
+Montana,Liberty
+Montana,Lincoln
+Montana,Madison
+Montana,McCone
+Montana,Park
+Montana,Phillips
+Montana,Powder River
+Montana,Powell
+Montana,Prairie
+Montana,Rosebud
+Montana,Sheridan
+Montana,Treasure
+Montana,Valley
+Montana,Yellowstone
+Nebraska,Adams
+Nebraska,Arthur
+Nebraska,Banner
+Nebraska,Blaine
+Nebraska,Boone
+Nebraska,Box Butte
+Nebraska,Buffalo
+Nebraska,Cass
+Nebraska,Cedar
+Nebraska,Chase
+Nebraska,Cherry
+Nebraska,Cheyenne
+Nebraska,Custer
+Nebraska,Dawes
+Nebraska,Dawson
+Nebraska,Deuel
+Nebraska,Dundy
+Nebraska,Fillmore
+Nebraska,Franklin
+Nebraska,Frontier
+Nebraska,Furnas
+Nebraska,Gage
+Nebraska,Garden
+Nebraska,Gosper
+Nebraska,Grant
+Nebraska,Hall
+Nebraska,Harlan
+Nebraska,Hayes
+Nebraska,Hitchcock
+Nebraska,Holt
+Nebraska,Hooker
+Nebraska,Howard
+Nebraska,Johnson
+Nebraska,Keith
+Nebraska,Keya Paha
+Nebraska,Kimball
+Nebraska,Knox
+Nebraska,Lancaster
+Nebraska,Lincoln
+Nebraska,Loup
+Nebraska,McPherson
+Nebraska,Morrill
+Nebraska,Nance
+Nebraska,Otoe
+Nebraska,Pawnee
+Nebraska,Phelps
+Nebraska,Polk
+Nebraska,Red Willow
+Nebraska,Rock
+Nebraska,Saline
+Nebraska,Scotts Bluff
+Nebraska,Sheridan
+Nebraska,Sioux
+Nebraska,Thayer
+Nebraska,Thomas
+Nebraska,Valley
+Nebraska,Webster
+New Mexico,Dona Ana
+New Mexico,Otero
+New Mexico,Socorro
+New York,Oneida
+North Carolina,Cumberland
+North Carolina,Franklin
+North Carolina,Johnston
+North Carolina,Stokes
+North Carolina,Surry
+North Carolina,Wilkes
+North Carolina,Yadkin
+North Dakota,Adams
+North Dakota,Bottineau
+North Dakota,Bowman
+North Dakota,Divide
+North Dakota,Grant
+North Dakota,Hettinger
+North Dakota,McKenzie
+North Dakota,Morton
+North Dakota,Sioux
+North Dakota,Stark
+North Dakota,Ward
+North Dakota,Williams
+Ohio,Allen
+Ohio,Hardin
+Ohio,Marion
+Ohio,Wyandot
+Oklahoma,Texas
+Oklahoma,Woodward
+Pennsylvania,Bedford
+Pennsylvania,Blair
+Pennsylvania,Cambria
+Pennsylvania,Clearfield
+Pennsylvania,Cumberland
+Pennsylvania,Dauphin
+Pennsylvania,Franklin
+Pennsylvania,Fulton
+Pennsylvania,Huntingdon
+Pennsylvania,Indiana
+Pennsylvania,Jefferson
+Pennsylvania,Juniata
+Pennsylvania,Perry
+Pennsylvania,Snyder
+Pennsylvania,Somerset
+Pennsylvania,Westmoreland
+South Dakota,Bennett
+South Dakota,Buffalo
+South Dakota,Butte
+South Dakota,Corson
+South Dakota,Custer
+South Dakota,Fall River
+South Dakota,Haakon
+South Dakota,Harding
+South Dakota,Jackson
+South Dakota,Lawrence
+South Dakota,Lyman
+South Dakota,Meade
+South Dakota,Mellette
+South Dakota,Pennington
+South Dakota,Perkins
+South Dakota,Stanley
+South Dakota,Sully
+South Dakota,Tripp
+South Dakota,Union
+South Dakota,Ziebach
+Tennessee,Chester
+Tennessee,Crockett
+Tennessee,Dyer
+Tennessee,Fayette
+Tennessee,Gibson
+Tennessee,Hardeman
+Tennessee,Hardin
+Tennessee,Haywood
+Tennessee,Henderson
+Tennessee,Henry
+Tennessee,Lauderdale
+Tennessee,Lewis
+Tennessee,Madison
+Tennessee,McNairy
+Tennessee,Shelby
+Tennessee,Tipton
+Tennessee,Weakley
+Texas,Bexar
+Texas,Coleman
+Texas,Dallam
+Texas,El Paso
+Texas,Hartley
+Texas,Hudspeth
+Texas,Hunt
+Texas,Kaufman
+Texas,Lubbock
+Texas,Medina
+Texas,Uvalde
+Texas,Val Verde
+Utah,Carbon
+Utah,Daggett
+Utah,Davis
+Utah,Grand
+Utah,Salt Lake
+Utah,San Juan
+Utah,Sanpete
+Utah,Uintah
+Utah,Utah
+Virginia,Carroll
+Virginia,Clarke
+Virginia,Culpeper
+Virginia,Fairfax
+Virginia,Fairfax City
+Virginia,Fauquier
+Virginia,Floyd
+Virginia,Frederick
+Virginia,Loudoun
+Virginia,Madison
+Virginia,Montgomery
+Virginia,Pulaski
+Virginia,Rappahannock
+Virginia,Shenandoah
+Virginia,Warren
+West Virginia,Berkeley
+West Virginia,Hampshire
+West Virginia,Hardy
+West Virginia,Mineral
+West Virginia,Morgan
+Wisconsin,Adams
+Wisconsin,Buffalo
+Wisconsin,Columbia
+Wisconsin,Crawford
+Wisconsin,Dane
+Wisconsin,Dodge
+Wisconsin,Dunn
+Wisconsin,Eau Claire
+Wisconsin,Fond Du Lac
+Wisconsin,Grant
+Wisconsin,Green
+Wisconsin,Green Lake
+Wisconsin,Iowa
+Wisconsin,Jackson
+Wisconsin,Jefferson
+Wisconsin,Juneau
+Wisconsin,Kenosha
+Wisconsin,Lafayette
+Wisconsin,Langlade
+Wisconsin,Lincoln
+Wisconsin,Marathon
+Wisconsin,Marquette
+Wisconsin,Milwaukee
+Wisconsin,Monroe
+Wisconsin,Oconto
+Wisconsin,Oneida
+Wisconsin,Polk
+Wisconsin,Portage
+Wisconsin,Racine
+Wisconsin,Richland
+Wisconsin,Rock
+Wisconsin,Sauk
+Wisconsin,Shawano
+Wisconsin,Sheboygan
+Wisconsin,Trempealeau
+Wisconsin,Vernon
+Wisconsin,Vilas
+Wisconsin,Walworth
+Wisconsin,Washburn
+Wisconsin,Washington
+Wisconsin,Waukesha
+Wisconsin,Waupaca
+Wisconsin,Winnebago
+Wisconsin,Wood
+Wyoming,Albany
+Wyoming,Big Horn
+Wyoming,Campbell
+Wyoming,Carbon
+Wyoming,Converse
+Wyoming,Crook
+Wyoming,Fremont
+Wyoming,Goshen
+Wyoming,Hot Springs
+Wyoming,Johnson
+Wyoming,Laramie
+Wyoming,Lincoln
+Wyoming,Natrona
+Wyoming,Niobrara
+Wyoming,Park
+Wyoming,Platte
+Wyoming,Sheridan
+Wyoming,Sublette
+Wyoming,Sweetwater
+Wyoming,Teton
+Wyoming,Washakie
+Wyoming,Weston
