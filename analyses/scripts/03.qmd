@@ -1,0 +1,103 @@
+---
+title: "Visualization of Results"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: readable
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+#### Packages
+```{r}
+library(tidyverse)
+library(psych)
+library(car)
+library(janitor)
+library(gtsummary)
+
+# Load processed data
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp      <- file.path(analyses, "inputs")
+oup      <- file.path(analyses, "outputs")
+df <- read.csv(file.path(oup, "processedsurv.csv"))
+
+```
+
+
+```{r}
+
+library(dplyr)
+library(janitor)
+library(knitr)
+
+#  demographic binary variables
+demo_vars <- c("AGEbin", "GENDERbin", "RACEbin", "INCOMEbin", "EDUCATIONbin", 
+               "DEGREEbin", "LICENSEbin", "TWSbin", "COURSEbin", "SELFTITLEbin")
+
+# Generate frequency table
+demo_table <- surv %>%
+  dplyr::select(all_of(demo_vars)) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Response") %>%
+  mutate(Response = as.character(Response)) %>%
+  count(Variable, Response) %>%
+  group_by(Variable) %>%
+  mutate(Percent = round(100 * n / sum(n), 1)) %>%
+  ungroup()
+
+# Print summary table
+demo_table %>%
+  arrange(Variable, desc(Percent)) %>%
+  knitr::kable(caption = "Table 1. Frequency of Demographic Variables")
+
+```
+
+```{r}
+
+knowledge_vars <- c("PIGScorr", "BRUCEcorr", "CWDcorr", "FLUALcorr", 
+                    "FLUcorr", "COVIDcorr", "COVIDSPILLcorr", 
+                    "RABIESALcorr", "RABIEScorr", "TURKEYcorr")
+
+knowledge_table <- surv %>%
+  dplyr::select(all_of(knowledge_vars)) %>%
+  summarise(across(everything(), ~ mean(.x, na.rm = TRUE) * 100)) %>%
+  pivot_longer(cols = everything(), names_to = "Question", values_to = "Percent_Correct")
+
+knowledge_table %>%
+  mutate(Percent_Correct = round(Percent_Correct, 1)) %>%
+  knitr::kable(caption = "Table 2. Percent of Respondents Answering Each Knowledge Item Correctly")
+
+
+```
+
+```{r}
+
+kap_composites <- c("CORRECTnum", "CERTAINnum", "ATTITUDEnum", 
+                    "FAVnum", "NEUTRALnum", "UNFAVnum", 
+                    "PRACnum", "nTOPICS", "nSOURCE", "nFREEINFO")
+
+summary_table <- surv %>%
+  dplyr::select(all_of(kap_composites)) %>%
+  summarise(across(everything(),
+                   list(Median = ~median(.x, na.rm = TRUE),
+                        IQR = ~IQR(.x, na.rm = TRUE)),
+                   .names = "{.col}_{.fn}"))
+
+# Reshape for easier reading
+summary_long <- pivot_longer(summary_table, everything(),
+                              names_to = c("Variable", "Statistic"), 
+                              names_sep = "_", values_to = "Value") %>%
+  pivot_wider(names_from = Statistic, values_from = Value)
+
+summary_long %>%
+  knitr::kable(caption = "Table 3. Summary Statistics for Composite KAP Scores")
+
+
+```
+
+
+
