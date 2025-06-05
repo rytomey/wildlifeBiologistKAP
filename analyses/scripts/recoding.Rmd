@@ -1,0 +1,1076 @@
+---
+title: "Data Recoding & Reliability Diagnostics"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    highlight: zenburn
+    latex_engine: xelatex
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
+    code_folding: show
+    fig_caption: true
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+fontsize: 10pt
+mainfont: "Times New Roman"
+geometry: margin=1in
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+require(dplyr)
+require(readr)
+require(forcats)
+require(stringr)
+require(janitor)
+require(psych)
+require(writexl)
+require(tibble)
+require(purrr)
+```
+
+### Importing and Cleaning Raw Data
+```{r}
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp <- file.path(analyses, "inputs")
+oup <- file.path(analyses, "outputs")
+
+# ---- Load Raw Dataset ----
+rawdf <- read.csv(file.path(inp, "rawdata.csv")) # 219 responses -------
+nrow(rawdf)
+
+df <- rawdf %>%
+  filter(PROG > 70)  # 150 responses ----
+nrow(df)
+
+df <- df %>%
+  filter(DURATION > 300)  # 140 responses ---------
+nrow(df)
+
+```
+
+# Functions
+
+#### Realiability Diagnostics
+
+```{r}
+
+reliFUN <- function(data, vars, title = "") {
+  cat("\n\n====================", title, "====================\n")
+
+  # Select and clean item set
+  items <- data %>%
+    dplyr::select(all_of(vars)) %>%
+    dplyr::select(where(~ length(unique(na.omit(.))) > 1))
+  items_clean <- items[rowSums(is.na(items)) <= 1, ]
+
+  # Cronbach’s Alpha
+  cat("\n=== Cronbach's Alpha ===\n")
+  alpha_res <- psych::alpha(items_clean, check.keys = TRUE)
+  print(alpha_res)
+  cat("Raw Alpha:", round(alpha_res$total$raw_alpha, 3), "\n")
+  print(alpha_res$alpha.drop)
+
+  # McDonald's Omega
+  cat("\n=== McDonald's Omega ===\n")
+  print(psych::omega(items_clean))
+
+  # Factor Analysis (3-factor, ML) — only if there are ≥3 items
+  if (ncol(items_clean) >= 3) {
+    cat("\n=== Factor Analysis (3-factor, ML) ===\n")
+    print(psych::fa(items_clean, nfactors = 3, fm = "ml"))
+  } else {
+    cat("\nFactor analysis skipped: fewer than 3 items.\n")
+  }
+
+  # Greatest Lower Bound (GLB)
+  cat("\n=== Greatest Lower Bound ===\n")
+  print(psych::glb(items_clean))
+
+  # Split-Half Reliability
+  cat("\n=== Split-Half Reliability ===\n")
+  print(psych::splitHalf(items_clean))
+
+  # Average Inter-Item Correlation
+  cat("\n=== Average Inter-Item Correlation ===\n")
+  corr_matrix <- cor(items_clean, use = "pairwise.complete.obs")
+  mean_corr <- mean(corr_matrix[lower.tri(corr_matrix)])
+  print(mean_corr)
+
+  # Principal Component Analysis (1-factor) — only if there are ≥1 item
+  cat("\n=== Principal Component Analysis (1-factor) ===\n")
+  if (ncol(items_clean) >= 1) {
+    print(psych::principal(items_clean, nfactors = 1, rotate = "none"))
+  } else {
+    cat("Not enough items to run PCA.\n")
+  }
+}
+
+```
+
+# DEMOGRAPHIC
+
+#### Recoding
+
+```{r}
+
+df <- df %>%
+  mutate(
+  # RACE: White = 1, Non-White = 0 --------------
+    RACE_BIN = case_when(
+      RACE == "White" ~ 1,
+      !is.na(RACE) ~ 0,
+      TRUE ~ NA_real_),
+  # INCOME: Above Median = 1, Below = 0 -------
+    INCOME_BIN = case_when(
+      INCOME %in% c("$0-20,000", "$20,001-30,000", "$30,001-40,000", "$40,001-50,000", "$50,001-60,000") ~ 0,
+      INCOME %in% c("$60,001-70,000", "$70,001-80,000", "$80,001-90,000", "$90,001-100,000", "$100,001+") ~ 1,
+      TRUE ~ NA_real_),
+    # GENDER: Male = 1, Female = 0, Other/Prefer not = NA ----
+    GENDER_BIN = case_when(
+      GENDER == "Male" ~ 1,
+      GENDER == "Female" ~ 0,
+      TRUE ~ NA_real_),
+    RACE = as.factor(RACE),
+    GENDER = as.factor(GENDER),
+    ETHNICITY = as.factor(ETHNICITY),
+    INCOME = factor(INCOME, ordered = TRUE),
+    DOB = as.numeric(DOB),
+    RESIDENT_BIN = ifelse(RESIDENT == "Yes", 1, 0))
+df <- df %>%
+  mutate(AGE = 2024 - DOB)
+median_age <- median(df$AGE, na.rm = TRUE)
+median_age
+## [1] 36.5
+  # AGE: Above median of respondents = 1, below = 0, ---------
+df <- df %>%
+  mutate(
+    AGE_BIN = case_when(
+      is.na(AGE) ~ NA_real_,
+      AGE >= median_age ~ 1,
+      AGE < median_age ~ 0))
+
+
+# Experience / Professional Identity ---------
+df <- df %>%
+  mutate(
+    SELFTITLE_BIN = ifelse(SELFTITLE == "Yes", 1, 0),
+    AFFILIATE = as.factor(AFFILIATEfill),
+    ACTIVITY = as.factor(ACTIVITYfill),
+    LICENSE_BIN = ifelse(LICENSE == "Yes", 1, ifelse(LICENSE == "No", 0, NA)),
+    BIOTIME = factor(BIOTIME,
+      levels = c("<1 year", "1-5 years", "5-10 years", "10-20 years", ">20 years"),
+      ordered = TRUE),
+    BIOTIME_BIN = case_when(
+      BIOTIME %in% c("10-20 years", ">20 years") ~ 1,
+      BIOTIME %in% c("<1 year", "1-5 years", "5-10 years") ~ 0,
+      TRUE ~ NA_real_))
+
+df <- df %>%
+  mutate(AFFILIATE_GROUP = case_when(
+    AFFILIATEfill %in% c("Federal Government", "State/Provincial Government") ~ "Government",
+    AFFILIATEfill == "Academic/Research Institution" ~ "Academic",
+    AFFILIATEfill %in% c("Nonprofit/Conservation Organization", "Professional Societies or Associations") ~ "Nonprofit",
+    AFFILIATEfill == "Private Industry" ~ "Private",
+    TRUE ~ "Other")) %>%
+  mutate(AFFILIATE_GROUP = factor(AFFILIATE_GROUP,
+                                  levels = c("Government", "Academic", "Nonprofit", "Private", "Other")))
+
+df <- df %>%
+  mutate(ACTIVITY_GROUP = case_when(
+    ACTIVITYfill %in% c("Research") ~ "Science/Technical",
+    ACTIVITYfill %in% c("Land/Wildlife Management", "Consulting") ~ "Fieldwork",
+    ACTIVITYfill %in% c("Education", "Administration") ~ "Education/Admin",
+    TRUE ~ "Other")) %>%
+  mutate(ACTIVITY_GROUP = factor(ACTIVITY_GROUP,
+                                 levels = c("Fieldwork", "Science/Technical", "Education/Admin", "Other")))
+
+
+# Education ---------------
+df <- df %>%
+  mutate(
+    EDUCATION = factor(EDUCATION,
+      levels = c(
+        "Did not graduate high school/no GED",
+        "High school graduate/GED",
+        "Technical/Vocational School",
+        "Some College/AA or AS (2-year degree)",
+        "College Graduate/BA or BS (4-year degree)",
+        "Graduate or Professional School"),
+      ordered = TRUE),
+    EDUCATION_BIN = case_when(
+      EDUCATION %in% c("College Graduate/BA or BS (4-year degree)", 
+                       "Graduate or Professional School") ~ 1,
+      EDUCATION %in% c("Did not graduate high school/no GED", "High school graduate/GED",
+                       "Technical/Vocational School", "Some College/AA or AS (2-year degree)") ~ 0, TRUE ~ NA_real_),
+    DEGREE = as.factor(DEGREE),
+    DEGREE_BIN = ifelse(DEGREE == "Yes", 1, 0),
+    TWS = as.factor(TWS),
+    TWS_BIN = ifelse(TWS == "Yes", 1, 0),
+    COURSE = as.factor(COURSE),
+    COURSE_BIN = ifelse(COURSE == "Yes", 1, 0),
+    COURSETIME = factor(COURSETIME, levels = c("<5 years", "5-10 years", ">10 years"),
+                        ordered = TRUE),
+     # Binary: Took course in last 10 years = 1 ------------
+    COURSETIME_BIN = case_when(
+      COURSETIME %in% c("<5 years", "5-10 years") ~ 1,
+      COURSETIME == ">10 years" ~ 0,
+      TRUE ~ NA_real_))
+
+df <- df %>%
+  mutate(COURSE_GROUP = case_when(
+    COURSE_BIN == 0 ~ "None",
+    COURSE_BIN == 1 & COURSETIME_BIN == 1 ~ "Recent",   # Last 10 years
+    COURSE_BIN == 1 & COURSETIME_BIN == 0 ~ "Older"     # >10 years
+  )) %>%
+  mutate(COURSE_GROUP = factor(COURSE_GROUP, levels = c("None", "Older", "Recent")))
+
+# Education Level ----------------
+df <- df %>%
+  mutate(
+    DEMO_EDU_SCORE = rowSums(dplyr::select(., EDUCATION_BIN, DEGREE_BIN), na.rm = TRUE),
+    DEMO_EDU_NORM = DEMO_EDU_SCORE / 2)
+
+demoedu_avg <- mean(df$DEMO_EDU_SCORE, na.rm = TRUE)
+demoedu_med <- median(df$DEMO_EDU_SCORE, na.rm = TRUE)
+demoedu_avg
+demoedu_med
+demoedu_norm_avg <- mean(df$DEMO_EDU_NORM, na.rm = TRUE)
+demoedu_norm_med <- median(df$DEMO_EDU_NORM, na.rm = TRUE)
+
+df <- df %>%
+  mutate(
+    DEMO_EDU_AVG = case_when(DEMO_EDU_NORM > demoedu_norm_avg ~ 1,
+                             DEMO_EDU_NORM <= demoedu_norm_avg ~ 0,
+                             TRUE ~ NA_real_),
+    DEMO_EDU_MED = case_when(DEMO_EDU_NORM > demoedu_norm_med ~ 1,
+                             DEMO_EDU_NORM <= demoedu_norm_med ~ 0,
+                             TRUE ~ NA_real_))
+
+
+# Experience Level -------------
+df <- df %>% mutate(DEMO_EXP_SCORE = rowSums(dplyr::select(., BIOTIME_BIN, SELFTITLE_BIN, TWS_BIN), 
+                             na.rm = TRUE),
+    DEMO_EXP_NORM = DEMO_EXP_SCORE / 4)
+
+demoexp_avg <- mean(df$DEMO_EXP_SCORE, na.rm = TRUE)
+demoexp_med <- median(df$DEMO_EXP_SCORE, na.rm = TRUE)
+demoexp_avg
+demoexp_med
+demoexp_norm_avg <- mean(df$DEMO_EXP_NORM, na.rm = TRUE)
+demoexp_norm_med <- median(df$DEMO_EXP_NORM, na.rm = TRUE)
+
+df <- df %>%
+  mutate(
+    DEMO_EXP_AVG = case_when(DEMO_EXP_NORM > demoexp_norm_avg ~ 1,
+                             DEMO_EXP_NORM <= demoexp_norm_avg ~ 0,
+                             TRUE ~ NA_real_),
+    DEMO_EXP_MED = case_when(DEMO_EXP_NORM > demoexp_norm_med ~ 1,
+                             DEMO_EXP_NORM <= demoexp_norm_med ~ 0,
+                             TRUE ~ NA_real_))
+
+```
+#### Reliability
+```{r}
+
+# Reliability: Demographic Education
+edu_items <- df %>% select(EDUCATION_BIN, DEGREE_BIN)
+  # removed COURSE_BIN
+edu_items <- edu_items[rowSums(is.na(edu_items)) <= 1, ]
+edu_alpha <- psych::alpha(edu_items, check.keys = TRUE)
+cat("=== Cronbach's Alpha: DEMOGRAPHIC EDUCATION ===\n")
+print(edu_alpha)
+edu_alpha$total$raw_alpha
+edu_alpha$alpha.drop
+
+# Reliability: Demographic Experience
+exp_items <- df %>% select(BIOTIME_BIN, SELFTITLE_BIN, TWS_BIN) 
+# removed LICENSE
+exp_items <- exp_items[rowSums(is.na(exp_items)) <= 1, ]
+exp_alpha <- psych::alpha(exp_items, check.keys = TRUE)
+cat("=== Cronbach's Alpha: DEMOGRAPHIC EXPERIENCE ===\n")
+print(exp_alpha)
+exp_alpha$total$raw_alpha
+exp_alpha$alpha.drop
+
+#reliFUN(df, vars = c("EDUCATION_BIN", "DEGREE_BIN"),
+#        title = "DEMOGRAPHIC: Education")
+
+#reliFUN(df, vars = c("BIOTIME_BIN", "SELFTITLE_BIN", "TWS_BIN"),
+#        title = "DEMOGRAPHIC: Experience")
+
+```
+
+
+# KNOWLEDGE
+
+#### Recoding
+
+```{r}
+
+# Knowledge: Correct = 1, Incorrect = 0, I don't know = NA -----------
+df <- df %>%
+  mutate(
+    PIGS = as.factor(PIGS),
+    BRUCE = as.factor(BRUCE),
+    CWD = as.factor(CWD),
+    FLUAL = as.factor(FLUAL),
+    FLU = as.factor(FLU),
+    COVID = as.factor(COVID),
+    COVIDSPILL = as.factor(COVIDSPILL),
+    RABIESAL = as.factor(RABIESAL),
+    RABIES = as.factor(RABIES),
+    TURKEY = as.factor(TURKEY),
+    PIGS_BINK = case_when(
+      PIGS == "TRUE" ~ 1,
+      PIGS %in% c("FALSE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    BRUCE_BINK = case_when(
+      BRUCE == "FALSE" ~ 1,
+      BRUCE %in% c("TRUE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    CWD_BINK = case_when(
+      CWD == "FALSE" ~ 1,
+      CWD %in% c("TRUE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    FLUAL_BINK = case_when(
+      FLUAL == "TRUE" ~ 1,
+      FLUAL %in% c("FALSE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    FLU_BINK = case_when(
+      FLU == "FALSE" ~ 1,
+      FLU %in% c("TRUE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    COVID_BINK = case_when(
+      COVID == "TRUE" ~ 1,
+      COVID %in% c("FALSE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    COVIDSPILL_BINK = case_when(
+      COVIDSPILL == "TRUE" ~ 1,
+      COVIDSPILL %in% c("FALSE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    RABIESAL_BINK = case_when(
+      RABIESAL == "TRUE" ~ 1,
+      RABIESAL %in% c("FALSE", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    RABIES_BINK = case_when(
+      RABIES == "Bites" ~ 1,
+      RABIES %in% c("Blood", "Feces", "I don't know") ~ 0,
+      TRUE ~ NA_real_),
+    TURKEY_BINK = case_when(
+      TURKEY %in% c("Bury", "Incinerate") ~ 1,
+      TURKEY %in% c("Place in a dumpster","Ignore","Field dress and consumption",
+                    "I don't know") ~ 0,
+      TRUE ~ NA_real_))
+
+df <- df %>%
+  mutate(KNOWLEDGE_SCORE = rowSums(dplyr::select(., PIGS_BINK, BRUCE_BINK, CWD_BINK, FLUAL_BINK, FLU_BINK,
+                                     COVID_BINK, COVIDSPILL_BINK, RABIESAL_BINK,
+                                     RABIES_BINK, TURKEY_BINK), na.rm = TRUE),
+    KNOWLEDGE_SCORE_NORM = KNOWLEDGE_SCORE / 10)
+
+knowbin_avg = mean(df$KNOWLEDGE_SCORE)
+knowbin_avg
+knowbin_med = median(df$KNOWLEDGE_SCORE)
+knowbin_med
+
+knowbin_norm_avg <- mean(df$KNOWLEDGE_SCORE_NORM, na.rm = TRUE)
+knowbin_norm_avg
+df <- df %>%
+  mutate(KNOWLEDGE_AVG = case_when(
+    KNOWLEDGE_SCORE_NORM > knowbin_norm_avg ~ 1,
+    KNOWLEDGE_SCORE_NORM <= knowbin_norm_avg ~ 0,
+    TRUE ~ NA_real_))
+
+knowbin_norm_med <- median(df$KNOWLEDGE_SCORE_NORM, na.rm = TRUE)
+knowbin_norm_med
+df <- df %>%
+  mutate(KNOWLEDGE_MED = case_when(
+    KNOWLEDGE_SCORE_NORM > knowbin_norm_med ~ 1,
+    KNOWLEDGE_SCORE_NORM <= knowbin_norm_med ~ 0,
+    TRUE ~ NA_real_))
+
+
+# Confidence: I don't know = 1, Answer (Correct/not) = 0 -------------
+df <- df %>%
+  mutate(
+    # Flag 'I don't know' for each knowledge question
+    PIGS_BINC = ifelse(PIGS == "I don't know", 1, 0),
+    BRUCE_BINC = ifelse(BRUCE == "I don't know", 1, 0),
+    CWD_BINC = ifelse(CWD == "I don't know", 1, 0),
+    FLUAL_BINC = ifelse(FLUAL == "I don't know", 1, 0),
+    FLU_BINC = ifelse(FLU == "I don't know", 1, 0),
+    COVID_BINC = ifelse(COVID == "I don't know", 1, 0),
+    COVIDSPILL_BINC = ifelse(COVIDSPILL == "I don't know", 1, 0),
+    RABIESAL_BINC = ifelse(RABIESAL == "I don't know", 1, 0),
+    RABIES_BINC = ifelse(RABIES == "I don't know", 1, 0),
+    TURKEY_BINC = ifelse(TURKEY == "I don't know", 1, 0))
+
+df <- df %>%
+  mutate(CONFIDENCE_SCORE = rowSums(dplyr::select(., ends_with("_BINC")), na.rm = TRUE),
+    CONFIDENCE_SCORE_NORM = CONFIDENCE_SCORE / 10)
+
+confbin_avg = mean(df$CONFIDENCE_SCORE)
+confbin_avg
+confbin_med = median(df$CONFIDENCE_SCORE)
+confbin_med
+
+confbin_norm_avg <- mean(df$CONFIDENCE_SCORE_NORM, na.rm = TRUE)
+confbin_norm_avg
+df <- df %>%
+  mutate(CONFIDENCE_AVG = case_when(
+    CONFIDENCE_SCORE_NORM > confbin_norm_avg ~ 1,
+    CONFIDENCE_SCORE_NORM <= confbin_norm_avg ~ 0,
+    TRUE ~ NA_real_))
+
+confbin_norm_med <- median(df$CONFIDENCE_SCORE_NORM, na.rm = TRUE)
+confbin_norm_med
+df <- df %>%
+  mutate(CONFIDENCE_MED = case_when(
+    CONFIDENCE_SCORE_NORM> confbin_norm_med ~ 1,
+    CONFIDENCE_SCORE_NORM <= confbin_norm_med ~ 0,
+    TRUE ~ NA_real_))
+
+```
+
+#### Reliability
+
+```{r}
+
+# Correct / Incorrect (+ I Don't Know) -------------
+knowledge_items <- df %>% select(
+  PIGS_BINK, BRUCE_BINK, CWD_BINK, FLUAL_BINK, FLU_BINK,
+  COVID_BINK, COVIDSPILL_BINK, RABIESAL_BINK, RABIES_BINK, TURKEY_BINK)
+knowledge_items <- knowledge_items %>%
+  select(where(~ length(unique(na.omit(.))) > 1))
+knowledge_clean <- knowledge_items[rowSums(is.na(knowledge_items)) <= 3, ]
+knowledge_alpha <- alpha(knowledge_clean, check.keys = TRUE)
+knowledge_alpha$keys
+# Cronbach’s Alpha results 
+cat("=== Cronbach's Alpha ===\n")
+print(knowledge_alpha)
+knowledge_alpha$total$raw_alpha
+knowledge_alpha$alpha.drop
+
+# Confidence - I Don't Know vs Answered -------------
+confidence_items <- df %>% select(
+  PIGS_BINC, BRUCE_BINC, CWD_BINC, FLUAL_BINC, FLU_BINC,
+  COVID_BINC, COVIDSPILL_BINC, RABIESAL_BINC, RABIES_BINC, TURKEY_BINC)
+confidence_items <- confidence_items %>%
+  select(where(~ length(unique(na.omit(.))) > 1))
+confidence_clean <- confidence_items[rowSums(is.na(confidence_items)) <= 3, ]
+confidence_alpha <- alpha(confidence_clean, check.keys = TRUE)
+confidence_alpha$keys
+# Cronbach’s Alpha results 
+cat("=== Cronbach's Alpha ===\n")
+print(confidence_alpha)
+confidence_alpha$total$raw_alpha
+confidence_alpha$alpha.drop
+
+###### reliFUN -------------------------------
+# Principal Component Analysis 
+cat("\n=== Principal Component Analysis (1-factor) ===\n")
+pca_result <- principal(confidence_clean, nfactors = 1, rotate = "none")
+print(pca_result)
+
+reliFUN(df,vars = c("PIGS_BINK", "BRUCE_BINK", "CWD_BINK", "FLUAL_BINK", "FLU_BINK",
+           "COVID_BINK", "COVIDSPILL_BINK", "RABIESAL_BINK", "RABIES_BINK", "TURKEY_BINK"),
+  title = "KNOWLEDGE: Correct = 1, Incorrect/IDK = 0")
+
+reliFUN(df,vars = c("PIGS_BINC", "BRUCE_BINC", "CWD_BINC", "FLUAL_BINC", "FLU_BINC",
+           "COVID_BINC", "COVIDSPILL_BINC", "RABIESAL_BINC", "RABIES_BINC", "TURKEY_BINC"),
+  title = "CONFIDENCE: IDK = 1, Correct/Incorrect = 0")
+
+
+```
+
+# ATTITUDES
+
+#### Recoding
+
+```{r}
+
+directFUN <- function(x) case_when(
+  x == "Strongly Disagree" ~ 1,
+  x == "Disagree" ~ 2,
+  x == "Neutral" ~ 3,
+  x == "Agree" ~ 4,
+  x == "Strongly Agree" ~ 5,
+  TRUE ~ NA_real_)
+
+reverseFUN <- function(x) case_when(
+  x == "Strongly Agree" ~ 1,
+  x == "Agree" ~ 2,
+  x == "Neutral" ~ 3,
+  x == "Disagree" ~ 4,
+  x == "Strongly Disagree" ~ 5,
+  TRUE ~ NA_real_)
+
+df <- df %>%
+  mutate(
+    POPRED_A   = reverseFUN(POPRED),
+    POPPLAN_A  = reverseFUN(POPPLAN),
+    SURVEY_A   = directFUN(SURVEY),
+    VACCINE_A  = directFUN(VACCINE),
+    PREVAL_A   = directFUN(PREVAL),
+    DIVERSE_A  = directFUN(DIVERSE),
+    CONSEQ_A   = directFUN(CONSEQ),
+    CLIMATE_A  = directFUN(CLIMATE),
+    EDREQ_A    = directFUN(EDREQ),
+    INFO_A     = reverseFUN(INFO),
+    HANDSON_A  = reverseFUN(HANDSON),
+    CWDAL_A    = reverseFUN(CWDAL),
+    BATS_A     = directFUN(BATS),
+    PPEREQ_A   = directFUN(PPEREQ),
+    EHD_A      = reverseFUN(EHD),
+    DARWIN_A   = reverseFUN(DARWIN))
+
+# Define item groupings
+control_vars   <- c("POPRED_A", "POPPLAN_A", "SURVEY_A", "VACCINE_A", "PPEREQ_A", "BATS_A")
+misinfo_vars   <- c("DARWIN_A", "CWDAL_A", "EHD_A")
+concern_vars   <- c("PREVAL_A", "DIVERSE_A", "CONSEQ_A")  # CLIMATE_A excluded
+education_vars <- c("EDREQ_A", "INFO_A", "HANDSON_A")
+
+rev_var <- c("DARWIN_A", "EHD_A", "CWDAL_A", "HANDSON_A", "INFO_A", "POPPLAN_A", "POPRED_A") 
+dir_var <- c("PPEREQ_A", "BATS_A", "EDREQ_A", "CONSEQ_A", "DIVERSE_A", "PREVAL_A", "VACCINE_A", "SURVEY_A") # Climate_A excluded
+
+df <- df %>%
+  rowwise() %>%
+  mutate(
+    ATT_CONTROL_SCORE    = mean(c_across(all_of(control_vars)), na.rm = TRUE),
+    ATT_CONTROL_NORM = ATT_CONTROL_SCORE / 5, 
+    ATT_MISINFO_SCORE    = mean(c_across(all_of(misinfo_vars)), na.rm = TRUE),
+    ATT_MISINFO_NORM = ATT_MISINFO_SCORE / 5, 
+    ATT_CONCERN_SCORE    = mean(c_across(all_of(concern_vars)), na.rm = TRUE),
+    ATT_CONCERN_NORM = ATT_CONCERN_SCORE / 5, 
+    ATT_EDUCATION_SCORE  = mean(c_across(all_of(education_vars)), na.rm = TRUE),
+    ATT_EDUCATION_NORM = ATT_EDUCATION_SCORE / 5, 
+    ATT_REVERSE_SCORE    = mean(c_across(all_of(rev_var)), na.rm = TRUE),
+    ATT_REVERSE_NORM = ATT_REVERSE_SCORE / 5, 
+    ATT_DIRECT_SCORE     = mean(c_across(all_of(dir_var)), na.rm = TRUE),
+    ATT_DIRECT_NORM = ATT_DIRECT_SCORE / 5) %>%
+  ungroup()
+
+# CONTROL
+control_avg <- mean(df$ATT_CONTROL_SCORE, na.rm = TRUE)
+control_med <- median(df$ATT_CONTROL_SCORE, na.rm = TRUE)
+control_avg
+control_med
+# MISINFO
+misinfo_avg <- mean(df$ATT_MISINFO_SCORE, na.rm = TRUE)
+misinfo_med <- median(df$ATT_MISINFO_SCORE, na.rm = TRUE)
+misinfo_avg
+misinfo_med
+# CONCERN
+concern_avg <- mean(df$ATT_CONCERN_SCORE, na.rm = TRUE)
+concern_med <- median(df$ATT_CONCERN_SCORE, na.rm = TRUE)
+concern_avg
+concern_med
+# EDUCATION
+education_avg <- mean(df$ATT_EDUCATION_SCORE, na.rm = TRUE)
+education_med <- median(df$ATT_EDUCATION_SCORE, na.rm = TRUE)
+education_avg
+education_med
+# REVERSE
+reverse_avg <- mean(df$ATT_REVERSE_SCORE, na.rm = TRUE)
+reverse_med <- median(df$ATT_REVERSE_SCORE, na.rm = TRUE)
+reverse_avg
+reverse_med
+# DIRECT
+direct_avg <- mean(df$ATT_DIRECT_SCORE, na.rm = TRUE)
+direct_med <- median(df$ATT_DIRECT_SCORE, na.rm = TRUE)
+direct_avg
+direct_med
+# Norm Scores 
+control_norm_avg   <- mean(df$ATT_CONTROL_NORM, na.rm = TRUE)
+control_norm_med   <- median(df$ATT_CONTROL_NORM, na.rm = TRUE)
+misinfo_norm_avg   <- mean(df$ATT_MISINFO_NORM, na.rm = TRUE)
+misinfo_norm_med   <- median(df$ATT_MISINFO_NORM, na.rm = TRUE)
+concern_norm_avg   <- mean(df$ATT_CONCERN_NORM, na.rm = TRUE)
+concern_norm_med   <- median(df$ATT_CONCERN_NORM, na.rm = TRUE)
+education_norm_avg <- mean(df$ATT_EDUCATION_NORM, na.rm = TRUE)
+education_norm_med <- median(df$ATT_EDUCATION_NORM, na.rm = TRUE)
+reverse_norm_avg   <- mean(df$ATT_REVERSE_NORM, na.rm = TRUE)
+reverse_norm_med   <- median(df$ATT_REVERSE_NORM, na.rm = TRUE)
+direct_norm_avg    <- mean(df$ATT_DIRECT_NORM, na.rm = TRUE)
+direct_norm_med    <- median(df$ATT_DIRECT_NORM, na.rm = TRUE)
+control_norm_avg 
+control_norm_med 
+misinfo_norm_avg   
+misinfo_norm_med   
+concern_norm_avg   
+concern_norm_med   
+education_norm_avg 
+education_norm_med 
+reverse_norm_avg   
+reverse_norm_med   
+direct_norm_avg    
+direct_norm_med    
+
+df <- df %>%
+  mutate(
+    CONTROL_AVG     = if_else(ATT_CONTROL_NORM > control_norm_avg, 1, 0),
+    CONTROL_MED     = if_else(ATT_CONTROL_NORM > control_norm_med, 1, 0),
+    MISINFO_AVG     = if_else(ATT_MISINFO_NORM > misinfo_norm_avg, 1, 0),
+    MISINFO_MED     = if_else(ATT_MISINFO_NORM > misinfo_norm_med, 1, 0),
+    CONCERN_AVG     = if_else(ATT_CONCERN_NORM > concern_norm_avg, 1, 0),
+    CONCERN_MED     = if_else(ATT_CONCERN_NORM > concern_norm_med, 1, 0),
+    EDUCATION_AVG   = if_else(ATT_EDUCATION_NORM > education_norm_avg, 1, 0),
+    EDUCATION_MED   = if_else(ATT_EDUCATION_NORM > education_norm_med, 1, 0),
+    REVERSE_AVG     = if_else(ATT_REVERSE_NORM > reverse_norm_avg, 1, 0),
+    REVERSE_MED     = if_else(ATT_REVERSE_NORM > reverse_norm_med, 1, 0),
+    DIRECT_AVG      = if_else(ATT_DIRECT_NORM > direct_norm_avg, 1, 0),
+    DIRECT_MED      = if_else(ATT_DIRECT_NORM > direct_norm_med, 1, 0))
+
+```
+
+#### Reliability
+
+```{r}
+
+### THEMATIC SPLIT ------------------------------------------------------------------------
+control_vars   <- c("POPRED_A", "POPPLAN_A", "SURVEY_A", "VACCINE_A", "PPEREQ_A", "BATS_A")
+alpha_control   <- psych::alpha(df[control_vars], check.keys = TRUE)
+alpha_control$key
+cat("Alpha – Disease Control Beliefs:", round(alpha_control$total$raw_alpha, 3), "\n")
+alpha_control$alpha.drop 
+
+misinfo_vars   <- c("DARWIN_A", "CWDAL_A", "EHD_A") 
+alpha_misinfo   <- psych::alpha(df[misinfo_vars], check.keys = TRUE)
+cat("Alpha – Misinformation Orientation:", round(alpha_misinfo$total$raw_alpha, 3), "\n")
+
+concern_vars   <- c("PREVAL_A", "DIVERSE_A", "CONSEQ_A")
+alpha_concern   <- psych::alpha(df[concern_vars], check.keys = TRUE)
+cat("Alpha – Concern & Risk:", round(alpha_concern$total$raw_alpha, 3), "\n")
+alpha_concern$alpha.drop # removed  "CLIMATE_A"
+
+education_vars <- c("EDREQ_A", "INFO_A", "HANDSON_A")
+alpha_education  <- psych::alpha(df[education_vars], check.keys = TRUE)
+cat("Alpha – Education Orientation:", round(alpha_education$total$raw_alpha, 3), "\n")
+
+### Direction of Response = More knowledge, concern, interest in edu ------------------
+rev_var <- c("DARWIN_A", "EHD_A", "CWDAL_A", "HANDSON_A", "INFO_A", "POPPLAN_A", "POPRED_A")
+alpha_rev      <- psych::alpha(df[rev_var], check.keys = TRUE)
+cat("Cronbach's Alpha – Reversed Value Recode:", round(alpha_rev$total$raw_alpha, 3), "\n")
+alpha_rev$alpha.drop
+
+dir_var <- c("PPEREQ_A", "BATS_A", "EDREQ_A", "CONSEQ_A", "DIVERSE_A", "PREVAL_A", "VACCINE_A", "SURVEY_A")
+# CLIMATE_A removed (increased CA estimate)
+alpha_dir    <- psych::alpha(df[dir_var], check.keys = TRUE)
+cat("Cronbach's Alpha – Direct Value Recode:", round(alpha_dir$total$raw_alpha, 3), "\n")
+alpha_dir$alpha.drop
+
+###### reliFUN -------------------------------
+# Thematic Scoring 
+reliFUN(df, c("POPRED_A", "POPPLAN_A", "SURVEY_A", "VACCINE_A", "PPEREQ_A", "BATS_A"), "CONTROL BELIEFS")
+reliFUN(df, c("DARWIN_A", "CWDAL_A", "EHD_A"), "MISINFORMATION ORIENTATION")
+reliFUN(df, c("PREVAL_A", "DIVERSE_A", "CONSEQ_A"), "CONCERN & PERCEIVED RISK")
+reliFUN(df, c("EDREQ_A", "INFO_A", "HANDSON_A"), "EDUCATION ORIENTATION")
+# Directional Scoring
+reliFUN(df, c("DARWIN_A", "EHD_A", "CWDAL_A", "HANDSON_A", "INFO_A", "POPPLAN_A", "POPRED_A"), "REVERSED-DIRECTION SCALED")
+reliFUN(df, c("PPEREQ_A", "BATS_A", "EDREQ_A", "CONSEQ_A", "DIVERSE_A", "PREVAL_A", "VACCINE_A", "SURVEY_A"), "DIRECT-DIRECTION SCALED")
+
+```
+
+# PRACTICES
+
+#### Recoding
+
+```{r}
+median_field_time <- median(df$FIELD, na.rm = TRUE)
+median_field_time
+df$TOPIC_COUNT <- rowSums(dplyr::select(df, starts_with("TOPIC_")), na.rm = TRUE)
+median_topic_count <- median(df$TOPIC_COUNT, na.rm = TRUE)
+median_topic_count
+
+df <- df %>%
+  mutate(
+    LICENSE  =  as.factor(LICENSE),
+    COLLECT  = as.factor(COLLECT),
+    HANDLE  =  as.factor(HANDLE),
+    PPE    = as.factor(PPE),
+    ACCESS  =  as.factor(ACCESS),
+    COLLECT_BIN = ifelse(COLLECT == "Yes", 1, ifelse(COLLECT == "No", 0, NA)),
+    HANDLE_BIN  = ifelse(HANDLE == "Yes", 1, ifelse(HANDLE == "No", 0, NA)),
+    PPE_BIN     = ifelse(PPE == "Yes", 1, ifelse(PPE == "No", 0, NA)),
+    ACCESS_BIN  = ifelse(ACCESS == "No", 1, ifelse(ACCESS == "Yes", 0, NA)),
+    CONTACT = factor(CONTACT, levels = c("Never", "Rarely", "Monthly", "Weekly", "Daily"), 
+                     ordered = TRUE),
+    CONTACT_BIN = case_when(CONTACT %in% c("Weekly", "Daily") ~ 1,
+                            CONTACT %in% c("Monthly", "Rarely", "Never") ~ 0, TRUE ~ NA_real_),
+    INTEREST = as.factor(INTEREST),
+    INTEREST_BIN = case_when(INTEREST %in% c("No", "Unsure") ~ 0, INTEREST == "Yes" ~ 1, 
+                             TRUE ~ NA_real_),
+    FIELD = as.numeric(FIELD),
+    FIELD_BIN_MED = case_when(is.na(FIELD) ~ NA_real_, FIELD >= median_field_time ~ 1, 
+                              FIELD < median_field_time ~ 0),
+    FIELD_BIN_50 = case_when(is.na(FIELD) ~ NA_real_, FIELD >= 50 ~ 1, FIELD < 50 ~ 0),
+    STATE = as.factor(STATE),
+    STATE_BIN = case_when(STATE == "Dead" ~ 0,
+                          STATE %in% c("Alive - Sedated", "Alive - Not Sedated") ~ 1, 
+                          TRUE ~ NA_real_),
+    PPETIME = factor(PPETIME, levels = c("Never (0%)", "Rarely (1%-24%)", 
+      "Sometimes (25%-75%)", "Usually (76%-99%)", "Always (100%)"), ordered = TRUE),
+    PPETIME_BIN = case_when(PPETIME %in% c("Sometimes (25%-75%)", "Usually (76%-99%)", "Always (100%)") ~ 1, 
+                            PPETIME %in% c("Never (0%)", "Rarely (1%-24%)") ~ 0,
+      TRUE ~ NA_real_),
+    FREEINFO_BIN_INPERSON = ifelse(grepl("in-person", FREEINFOfill, 
+                                         ignore.case = TRUE), 1, 0),
+    FREEINFO_BIN_VIRTUAL = ifelse(grepl("virtual", FREEINFOfill, 
+                                        ignore.case = TRUE), 1, 0),
+    FREEINFO_BIN_OTHER = ifelse(grepl("Other", FREEINFOfill, 
+                                      ignore.case = TRUE), 1, 0),
+    TOPIC_BIN_RABIES = ifelse(grepl("Rabies", TOPICSfill), 1, 0),
+    TOPIC_BIN_FLU = ifelse(grepl("Influenza", TOPICSfill), 1, 0),
+    TOPIC_BIN_LEPTO = ifelse(grepl("Leptospirosis", TOPICSfill), 1, 0),
+    TOPIC_BIN_RR = ifelse(grepl("Raccoon roundworm", TOPICSfill), 1, 0),
+    TOPIC_BIN_VECTOR = ifelse(grepl("Vector borne", TOPICSfill), 1, 0),
+    TOPIC_BIN_CWD = ifelse(grepl("CWD", TOPICSfill), 1, 0),
+    TOPIC_BIN_COVID = ifelse(grepl("SarsCoV2", TOPICSfill), 1, 0),
+    TOPIC_BIN_ONEHEALTH = ifelse(grepl("One Health", TOPICSfill), 1, 0),
+    TOPIC_BIN_OTHER = ifelse(grepl("Other", TOPICSfill), 1, 0),
+    TOPIC_BREADTH_BIN = case_when(
+      TOPICSfill == "All" ~ 1,
+      TOPIC_COUNT >= median_topic_count ~ 1,
+      TOPIC_COUNT < median_topic_count ~ 0, TRUE ~ NA_real_),
+    SOURCE_BIN_FAMILY = ifelse(grepl("Friends/Family", SOURCEfill), 1, 0),
+    SOURCE_BIN_AGENCY = ifelse(grepl("State Wildlife Agency", SOURCEfill), 1, 0),
+    SOURCE_BIN_ACADEMIC = ifelse(grepl("Academic Publications", SOURCEfill), 1, 0),
+    SOURCE_BIN_SOCIAL = ifelse(grepl("Social Media", SOURCEfill), 1, 0),
+    SOURCE_BIN_NEWS = ifelse(grepl("News Sources", SOURCEfill), 1, 0),
+    SOURCE_BIN_CONFERENCES = ifelse(grepl("Conferences", SOURCEfill), 1, 0),
+    SOURCE_BIN_NONE = ifelse(grepl("I have Not looked for health information", 
+                                   SOURCEfill, ignore.case = TRUE), 1, 0),
+    SOURCE_BIN_OTHER = ifelse(grepl("Other", SOURCEfill), 1, 0),
+    SOURCE_TRUST_COUNT = SOURCE_BIN_ACADEMIC + SOURCE_BIN_AGENCY + SOURCE_BIN_CONFERENCES,
+    SOURCE_UNTRUST_COUNT = SOURCE_BIN_SOCIAL + SOURCE_BIN_NEWS + SOURCE_BIN_FAMILY,
+    SOURCE_TRUST_BIN = case_when(
+      SOURCE_TRUST_COUNT > SOURCE_UNTRUST_COUNT ~ 1,
+      SOURCE_TRUST_COUNT < SOURCE_UNTRUST_COUNT ~ 0,
+      SOURCE_TRUST_COUNT == SOURCE_UNTRUST_COUNT ~ 0,
+      TRUE ~ NA_real_))
+
+# Exposure = more risky (higher score = more risk) ----------
+df <- df %>%
+  mutate(
+    PRACTICE_EXPOSURE_SCORE = rowSums(dplyr::select(., 
+      CONTACT_BIN,      
+      FIELD_BIN_50,     
+      HANDLE_BIN,     # Removed LICENSE_BIN to increase CA value 
+      COLLECT_BIN),   # Removed STATE_BIN (too many NA values)     
+      na.rm = TRUE),
+    PRACTICE_EXPOSURE_NORM = PRACTICE_EXPOSURE_SCORE / 4)
+
+pracexp_avg = mean(df$PRACTICE_EXPOSURE_SCORE)
+pracexp_avg
+pracexp_med = median(df$PRACTICE_EXPOSURE_SCORE)
+pracexp_med
+
+pracexp_norm_avg <- mean(df$PRACTICE_EXPOSURE_NORM, na.rm = TRUE)
+pracexp_norm_avg
+df <- df %>%
+  mutate(PRACTICE_AVG = case_when(
+    PRACTICE_EXPOSURE_NORM > pracexp_norm_avg ~ 1,
+    PRACTICE_EXPOSURE_NORM <= pracexp_norm_avg ~ 0,
+    TRUE ~ NA_real_))
+
+pracexp_norm_med <- median(df$PRACTICE_EXPOSURE_NORM, na.rm = TRUE)
+pracexp_norm_med
+df <- df %>%
+  mutate(PRACTICE_MED = case_when(
+    PRACTICE_EXPOSURE_NORM> pracexp_norm_med ~ 1,
+    PRACTICE_EXPOSURE_NORM <= pracexp_norm_med ~ 0,
+    TRUE ~ NA_real_))
+
+# Education interest = more engagement toward wildlife health education ---------
+df <- df %>%
+  mutate(
+    PRACTICE_EDUCATION_SCORE = rowSums(dplyr::select(., 
+      TOPIC_BREADTH_BIN,
+      FREEINFO_BIN_INPERSON,
+      FREEINFO_BIN_VIRTUAL), na.rm = TRUE),
+    PRACTICE_EDUCATION_NORM = PRACTICE_EDUCATION_SCORE / 3)
+
+pracedu_avg = mean(df$PRACTICE_EDUCATION_SCORE)
+pracedu_avg
+pracedu_med = median(df$PRACTICE_EDUCATION_SCORE)
+pracedu_med
+
+pracedu_norm_avg <- mean(df$PRACTICE_EDUCATION_NORM, na.rm = TRUE)
+pracedu_norm_avg
+df <- df %>%
+  mutate(PRACTICE_AVG = case_when(
+    PRACTICE_EDUCATION_NORM > pracedu_norm_avg ~ 1,
+    PRACTICE_EDUCATION_NORM <= pracedu_norm_avg ~ 0,
+    TRUE ~ NA_real_))
+
+pracedu_norm_med <- median(df$PRACTICE_EDUCATION_NORM, na.rm = TRUE)
+pracedu_norm_med
+df <- df %>%
+  mutate(PRACTICE_MED = case_when(
+    PRACTICE_EDUCATION_NORM> pracedu_norm_med ~ 1,
+    PRACTICE_EDUCATION_NORM <= pracedu_norm_med ~ 0,
+    TRUE ~ NA_real_))
+
+## Did not have specific 'Precaution' composite score - PPE (IF yes) -> PPETIME -----
+## Use individual variables, composite = issues with NA values (only 55 = yes) ----
+
+```
+
+#### Reliability
+
+```{r}
+
+# Exposure-related practice items -----
+practice_exposure_vars <- c("CONTACT_BIN", "FIELD_BIN_50", "HANDLE_BIN","COLLECT_BIN") 
+                            # FIELD_BIN_50 / FIELD_BIN_MED = same CA value 
+                            # STATE_BIN removed (NA values)
+                            # "LICENSE_BIN" removed to increase CA value
+practice_exposure_items <- df %>% select(all_of(practice_exposure_vars))
+practice_exposure_items <- practice_exposure_items[rowSums(is.na(practice_exposure_items)) <= 2, ]
+alpha_exposure <- psych::alpha(practice_exposure_items, check.keys = TRUE)
+alpha_exposure$key
+cat("Alpha – Practice Exposure (Risky Contact/Handling):", 
+    round(alpha_exposure$total$raw_alpha, 4), "\n")
+alpha_exposure$alpha.drop
+
+# Education engagement practice items (Binary vs Attitude = Likert) ----------
+practice_education_vars <- c("FREEINFO_BIN_INPERSON", "FREEINFO_BIN_VIRTUAL", "TOPIC_BREADTH_BIN")
+                            # Removed ACCESS/INTEREST to improve CA value
+practice_education_items <- df %>% select(all_of(practice_education_vars))
+practice_education_items <- practice_education_items[rowSums(is.na(practice_education_items)) <= 2, ]
+alpha_education <- psych::alpha(practice_education_items, check.keys = TRUE)
+alpha_education$key
+cat("Alpha – Practice Education (Interest in Training):", 
+    round(alpha_education$total$raw_alpha, 3), "\n")
+alpha_education$alpha.drop
+
+###### reliFUN ----------------------------------------------
+reliFUN(df, c("CONTACT_BIN", "FIELD_BIN_50", "HANDLE_BIN","COLLECT_BIN"))
+reliFUN(df, c("INTEREST_BIN", "FREEINFO_BIN_INPERSON", "FREEINFO_BIN_VIRTUAL"))
+
+```
+
+# Exports
+
+#### Recoded DF
+
+```{r}
+
+write.csv(df, file.path(oup, "recodeddata.csv"), row.names = FALSE)
+
+```
+
+#### Data Dictionary
+
+```{r}
+
+meta <- read.csv(file.path(inp, "surveymeta.csv"))
+
+data_profile <- tibble(
+  Variable = names(df),
+  Data_Type = sapply(df, function(x) class(x)[1]),
+  Unique_Values = sapply(df, function(x) length(unique(na.omit(x)))),
+  Missing_Values = sapply(df, function(x) sum(is.na(x))))
+
+metasum <- meta %>%
+  select(COLUMNID, QUESTION, ANSWERS) %>%
+  rename(
+    Variable = COLUMNID,
+    Question = QUESTION,
+    Answer_Options = ANSWERS) %>%
+  left_join(data_profile, by = "Variable") %>%
+  arrange(Variable)
+# Derived Vars ------------------------------------------
+derived_vars <- tribble(
+  ~New_Variable,        ~Description,                                                         ~Source_Variables,
+  "PIGS_BINK",          "Correct = 1 if TRUE; Incorrect/Don't Know = 0",                     "PIGS",
+  "BRUCE_BINK",         "Correct = 1 if FALSE; Incorrect/Don't Know = 0",                    "BRUCE",
+  "CWD_BINK",           "Correct = 1 if FALSE; Incorrect/Don't Know = 0",                    "CWD",
+  "FLUAL_BINK",         "Correct = 1 if TRUE; Incorrect/Don't Know = 0",                     "FLUAL",
+  "FLU_BINK",           "Correct = 1 if FALSE; Incorrect/Don't Know = 0",                    "FLU",
+  "COVID_BINK",         "Correct = 1 if TRUE; Incorrect/Don't Know = 0",                     "COVID",
+  "COVIDSPILL_BINK",    "Correct = 1 if TRUE; Incorrect/Don't Know = 0",                     "COVIDSPILL",
+  "RABIESAL_BINK",      "Correct = 1 if TRUE; Incorrect/Don't Know = 0",                     "RABIESAL",
+  "RABIES_BINK",        "Correct = 1 if Bites; Incorrect/Don't Know = 0",                    "RABIES",
+  "TURKEY_BINK",        "Correct = 1 if Bury or Incinerate; others = 0",                     "TURKEY",
+  "KNOWLEDGE_SCORE",    "Sum of 10 knowledge binary scores",                                 "All _BINK variables",
+  "KNOWLEDGE_SCORE_NORM", "KNOWLEDGE_SCORE divided by 10",                                   "KNOWLEDGE_SCORE",
+  "KNOWLEDGE_AVG",      "Binary: Above avg = 1, below = 0",                                  "KNOWLEDGE_SCORE_NORM",
+  "KNOWLEDGE_MED",      "Binary: Above median = 1, below = 0",                               "KNOWLEDGE_SCORE_NORM",
+  "CONFIDENCE_SCORE",   "Count of 'I don't know' answers (10 questions)",                    "All _BINC variables",
+  "CONFIDENCE_SCORE_NORM", "Normalized confidence score (0-1 scale)",                        "CONFIDENCE_SCORE",
+  "CONFIDENCE_AVG",     "Binary: Confidence score > average = 1",                            "CONFIDENCE_SCORE_NORM",
+  "CONFIDENCE_MED",     "Binary: Confidence score > median = 1",                             "CONFIDENCE_SCORE_NORM")
+attitude_indiv <- names(df)[str_detect(names(df), "_A$")]
+attitude_derived <- names(df)[str_detect(names(df), "ATT|LIKERT")]
+attitude_doc <- tibble(
+  New_Variable = sort(unique(c(attitude_indiv, attitude_derived))),
+  Description = case_when(
+    str_detect(New_Variable, "_A$") ~ "Individual attitude item (recoded Likert)",
+    str_detect(New_Variable, "LIKERT_SUM") ~ "Sum of core Likert-scale attitude items",
+    str_detect(New_Variable, "NORM") ~ "Normalized attitude score (0–1 scale)",
+    str_detect(New_Variable, "AVG") ~ "Binary: Above or below average score",
+    str_detect(New_Variable, "MED") ~ "Binary: Above or below median score",
+    str_detect(New_Variable, "BINARY") ~ "Final binary classification of attitude score",
+    TRUE ~ "Composite or derived attitude metric"),
+  Source_Variables = case_when(
+    str_detect(New_Variable, "_A$") ~ "POPRED, POPPLAN, SURVEY, VACCINE, PREVAL",
+    str_detect(New_Variable, "LIKERT_SUM") ~ "POPRED, POPPLAN, SURVEY, VACCINE, PREVAL",
+    str_detect(New_Variable, "ATT") ~ "LIKERT_SUM",
+    TRUE ~ "Derived from Likert scale responses"))
+demographic_vars <- tribble(
+  ~New_Variable,        ~Description,                                                          ~Source_Variables,
+  "RACE_BIN",           "Binary: White = 1, Non-White = 0",                                    "RACE",
+  "INCOME_BIN",         "Binary: ≥$60,001 = 1, <$60,001 = 0",                                  "INCOME",
+  "GENDER_BIN",         "Binary: Male = 1, Female = 0, Other/NA = NA",                         "GENDER",
+  "RESIDENT_BIN",       "Binary: Resident = Yes = 1, No = 0",                                  "RESIDENT",
+  "AGE",                "Calculated age (2024 - DOB)",                                         "DOB",
+  "AGE_BIN",            "Binary: AGE ≥ sample median = 1, else = 0",                           "AGE",
+  "SELFTITLE_BIN",      "Binary: Identifies as biologist = 1, else = 0",                       "SELFTITLE",
+  "LICENSE_BIN",        "Binary: Holds sample license = 1, else = 0",                          "LICENSE",
+  "BIOTIME_BIN",        "Binary: ≥10 years of bio experience = 1, <10 = 0",                    "BIOTIME",
+  "EDUCATION_BIN",      "Binary: ≥ Bachelor's degree = 1, else = 0",                           "EDUCATION",
+  "DEGREE_BIN",         "Binary: Completed any degree = 1, else = 0",                          "DEGREE",
+  "TWS_BIN",            "Binary: TWS member = 1, else = 0",                                    "TWS",
+  "COURSE_BIN",         "Binary: Took course = 1, else = 0",                                   "COURSE",
+  "COURSETIME_BIN",     "Binary: Took course ≤10 years ago = 1, else = 0",                     "COURSETIME",
+  "DEMO_EDU_SCORE",     "Sum of education variables (EDUCATION_BIN, DEGREE_BIN)",              "EDUCATION_BIN, DEGREE_BIN",
+  "DEMO_EDU_NORM",      "Normalized education score (0–1 scale)",                              "DEMO_EDU_SCORE",
+  "DEMO_EDU_AVG",       "Binary: Above average normalized education score = 1",                "DEMO_EDU_NORM",
+  "DEMO_EDU_MED",       "Binary: Above median normalized education score = 1",                 "DEMO_EDU_NORM",
+  "DEMO_EXP_SCORE",     "Sum of experience variables (BIOTIME_BIN, SELFTITLE_BIN, TWS_BIN)",   "BIOTIME_BIN, SELFTITLE_BIN, TWS_BIN",
+  "DEMO_EXP_NORM",      "Normalized experience score (0–1 scale)",                             "DEMO_EXP_SCORE",
+  "DEMO_EXP_AVG",       "Binary: Above average normalized experience score = 1",               "DEMO_EXP_NORM",
+  "DEMO_EXP_MED",       "Binary: Above median normalized experience score = 1",                "DEMO_EXP_NORM")
+demographic_vars <- demographic_vars %>%
+  add_row(New_Variable = "ACTIVITY_GROUP",
+          Description = "Grouped activity types: Fieldwork, Education/Admin, Science/Technical, Other",
+          Source_Variables = "ACTIVITY") %>%
+  add_row(New_Variable = "AFFILIATE_GROUP",
+          Description = "Grouped affiliations: Government, Academic, Nonprofit, Private, Other",
+          Source_Variables = "AFFILIATE") %>%
+  add_row(New_Variable = "COURSE_GROUP",
+          Description = "Grouped course recency: None, Older (>10 years), Recent (≤10 years)",
+          Source_Variables = "COURSE_BIN, COURSETIME_BIN")
+practice_vars <- tribble(
+  ~New_Variable,                  ~Description,                                                        ~Source_Variables,
+  "LICENSE_BIN",                 "Binary: Licensed = 1, Not licensed = 0",                            "LICENSE",
+  "COLLECT_BIN",                 "Binary: Collect samples = 1, else = 0",                             "COLLECT",
+  "HANDLE_BIN",                  "Binary: Handle samples = 1, else = 0",                              "HANDLE",
+  "PPE_BIN",                     "Binary: Uses PPE = 1, else = 0",                                    "PPE",
+  "ACCESS_BIN",                  "Binary: No = 1, Yes = 0",                                           "ACCESS",
+  "CONTACT_BIN",                "Binary: Frequent contact (Weekly/Daily) = 1, else = 0",             "CONTACT",
+  "INTEREST_BIN",               "Binary: Interested = 1, Not/Unsure = 0",                            "INTEREST",
+  "FIELD_BIN_MED",              "Binary: FIELD ≥ median = 1, else = 0",                              "FIELD",
+  "FIELD_BIN_50",               "Binary: FIELD ≥ 50% = 1, else = 0",                                 "FIELD",
+  "STATE_BIN",                  "Binary: Works with live animals = 1, else = 0",                     "STATE",
+  "PPETIME_BIN",                "Binary: PPE use Sometimes+ = 1, Rarely/Never = 0",                  "PPETIME",
+  "FREEINFO_BIN_INPERSON",      "Interested in in-person courses = 1",                               "FREEINFOfill",
+  "FREEINFO_BIN_VIRTUAL",       "Interested in virtual courses = 1",                                 "FREEINFOfill",
+  "FREEINFO_BIN_OTHER",         "Selected 'Other' for course format = 1",                            "FREEINFOfill",
+  "TOPIC_BIN_RABIES",           "Selected Rabies as topic = 1",                                      "TOPICSfill",
+  "TOPIC_BIN_FLU",              "Selected Influenza = 1",                                            "TOPICSfill",
+  "TOPIC_BIN_LEPTO",            "Selected Leptospirosis = 1",                                        "TOPICSfill",
+  "TOPIC_BIN_RR",               "Selected Raccoon roundworm = 1",                                    "TOPICSfill",
+  "TOPIC_BIN_VECTOR",           "Selected Vector borne diseases = 1",                                "TOPICSfill",
+  "TOPIC_BIN_CWD",              "Selected CWD = 1",                                                   "TOPICSfill",
+  "TOPIC_BIN_COVID",            "Selected SarsCoV2 = 1",                                              "TOPICSfill",
+  "TOPIC_BIN_ONEHEALTH",        "Selected One Health = 1",                                           "TOPICSfill",
+  "TOPIC_BIN_OTHER",            "Selected 'Other' for topic = 1",                                    "TOPICSfill",
+  "TOPIC_COUNT",                "Count of selected topics (checkbox)",                               "TOPICSfill",
+  "TOPIC_BREADTH_BIN",          "Binary: Full breadth or above median topic count = 1",             "TOPIC_COUNT, TOPICSfill",
+  "SOURCE_BIN_FAMILY",          "Selected Friends/Family = 1",                                       "SOURCEfill",
+  "SOURCE_BIN_AGENCY",          "Selected State Wildlife Agency = 1",                                "SOURCEfill",
+  "SOURCE_BIN_ACADEMIC",        "Selected Academic Publications = 1",                                "SOURCEfill",
+  "SOURCE_BIN_SOCIAL",          "Selected Social Media = 1",                                         "SOURCEfill",
+  "SOURCE_BIN_NEWS",            "Selected News Sources = 1",                                         "SOURCEfill",
+  "SOURCE_BIN_CONFERENCES",     "Selected Conferences = 1",                                          "SOURCEfill",
+  "SOURCE_BIN_NONE",            "Indicated no source sought = 1",                                    "SOURCEfill",
+  "SOURCE_BIN_OTHER",           "Selected 'Other' source = 1",                                       "SOURCEfill",
+  "SOURCE_TRUST_BIN",           "Trusted sources = 1 (academic, agency, conferences); others = 0",  "SOURCE_BIN_*",
+  "PRACTICE_EXPOSURE_SCORE",    "Sum of binary risky exposure variables",                            "CONTACT_BIN, FIELD_BIN_50, HANDLE_BIN, COLLECT_BIN",
+  "PRACTICE_EXPOSURE_NORM",     "Normalized exposure score (0–1)",                                   "PRACTICE_EXPOSURE_SCORE",
+  "PRACTICE_AVG",               "Binary: Above average exposure = 1",                                "PRACTICE_EXPOSURE_NORM",
+  "PRACTICE_MED",               "Binary: Above median exposure = 1",                                 "PRACTICE_EXPOSURE_NORM",
+  "PRACTICE_EDUCATION_SCORE",   "Sum of education interest variables",                               "INTEREST_BIN, FREEINFO_BIN_*",
+  "PRACTICE_EDUCATION_NORM",    "Normalized education score (0–1)",                                  "PRACTICE_EDUCATION_SCORE")
+new_derived_vars <- tribble(
+  ~New_Variable,              ~Description,                                               ~Source_Variables,
+  "QSNCS",                    "Question sequence number or status code",                 "Qualtrics metadata",
+  "SOURCE_TRUST_COUNT",       "Count of trusted sources (e.g., academic, agency)",       "SOURCE_BIN_*",
+  "SOURCE_UNTRUST_COUNT",     "Count of untrusted sources",                              "SOURCE_BIN_*",
+  "SOURCE_TRUST_BIN",         "Binary: Any trusted source selected = 1",                 "SOURCE_TRUST_COUNT",
+  "PRACTICE_EXPOSURE_SCORE",  "Sum of binary risky exposure variables",                  "CONTACT_BIN, FIELD_BIN_50, HANDLE_BIN, COLLECT_BIN",
+  "PRACTICE_EXPOSURE_NORM",   "Normalized exposure score (0–1)",                         "PRACTICE_EXPOSURE_SCORE",
+  "PRACTICE_AVG",             "Binary: Above average exposure = 1",                      "PRACTICE_EXPOSURE_NORM",
+  "PRACTICE_MED",             "Binary: Above median exposure = 1",                       "PRACTICE_EXPOSURE_NORM",
+  "PRACTICE_EDUCATION_SCORE", "Sum of education interest variables",                     "INTEREST_BIN, FREEINFO_BIN_*",
+  "PRACTICE_EDUCATION_NORM",  "Normalized education score (0–1)",                        "PRACTICE_EDUCATION_SCORE")
+
+
+derived_data_info <- tibble(
+  New_Variable = names(df),
+  Data_Type = sapply(df, function(x) class(x)[1]),
+  Missing_Values = sapply(df, function(x) sum(is.na(x))))
+
+all_derived_vars <- bind_rows(
+  derived_vars,
+  attitude_doc,
+  practice_vars,
+  demographic_vars,
+  new_derived_vars) %>%
+  left_join(derived_data_info, by = "New_Variable") %>%
+  arrange(New_Variable)
+
+env_summary <- ls(envir = .GlobalEnv) %>%
+  purrr::map_df(function(obj_name) {
+    obj <- get(obj_name, envir = .GlobalEnv)
+    tibble(
+      Object = obj_name,
+      Class = class(obj)[1],
+      Type = typeof(obj),
+      Size = format(object.size(obj), units = "auto"),
+      Length = if (is.atomic(obj)) length(obj) else NA_integer_,
+      Dimensions = if (is.data.frame(obj) || is.matrix(obj)) paste(dim(obj), collapse = " x ") else
+        NA_character_,
+      Is_Numeric = is.numeric(obj),
+      Is_Scalar = is.atomic(obj) && length(obj) == 1,
+      Is_Vector = is.atomic(obj) && length(obj) > 1,
+      Preview = if (is.numeric(obj) || is.character(obj) || is.logical(obj)) {
+        paste0(utils::capture.output(print(utils::head(obj, 3))), collapse = " | ")
+      } else {
+        NA_character_
+      }
+    )
+  })
+
+write_xlsx(list(Original_vars = metasum, Derived_vars = all_derived_vars, GlobalEnv_Objects = env_summary),
+           file.path(oup, "datadictionary.xlsx"))
+
+
+```
+
+#### References
+
+```{r}
+
+# ----to display the packages within the .qmd without creating another .bib -----
+knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+
+```

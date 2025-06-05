@@ -1,0 +1,850 @@
+---
+title: "Exploratory and Statistical Analyses"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    highlight: zenburn
+    latex_engine: xelatex
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
+    code_folding: show
+    fig_caption: true
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+fontsize: 10pt
+mainfont: "Times New Roman"
+geometry: margin=1in
+---
+
+```{r}
+
+# Restart R / Clear Packages before running -----------------------
+#-----------------------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+require(tidyverse)
+require(knitr)
+require(kableExtra)
+require(lubridate)
+
+```
+
+### Importing Data 
+```{r}
+
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp <- file.path(analyses, "inputs")
+oup <- file.path(analyses, "outputs")
+
+# ---- Load Raw Dataset ----
+df <- read_csv(file.path(oup, "recodeddata.csv"))
+nrow(df) # 140 responses ------
+names(df)
+
+```
+
+# Functions
+#### Summary
+```{r}
+
+# Summary for binary variables -------------
+binFUN <- function(data, var, labels = c("No", "Yes")) {
+  data %>%
+    count(!!sym(var)) %>%
+    mutate(
+      Label = case_when(
+        !!sym(var) == 0 ~ labels[1],
+        !!sym(var) == 1 ~ labels[2],
+        TRUE ~ "Missing"),
+      Percent = round(n / sum(n, na.rm = TRUE) * 100, 1)) %>%
+    rename(Code = !!sym(var), Count = n)
+}
+
+# Continuous summary ------------------
+contFUN <- function(data, var) {
+  dplyr::summarize(data,
+    Mean = mean(.data[[var]], na.rm = TRUE),
+    Median = median(.data[[var]], na.rm = TRUE),
+    SD = sd(.data[[var]], na.rm = TRUE),
+    Min = min(.data[[var]], na.rm = TRUE),
+    Max = max(.data[[var]], na.rm = TRUE),
+    N = sum(!is.na(.data[[var]])))
+}
+
+# Summary for categorical (ordinal/factor) variable -----------------------
+catFUN <- function(data, var) {
+  data %>%
+    count(!!sym(var)) %>%
+    mutate(Percent = round(n / sum(n, na.rm = TRUE) * 100, 1)) %>%
+    rename(Level = !!sym(var), Count = n)
+}
+
+# Composite score summary ---------------
+compFUN <- function(data, var) {
+  dplyr::summarize(data,
+    Mean = mean(.data[[var]], na.rm = TRUE),
+    Median = median(.data[[var]], na.rm = TRUE),
+    SD = sd(.data[[var]], na.rm = TRUE),
+    Range = paste0(min(.data[[var]], na.rm = TRUE), "–", max(.data[[var]], na.rm = TRUE)),
+    N = sum(!is.na(.data[[var]])))
+}
+
+```
+
+#### Chisq / Cramer
+```{r}
+# ---- cramerschi Function ----
+cramerschi <- function(a, b) {
+  data.table <- table(a, b, useNA = "ifany")
+  data.chi <- chisq.test(data.table)
+  chistat <- as.numeric(data.chi$statistic)
+  chi.df <- as.integer(data.chi$parameter)
+  chi.pvalue <- data.chi$p.value
+  CramV <- as.numeric(cramerV(data.table))
+  interpret_cramv <- function(cv) {
+    if (cv < 0.1) return("Negligible")
+    else if (cv < 0.3) return("Small")
+    else if (cv < 0.5) return("Moderate")
+    else return("Large")
+  }
+  CramV.label <- interpret_cramv(CramV)
+  row_totals <- rowSums(data.table)
+  col_totals <- colSums(data.table)
+  grand_total <- sum(data.table)
+  prop_table <- prop.table(data.table) * 100
+  row_props <- prop.table(data.table, 1) * 100
+  col_props <- prop.table(data.table, 2) * 100
+  expected <- round(data.chi$expected, 2)
+  result <- list(
+    chi_statistic = chistat,
+    chi_df = chi.df,
+    chi_p_value = chi.pvalue,
+    cramerV = CramV,
+    cramerV_interpretation = CramV.label,
+    observed_table = data.table,
+    expected_table = expected,
+    row_totals = row_totals,
+    col_totals = col_totals,
+    grand_total = grand_total,
+    percent_table = round(prop_table, 2),
+    row_percentages = round(row_props, 2),
+    column_percentages = round(col_props, 2))
+  return(result)
+}
+
+# Output labels for easier use
+cramerschi.output.list <- c("chistat", "chi.df", "chi.pvalue", "CramV",
+                            "zero_zero", "zero_one", "one_zero", "one_one",
+                            "colzerotot", "colonetot")
+
+# ---- run_chi_batch Function ----
+run_chi_batch <- function(df, predictors, outcomes) {
+  out <- list()
+  for (p in predictors) {
+    for (o in outcomes) {
+      key <- paste(p, o, sep = "_x_")
+      sub <- df[, c(p, o)]
+      sub <- na.omit(sub)
+      if (nrow(sub) >= 5 && length(unique(sub[[1]])) > 1) {
+        res <- try(cramerschi(sub[[1]], sub[[2]]), silent = TRUE)
+        if (!inherits(res, "try-error")) {
+          out[[key]] <- res
+        }
+      }
+    }
+  }
+  return(out)
+}
+
+# Convert results to data frame summary
+extract_summary <- function(result_list) {
+  data.frame(
+    Variable_Pair = names(result_list),
+    Chi_Square    = sapply(result_list, function(x) x$chi_statistic),
+    df            = sapply(result_list, function(x) x$chi_df),
+    p_value       = sapply(result_list, function(x) x$chi_p_value),
+    CramerV       = sapply(result_list, function(x) x$cramerV),
+    Effect_Size   = sapply(result_list, function(x) x$cramerV_interpretation),
+    Significant   = sapply(result_list, function(x) x$chi_p_value < 0.05)
+  )
+}
+```
+
+
+
+# Data Summary
+#### Metadata
+```{r}
+
+# Progress Summary ----------------------------------------------------
+prog <- read_csv(file.path(inp, "prog.csv"))
+nrow(prog) # 214 responses (all exported from qualtrics platform) ------
+progsum <- prog %>%
+  mutate(
+    prog_bin = cut(
+      PROG,                                # specify the variable here!
+      breaks = seq(0, 100, by = 10),
+      include.lowest = TRUE,
+      right = FALSE,
+      labels = paste0(seq(0, 90, 10), "-", seq(10, 100, 10), "%"))) %>%
+  count(prog_bin, name = "Respondent_Count") %>%
+  arrange(prog_bin)
+cat("### Survey Progress\n")
+contFUN(df, "PROG") %>% kable(caption = "Survey Progress (0–100%)")
+
+# Duration Summary ---------------------------------------------
+df <- df %>%
+  mutate(DURATION_MIN = DURATION / 60)
+cat("### Survey Duration\n")
+contFUN(df, "DURATION") %>% kable(caption = "Duration (Seconds)")
+contFUN(df, "DURATION_MIN") %>% kable(caption = "Duration (Minutes)")
+df <- df %>% mutate(DURATION_MIN = as.numeric(DURATION))
+total_responses <- nrow(df)
+above_60 <- sum(df$DURATION_MIN > 60)
+duration_table <- df %>%
+  filter(DURATION_MIN <= 60) %>%
+  mutate(duration_bin = cut(DURATION_MIN, breaks = seq(0, 60, by = 5), include.lowest = TRUE, right = FALSE,
+                            labels = paste0(seq(0, 55, 5), "-", seq(5, 60, 5), " Minutes"))) %>%
+  count(duration_bin, name = "Respondent_Count") %>%
+  mutate(Proportion = Respondent_Count / total_responses)
+duration_table
+
+# End Date - Survey Submission ------------------
+df <- df %>% mutate(END = as.Date(END, format = "%m/%d/%Y"))
+monthly_summary <- df %>%
+  mutate(Month = format(END, "%Y-%m")) %>%
+  count(Month, name = "Respondent_Count") %>%
+  mutate(Proportion = Respondent_Count / sum(Respondent_Count)) %>%
+  arrange(Month)
+kable(monthly_summary, digits = c(NA, 0, 2), col.names = c("Month", "Number of Respondents", "Proportion of Total"),
+      caption = paste0("**Survey Responses by Month**\n", "Total responses:",sum(monthly_summary$Respondent_Count)))
+
+```
+
+#### Demographic
+```{r}
+
+# --- Binary Variables ---
+cat("### Gender\n")
+binFUN(df, "GENDER_BIN", labels = c("Female", "Male")) %>% kable()
+
+cat("### Race (Binary)\n")
+binFUN(df, "RACE_BIN", labels = c("Non-White", "White")) %>% kable()
+
+cat("### Income (Binary)\n")
+binFUN(df, "INCOME_BIN", labels = c("Below $60K", "Above $60K")) %>% kable()
+
+cat("### Age (Above/Below Median)\n")
+binFUN(df, "AGE_BIN", labels = c("Below Median", "Above Median")) %>% kable()
+
+cat("### LICENSE_BIN\n")
+binFUN(df, "LICENSE_BIN") %>% kable()
+
+cat("### SELFTITLE_BIN\n")
+binFUN(df, "SELFTITLE_BIN") %>% kable()
+
+cat("### TWS_BIN\n")
+binFUN(df, "TWS_BIN") %>% kable()
+
+cat("### COURSE_BIN\n")
+binFUN(df, "COURSE_BIN") %>% kable()
+
+cat("### COURSETIME_BIN\n")
+binFUN(df, "COURSETIME_BIN", labels = c(">10 years ago", "<=10 years ago")) %>% kable()
+
+# --- Continuous Variable ---
+cat("### Age Summary (Continuous)\n")
+contFUN(df, "AGE") %>% kable()
+
+# --- Categorical Variables ---
+cat("### Race (Full Categories)\n")
+catFUN(df, "RACE") %>% kable()
+
+cat("### Gender (Full Categories)\n")
+catFUN(df, "GENDER") %>% kable()
+
+cat("### Income (Full Categories)\n")
+catFUN(df, "INCOME") %>% kable()
+
+cat("### Education (Ordinal)\n")
+catFUN(df, "EDUCATION") %>% kable()
+
+cat("### BIOTIME (Years in Field)\n")
+catFUN(df, "BIOTIME") %>% kable()
+
+cat("### COURSETIME\n")
+catFUN(df, "COURSETIME") %>% kable()
+
+# --- Composite Scores ---
+cat("### DEMO_EDU_SCORE Summary\n")
+compFUN(df, "DEMO_EDU_SCORE") %>% kable()
+
+cat("### DEMO_EDU_NORM Summary\n")
+compFUN(df, "DEMO_EDU_NORM") %>% kable()
+
+cat("### DEMO_EXP_SCORE Summary\n")
+compFUN(df, "DEMO_EXP_SCORE") %>% kable()
+
+cat("### DEMO_EXP_NORM Summary\n")
+compFUN(df, "DEMO_EXP_NORM") %>% kable()
+
+# --- Binary Splits from Composite Scores ---
+cat("### DEMO_EDU_AVG (Above/Below Avg)\n")
+binFUN(df, "DEMO_EDU_AVG", labels = c("Below Avg", "Above Avg")) %>% kable()
+
+cat("### DEMO_EDU_MED (Above/Below Median)\n")
+binFUN(df, "DEMO_EDU_MED", labels = c("Below Median", "Above Median")) %>% kable()
+
+cat("### DEMO_EXP_AVG (Above/Below Avg)\n")
+binFUN(df, "DEMO_EXP_AVG", labels = c("Below Avg", "Above Avg")) %>% kable()
+
+cat("### DEMO_EXP_MED (Above/Below Median)\n")
+binFUN(df, "DEMO_EXP_MED", labels = c("Below Median", "Above Median")) %>% kable()
+
+```
+
+#### Knowledge 
+```{r}
+
+cat("### Knowledge Item Accuracy (BINK variables)\n")
+binFUN(df, "PIGS_BINK") %>% kable(caption = "PIGS_BINK")
+binFUN(df, "BRUCE_BINK") %>% kable(caption = "BRUCE_BINK")
+binFUN(df, "CWD_BINK") %>% kable(caption = "CWD_BINK")
+binFUN(df, "FLUAL_BINK") %>% kable(caption = "FLUAL_BINK")
+binFUN(df, "FLU_BINK") %>% kable(caption = "FLU_BINK")
+binFUN(df, "COVID_BINK") %>% kable(caption = "COVID_BINK")
+binFUN(df, "COVIDSPILL_BINK") %>% kable(caption = "COVIDSPILL_BINK")
+binFUN(df, "RABIESAL_BINK") %>% kable(caption = "RABIESAL_BINK")
+binFUN(df, "RABIES_BINK") %>% kable(caption = "RABIES_BINK")
+binFUN(df, "TURKEY_BINK") %>% kable(caption = "TURKEY_BINK")
+
+## --- Composite Knowledge Scores ---
+cat("### Knowledge Composite Scores\n")
+compFUN(df, "KNOWLEDGE_SCORE") %>% kable(caption = "Raw Score (0–10)")
+compFUN(df, "KNOWLEDGE_SCORE_NORM") %>% kable(caption = "Normalized Score (0–1)")
+
+## --- Binarized Knowledge Outcomes ---
+binFUN(df, "KNOWLEDGE_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Above/Below Average")
+binFUN(df, "KNOWLEDGE_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Above/Below Median")
+
+## --- Confidence (BINC: IDK = 1) ---
+cat("### Confidence (I Don't Know Responses)\n")
+
+binFUN(df, "PIGS_BINC") %>% kable(caption = "PIGS_BINC")
+binFUN(df, "BRUCE_BINC") %>% kable(caption = "BRUCE_BINC")
+binFUN(df, "CWD_BINC") %>% kable(caption = "CWD_BINC")
+binFUN(df, "FLUAL_BINC") %>% kable(caption = "FLUAL_BINC")
+binFUN(df, "FLU_BINC") %>% kable(caption = "FLU_BINC")
+binFUN(df, "COVID_BINC") %>% kable(caption = "COVID_BINC")
+binFUN(df, "COVIDSPILL_BINC") %>% kable(caption = "COVIDSPILL_BINC")
+binFUN(df, "RABIESAL_BINC") %>% kable(caption = "RABIESAL_BINC")
+binFUN(df, "RABIES_BINC") %>% kable(caption = "RABIES_BINC")
+binFUN(df, "TURKEY_BINC") %>% kable(caption = "TURKEY_BINC")
+
+## --- Confidence Composite Scores ---
+compFUN(df, "CONFIDENCE_SCORE") %>% kable(caption = "Raw Confidence Score (IDK Count)")
+compFUN(df, "CONFIDENCE_SCORE_NORM") %>% kable(caption = "Normalized Confidence Score (0–1)")
+
+## --- Binarized Confidence Outcomes ---
+binFUN(df, "CONFIDENCE_AVG", labels = c("Lower", "Higher")) %>% kable(caption = "Confidence vs Average")
+binFUN(df, "CONFIDENCE_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Confidence vs Median")
+
+```
+
+
+#### Attitudes 
+```{r}
+
+# --- Composite Scores: Raw ---
+cat("### Attitude Composite Scores (Raw Means)\n")
+compFUN(df, "ATT_CONTROL_SCORE") %>% kable(caption = "Control Attitudes")
+compFUN(df, "ATT_MISINFO_SCORE") %>% kable(caption = "Misinformation Attitudes")
+compFUN(df, "ATT_CONCERN_SCORE") %>% kable(caption = "Concern Attitudes")
+compFUN(df, "ATT_EDUCATION_SCORE") %>% kable(caption = "Education Attitudes")
+compFUN(df, "ATT_REVERSE_SCORE") %>% kable(caption = "Reverse-Coded Attitudes")
+compFUN(df, "ATT_DIRECT_SCORE") %>% kable(caption = "Direct-Coded Attitudes")
+
+# --- Composite Scores: Normalized ---
+cat("### Attitude Composite Scores (Normalized 0–1)\n")
+compFUN(df, "ATT_CONTROL_NORM") %>% kable(caption = "Control Attitudes (Norm)")
+compFUN(df, "ATT_MISINFO_NORM") %>% kable(caption = "Misinformation Attitudes (Norm)")
+compFUN(df, "ATT_CONCERN_NORM") %>% kable(caption = "Concern Attitudes (Norm)")
+compFUN(df, "ATT_EDUCATION_NORM") %>% kable(caption = "Education Attitudes (Norm)")
+compFUN(df, "ATT_REVERSE_NORM") %>% kable(caption = "Reverse Attitudes (Norm)")
+compFUN(df, "ATT_DIRECT_NORM") %>% kable(caption = "Direct Attitudes (Norm)")
+
+# --- Binary Breakdown: Above/Below AVG ---
+cat("### Attitude Scores: Above vs Below Average\n")
+binFUN(df, "CONTROL_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Control Attitudes")
+binFUN(df, "MISINFO_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Misinformation Attitudes")
+binFUN(df, "CONCERN_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Concern Attitudes")
+binFUN(df, "EDUCATION_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Education Attitudes")
+binFUN(df, "REVERSE_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Reverse-Coded")
+binFUN(df, "DIRECT_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Direct-Coded")
+
+# --- Binary Breakdown: Above/Below Median ---
+cat("### Attitude Scores: Above vs Below Median\n")
+binFUN(df, "CONTROL_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Control Attitudes")
+binFUN(df, "MISINFO_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Misinformation Attitudes")
+binFUN(df, "CONCERN_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Concern Attitudes")
+binFUN(df, "EDUCATION_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Education Attitudes")
+binFUN(df, "REVERSE_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Reverse-Coded")
+binFUN(df, "DIRECT_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Direct-Coded")
+
+
+```
+#### Practices
+```{r}
+
+# --- Binary Behavior Items (Yes = 1) ---
+cat("### Field Practices (Binary)\n")
+binFUN(df, "COLLECT_BIN", labels = c("No", "Yes")) %>% kable(caption = "Collected Wildlife")
+binFUN(df, "HANDLE_BIN", labels = c("No", "Yes")) %>% kable(caption = "Handled Wildlife")
+binFUN(df, "PPE_BIN", labels = c("No", "Yes")) %>% kable(caption = "Used PPE")
+binFUN(df, "ACCESS_BIN", labels = c("Yes", "No")) %>% kable(caption = "Field Access Barriers")
+binFUN(df, "CONTACT_BIN", labels = c("Low", "High")) %>% kable(caption = "Frequent Contact")
+binFUN(df, "FIELD_BIN_50", labels = c("Less", "More")) %>% kable(caption = "≥50 Days Field Time")
+binFUN(df, "INTEREST_BIN", labels = c("No/Unsure", "Yes")) %>% kable(caption = "Interested in Education")
+binFUN(df, "PPETIME_BIN", labels = c("Low Use", "High Use")) %>% kable(caption = "PPE Use Rate")
+
+# --- Information Topics / Channels ---
+cat("### Wildlife Health Course (Binary Indicators)\n")
+binFUN(df, "FREEINFO_BIN_INPERSON") %>% kable(caption = "Info Format: In-Person")
+binFUN(df, "FREEINFO_BIN_VIRTUAL") %>% kable(caption = "Info Format: Virtual")
+binFUN(df, "FREEINFO_BIN_OTHER") %>% kable(caption = "Info Format: Other")
+
+binFUN(df, "TOPIC_BREADTH_BIN", labels = c("Narrow", "Broad")) %>% kable(caption = "Topic Breadth")
+
+# --- Composite: Practice Exposure Score ---
+cat("### Composite Practice - Exposure Score\n")
+compFUN(df, "PRACTICE_EXPOSURE_SCORE") %>% kable(caption = "Exposure Score (0–4)")
+compFUN(df, "PRACTICE_EXPOSURE_NORM") %>% kable(caption = "Exposure Score (Normalized 0–1)")
+
+binFUN(df, "PRACTICE_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Exposure vs Average")
+binFUN(df, "PRACTICE_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Exposure vs Median")
+
+# --- Composite: Practice Education Score ---
+cat("### Composite Practice - Education Score\n")
+compFUN(df, "PRACTICE_EDUCATION_SCORE") %>% kable(caption = "Education Engagement (0–3)")
+compFUN(df, "PRACTICE_EDUCATION_NORM") %>% kable(caption = "Education Engagement (Normalized 0–1)")
+
+binFUN(df, "PRACTICE_AVG", labels = c("Below Avg", "Above Avg")) %>% kable(caption = "Education vs Average")
+binFUN(df, "PRACTICE_MED", labels = c("Below Median", "Above Median")) %>% kable(caption = "Education vs Median")
+
+# --- Trust in Info Sources (Optional) ---
+cat("### Source of Wildlife Health Information\n")
+binFUN(df, "SOURCE_TRUST_BIN", labels = c("Less Reliability", "More Reliability")) %>% 
+  kable(caption = "Trusted > Untrusted Sources")
+
+```
+
+# Chi-squared / Cramers V
+```{r}
+require(rcompanion)
+require(kableExtra)
+require(officer)
+require(flextable)
+```
+
+#### Groups 
+```{r}
+binary_vars <- names(df)[sapply(df, function(x) is.factor(x) || (is.numeric(x) && length(unique(na.omit(x))) <= 2))]
+binary_vars
+# Demographics -------------------------------------------------------------------
+DEMvar <- c("RACE_BIN", "INCOME_BIN", "GENDER_BIN", "AGE_BIN", "RESIDENT_BIN", "STATE_BIN")
+IDvar   <- c("SELFTITLE_BIN", "LICENSE_BIN")  
+EDUvar  <- c("EDUCATION_BIN", "DEGREE_BIN", "DEMO_EDU_MED", "DEMO_EDU_AVG") 
+EXPvar  <- c("TWS_BIN", "COURSE_BIN", "COURSETIME_BIN", "BIOTIME_BIN", "DEMO_EXP_MED", "DEMO_EXP_AVG")
+
+# Knowledge ----------------------------------------------------------------------
+KNOWvar     <- c("PIGS_BINK", "BRUCE_BINK", "CWD_BINK", "FLUAL_BINK", "FLU_BINK",
+                 "COVID_BINK", "COVIDSPILL_BINK", "RABIESAL_BINK", "RABIES_BINK", "TURKEY_BINK")  
+KNOWbin <- c("KNOWLEDGE_MED", "KNOWLEDGE_AVG")  
+CONFvar      <- c("PIGS_BINC", "BRUCE_BINC", "CWD_BINC", "FLUAL_BINC", "FLU_BINC",
+                  "COVID_BINC", "COVIDSPILL_BINC", "RABIESAL_BINC", "RABIES_BINC", "TURKEY_BINC")  
+CONFbin  <- c("CONFIDENCE_MED", "CONFIDENCE_AVG") 
+
+# Attitudes ----------------------------------------------------------------------
+TUDEbin  <- c("CONTROL_AVG", "CONTROL_MED", "MISINFO_AVG", "MISINFO_MED", "CONCERN_AVG", "CONCERN_MED",
+                  "EDUCATION_AVG", "EDUCATION_MED", "REVERSE_AVG", "REVERSE_MED", "DIRECT_AVG", "DIRECT_MED") 
+
+# Practices --------------------------------------------------------------
+PRACvar     <- c("CONTACT_BIN", "FIELD_BIN_MED", "FIELD_BIN_50", "COLLECT_BIN", "HANDLE_BIN")
+PRACbin <- c("PRACTICE_AVG", "PRACTICE_MED") 
+PPEvar <- c("PPE_BIN", "PPETIME_BIN") 
+SOURCE  <- c("SOURCE_TRUST_BIN")
+```
+#### Comparisons 
+```{r message=FALSE, warning=FALSE}
+
+results <- list(
+  # Demographics x Knowledge
+  demo_know     = extract_summary(run_chi_batch(df, DEMvar, KNOWbin)),
+  # Demographics x Confidence
+  demo_conf     = extract_summary(run_chi_batch(df, DEMvar, CONFbin)),
+  # Education x Knowledge
+  edu_know      = extract_summary(run_chi_batch(df, EDUvar, KNOWbin)),
+  # Education x Confidence
+  edu_conf      = extract_summary(run_chi_batch(df, EDUvar, CONFbin)),
+  # Experience x Knowledge
+  exp_know      = extract_summary(run_chi_batch(df, EXPvar, KNOWbin)),
+  # Experience x Confidence
+  exp_conf      = extract_summary(run_chi_batch(df, EXPvar, CONFbin)),
+  # Identity x Knowledge
+  id_know       = extract_summary(run_chi_batch(df, IDvar, KNOWbin)),
+  # Identity x Confidence
+  id_conf       = extract_summary(run_chi_batch(df, IDvar, CONFbin)),
+  # Knowledge x Confidence (Cross-variable consistency)
+  know_conf     = extract_summary(run_chi_batch(df, KNOWbin, CONFbin)),
+  # Attitudes x Knowledge
+  att_know      = extract_summary(run_chi_batch(df, TUDEbin, KNOWbin)),
+  # Attitudes x Confidence
+  att_conf      = extract_summary(run_chi_batch(df, TUDEbin, CONFbin)),
+  # Practices x Knowledge
+  prac_know     = extract_summary(run_chi_batch(df, PRACvar, KNOWbin)),
+  # Practices x Confidence
+  prac_conf     = extract_summary(run_chi_batch(df, PRACvar, CONFbin)),
+  # Practice Scores x Knowledge
+  pracsco_know  = extract_summary(run_chi_batch(df, PRACbin, KNOWbin)),
+  # Practice Scores x Confidence
+  pracsco_conf  = extract_summary(run_chi_batch(df, PRACbin, CONFbin)),
+  # PPE Usage x Practices
+  ppe_prac      = extract_summary(run_chi_batch(df, PPEvar, PRACvar)),
+  # PPE Usage x Practice Scores
+  ppe_pracsco   = extract_summary(run_chi_batch(df, PPEvar, PRACbin)),
+  # Sources x Knowledge
+  sources_know  = extract_summary(run_chi_batch(df, SOURCE, KNOWvar)))
+
+str(results, max.level = 1)
+results
+
+all_results <- bind_rows(lapply(names(results), function(name) {
+  df <- results[[name]]
+  if (is.data.frame(df)) {
+    df$Source <- name
+    return(df)
+  }
+}), .id = "Group")
+top_results <- all_results %>%
+  filter(Significant == TRUE) %>%
+  arrange(desc(CramerV)) %>%
+  select(Source, Variable_Pair, Chi_Square, df, p_value, CramerV, Effect_Size) %>%
+  head(50)  
+knitr::kable(top_results, format = "pandoc", caption = "Top 50 Most Significant Relationships")
+
+```
+
+#### Export
+```{r}
+
+require(openxlsx)
+wb <- createWorkbook()
+dir.create(oup, showWarnings = FALSE)
+
+for (name in names(results)) {
+  res <- results[[name]]
+  if (is.data.frame(res) && nrow(res) > 0) {
+    addWorksheet(wb, sheetName = paste0(name, "_all"))
+    writeData(wb, sheet = paste0(name, "_all"), res)
+    if ("Significant" %in% names(res)) {
+      sig_res <- subset(res, Significant == TRUE)
+      addWorksheet(wb, sheetName = paste0(name, "_sig"))
+      writeData(wb, sheet = paste0(name, "_sig"), sig_res)
+    }
+  }
+}
+saveWorkbook(wb, file = file.path(oup, "cramerchisq_results.xlsx"), overwrite = TRUE)
+for (name in names(results)) {
+  res <- results[[name]]
+  if (is.data.frame(res) && nrow(res) > 0) {
+    if ("Significant" %in% names(res)) {
+      sig_data <- subset(res, Significant == TRUE)
+    }
+  }
+}
+```
+
+# Regression
+```{r}
+require(tidyverse)
+require(MASS)
+require(broom)
+require(nnet)
+require(knitr)
+
+df$COURSE_GROUP <- as.factor(df$COURSE_GROUP) 
+```
+#### Linear Models 
+```{r}
+
+#### Pairs (Knowledge X Attitude) ------------
+# Define matched attitude/knowledge/confidence items
+attitude_knowledge_pairs <- list(
+  list(attitude = "CWDAL_A",  knowledge = "CWD_BINK",        confidence = "CWD_BINC"),
+  list(attitude = "BATS_A",   knowledge = "FLUAL_BINK",      confidence = "FLUAL_BINC"),
+  list(attitude = "PPEREQ_A", knowledge = "BRUCE_BINK",      confidence = "BRUCE_BINC"),
+  list(attitude = "EHD_A",    knowledge = "FLUAL_BINK",      confidence = "FLUAL_BINC"),
+  list(attitude = "DARWIN_A", knowledge = "COVIDSPILL_BINK", confidence = "COVIDSPILL_BINC"))
+
+run_attitude_models_dual <- function(data, pairs) {
+  results <- list()
+  if (!"COURSEGROUP_BIN" %in% names(data)) {
+    data <- data %>%
+      mutate(COURSEGROUP_BIN = case_when(
+        COURSE_BIN == 0 ~ 0,
+        COURSETIME_BIN == 1 ~ 1,
+        COURSETIME_BIN == 0 ~ 2,
+        TRUE ~ NA_real_))
+  }
+  for (pair in pairs) {
+    att <- pair$attitude
+    acc <- pair$knowledge
+    conf <- pair$confidence
+    att_num <- paste0(att, "_NUM")
+    if (!all(c(att, acc, conf) %in% names(data))) {
+      warning(paste("Skipping due to missing variables:", att, acc, conf))
+      next
+    }
+    data[[att_num]] <- as.numeric(data[[att]])
+    model_acc <- lm(as.formula(paste(att_num, "~", acc,
+      "+ KNOWLEDGE_SCORE + INTEREST_BIN + EDUCATION_BIN + BIOTIME_BIN + factor(COURSEGROUP_BIN)")), data = data)
+    model_conf <- lm(as.formula(paste(att_num, "~", conf,
+      "+ KNOWLEDGE_SCORE + INTEREST_BIN + EDUCATION_BIN + BIOTIME_BIN + factor(COURSEGROUP_BIN)")), data = data)
+
+    results[[att]] <- list(
+      accuracy_model = summary(model_acc),
+      confidence_model = summary(model_conf)
+    )
+  }
+  return(results)
+}
+pairslm_result <- run_attitude_models_dual(df, attitude_knowledge_pairs)
+pairslm_result
+#--------------------------------------------------------------------------------
+df$KNOWLEDGE_SCORE_NORM <- scale(df$KNOWLEDGE_SCORE)
+df$CONFIDENCE_SCORE_NORM <- scale(df$CONFIDENCE_SCORE)
+
+# Knowledge Model
+know_lm <- lm(KNOWLEDGE_SCORE_NORM ~ COURSE_GROUP + AFFILIATE_GROUP +
+              PRACTICE_EXPOSURE_SCORE + ATT_CONCERN_SCORE +
+              ATT_MISINFO_SCORE + INTEREST_BIN, data = df)
+summary(know_lm)
+
+# Confidence Model
+conf_lm <- lm(CONFIDENCE_SCORE_NORM ~ COURSE_GROUP + AFFILIATE_GROUP +
+              PRACTICE_EXPOSURE_SCORE + ATT_CONCERN_SCORE +
+              ATT_MISINFO_SCORE + INTEREST_BIN, data = df)
+summary(conf_lm)
+
+```
+
+#### Binomial
+```{r}
+# Factor conversions -----------------------
+df$INTEREST_BIN <- as.factor(df$INTEREST_BIN)
+df$PPE_BIN <- as.factor(df$PPE_BIN)
+df$ACCESS_BIN <- as.factor(df$ACCESS_BIN)
+
+# Interest in Education ---------------------
+interest_glm <- glm(INTEREST_BIN ~ COURSE_GROUP + AFFILIATE_GROUP +
+                    DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+                    KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE,
+                    data = df, family = binomial)
+summary(interest_glm)
+exp(coef(interest_glm))
+
+# PPE Use --------------------------
+ppe_glm <- glm(PPE_BIN ~ COURSE_GROUP + AFFILIATE_GROUP +
+               DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+               KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE,
+               data = df, family = binomial)
+summary(ppe_glm)
+exp(coef(ppe_glm))
+
+# Information Access
+access_glm <- glm(ACCESS_BIN ~ DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+                  KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE,
+                  data = df, family = binomial)
+summary(access_glm)
+exp(coef(access_glm))
+
+```
+
+#### Multinomial 
+```{r}
+
+# Predicting Course Group -------------------------------------
+df$COURSE_GROUP <- as.factor(df$COURSE_GROUP)
+df$AFFILIATE_GROUP <- as.factor(df$AFFILIATE_GROUP)
+course_mnom <- multinom(COURSE_GROUP ~ CONFIDENCE_SCORE + AFFILIATE_GROUP +
+                        DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+                        KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE, 
+                        data = df)
+summary(course_mnom)
+exp(coef(course_mnom))
+z_course <- summary(course_mnom)$coefficients / summary(course_mnom)$standard.errors
+course_p <- 2 * (1 - pnorm(abs(z_course)))
+
+# Predicting Affiliate Group -----------------------
+affiliate_mnom <- multinom(AFFILIATE_GROUP ~ CONFIDENCE_SCORE + COURSE_GROUP +
+                           DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+                           KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE, 
+                           data = df)
+summary(affiliate_mnom)
+exp(coef(affiliate_mnom))
+z_affil <- summary(affiliate_mnom)$coefficients / summary(affiliate_mnom)$standard.errors
+affil_p <- 2 * (1 - pnorm(abs(z_affil)))
+
+```
+#### Ordinal 
+```{r}
+
+likert_items <- c("POPRED_A", "POPPLAN_A", "SURVEY_A", "VACCINE_A", "PREVAL_A", "DIVERSE_A", 
+                  "CONSEQ_A", "CLIMATE_A", "EDREQ_A", "INFO_A", "HANDSON_A", "CWDAL_A", "BATS_A",
+                  "PPEREQ_A", "EHD_A", "DARWIN_A")
+results_list <- list()
+for (item in likert_items) {
+  df[[item]] <- factor(df[[item]], ordered = TRUE)
+  model <- polr(as.formula(paste(item, "~ KNOWLEDGE_SCORE + CONFIDENCE_SCORE + DEMO_EDU_SCORE + DEMO_EXP_SCORE +
+                                           GENDER_BIN + AGE_BIN")),
+                data = df, Hess = TRUE)
+  tidy_out <- tidy(model) %>%
+    filter(str_detect(term, "KNOWLEDGE_SCORE|CONFIDENCE_SCORE|DEMO_|GENDER_BIN|AGE_BIN")) %>%
+    mutate(
+      p.value = 2 * pnorm(abs(statistic), lower.tail = FALSE),
+      attitude_item = item
+    )
+  results_list[[item]] <- tidy_out
+}
+results_df <- bind_rows(results_list) %>%
+  mutate(
+    significant = ifelse(p.value < 0.05, "*", ""),
+    estimate = round(estimate, 3),
+    p.value = round(p.value, 4))
+knitr::kable(results_df, format = "pandoc", caption = "Ordinal Regression: Likert Attitude")
+write.csv(results_df, file.path(oup, "ordinalattitudes_results.csv"), row.names = FALSE)
+
+```
+# Results 
+```{r}
+require(sjPlot)
+require(car)
+require(modelsummary)
+require(stargazer)
+require(ggeffects)
+require(effects)
+require(ggplot2)
+```
+#### Diagnostics 
+```{r}
+
+# Residual plots ------------------------
+par(mfrow = c(2, 2))
+plot(know_lm)
+plot(conf_lm)
+
+# GLM diagnostics (deviance residuals, etc.)
+par(mfrow = c(1, 3))
+plot(residuals(interest_glm, type = "deviance"), main = "Interest Residuals")
+plot(residuals(ppe_glm, type = "deviance"), main = "PPE Residuals")
+plot(residuals(access_glm, type = "deviance"), main = "Access Residuals")
+
+# VIF --------------------------------
+vif_results <- list(
+  "Knowledge" = vif(know_lm),
+  "Confidence" = vif(conf_lm),
+  "Interest" = vif(interest_glm),
+  "PPE" = vif(ppe_glm),
+  "Access" = vif(access_glm))
+print(vif_results)
+
+```
+
+#### Effects Plots 
+```{r}
+
+plot(allEffects(interest_glm), main = "Effect: Interest in Learning")
+plot(allEffects(ppe_glm), main = "Effect: PPE Use")
+plot(allEffects(access_glm), main = "Effect: Access to Information")
+
+# GGPREDICT: Predicted values with ggtitle() ---------------------------------
+
+# Logistic: Interest Model
+interestgp <- ggpredict(interest_glm, terms = c("COURSE_GROUP", "KNOWLEDGE_SCORE"))
+plot(interestgp) + ggtitle("Predicted Probability: Interest")
+
+# Linear: Knowledge Model
+knowgp <- ggpredict(know_lm, terms = c("INTEREST_BIN", "ATT_MISINFO_SCORE"))
+plot(knowgp) + ggtitle("Predicted Knowledge Score")
+
+# Linear: Confidence Model
+confgp <- ggpredict(conf_lm, terms = c("INTEREST_BIN", "PRACTICE_EXPOSURE_SCORE"))
+plot(confgp) + ggtitle("Predicted Confidence Score")
+
+
+# SJPlot: Visualize model coefficients ----------------------------------------
+
+# GLM: Interest Model Coefficient Plot
+plot_model(interest_glm, type = "est", show.values = TRUE, value.offset = 0.3) +
+  ggtitle("Interest Model Effects")
+
+# LM: Knowledge Model Coefficient Plot
+plot_model(know_lm, type = "est", show.values = TRUE, value.offset = 0.3) +
+  ggtitle("Knowledge Model Effects")
+
+
+# Side-by-side table comparison
+tab_model(
+  know_lm, conf_lm, interest_glm, ppe_glm, access_glm,
+  show.ci = TRUE, show.se = TRUE, show.stat = TRUE,
+  title = "Model Comparison Table")
+
+```
+
+#### Export 
+```{r}
+
+modelsummary(
+  list(
+    "Knowledge" = know_lm,
+    "Confidence" = conf_lm,
+    "Interest" = interest_glm,
+    "PPE Use" = ppe_glm,
+    "Access" = access_glm),
+  statistic = "conf.int",
+  output = file.path(oup, "regression_results.docx"))
+
+# Linear & logistic combined 
+stargazer(
+  know_lm, conf_lm, interest_glm, ppe_glm, access_glm,
+  type = "text",
+  title = "KAP Regression Models",
+  out = file.path(oup, "regression_results.txt"),
+  single.row = TRUE,
+  digits = 3,
+  covariate.labels = NULL,
+  omit.stat = c("f", "ser"))
+
+```
+
+#### References
+```{r}
+
+# ----to display the packages within the .qmd without creating another .bib -----
+knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
+
+```
