@@ -38,7 +38,6 @@ require(tidyverse)
 require(knitr)
 require(kableExtra)
 require(lubridate)
-
 ```
 
 ### Importing Data 
@@ -624,7 +623,6 @@ run_attitude_models_dual <- function(data, pairs) {
       "+ KNOWLEDGE_SCORE + INTEREST_BIN + EDUCATION_BIN + BIOTIME_BIN + factor(COURSEGROUP_BIN)")), data = data)
     model_conf <- lm(as.formula(paste(att_num, "~", conf,
       "+ KNOWLEDGE_SCORE + INTEREST_BIN + EDUCATION_BIN + BIOTIME_BIN + factor(COURSEGROUP_BIN)")), data = data)
-
     results[[att]] <- list(
       accuracy_model = summary(model_acc),
       confidence_model = summary(model_conf)
@@ -634,6 +632,7 @@ run_attitude_models_dual <- function(data, pairs) {
 }
 pairslm_result <- run_attitude_models_dual(df, attitude_knowledge_pairs)
 pairslm_result
+tidy(pairslm_result$accuracy_model)
 #--------------------------------------------------------------------------------
 df$KNOWLEDGE_SCORE_NORM <- scale(df$KNOWLEDGE_SCORE)
 df$CONFIDENCE_SCORE_NORM <- scale(df$CONFIDENCE_SCORE)
@@ -643,7 +642,7 @@ know_lm <- lm(KNOWLEDGE_SCORE_NORM ~ COURSE_GROUP + AFFILIATE_GROUP +
               PRACTICE_EXPOSURE_SCORE + ATT_CONCERN_SCORE +
               ATT_MISINFO_SCORE + INTEREST_BIN, data = df)
 summary(know_lm)
-
+tidy(know_lm)
 # Confidence Model
 conf_lm <- lm(CONFIDENCE_SCORE_NORM ~ COURSE_GROUP + AFFILIATE_GROUP +
               PRACTICE_EXPOSURE_SCORE + ATT_CONCERN_SCORE +
