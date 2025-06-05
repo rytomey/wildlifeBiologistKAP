@@ -35,6 +35,11 @@ require(zipcodeR)
 require(ggmap)
 require(sf)
 require(knitr)
+require(dplyr)
+require(tigris)
+options(tigris_use_cache = TRUE)
+require(ggplot2)
+require(RColorBrewer)
 ```
 
 
@@ -54,16 +59,63 @@ names(df)
 
 ```
 
-
+# Zipcode -> County 
 ```{r}
 
-df <- readr::read_csv("path/to/recodeddata.csv") %>%
+df <- df %>%
   mutate(ZIPCODE = as.character(ZIPCODE)) %>%
-  left_join(zipcodeR::zip_code_db %>% select(zipcode, county, state),
-            by = c("ZIPCODE" = "zipcode")) %>%
-  rename(COUNTY = county, STATE_ABBR = state)
-df %>% count(COUNTY, sort = TRUE) %>% head(10)
+  left_join(
+    zipcodeR::zip_code_db %>%
+      dplyr::select(zipcode, county, state),
+    by = c("ZIPCODE" = "zipcode")) %>%
+  rename(COUNTY = county) %>%
+  dplyr::select(-state)
 
+# Map of Respondents / County ----------------
+alcounty <- counties(state = "AL", cb = TRUE, class = "sf") %>%
+  mutate(NAME = toupper(NAME))  
+dfcounty <- df %>%
+  filter(!is.na(COUNTY)) %>%
+  count(COUNTY, name = "Respondents")
+mapcounty <- alcounty %>%
+  left_join(dfcounty, by = c("NAMELSAD" = "COUNTY")) %>%
+  mutate(Respondents = replace_na(Respondents, 0))
+centroids <- st_centroid(mapcounty)
+centroids_coords <- centroids %>%
+  mutate(
+    lon = st_coordinates(geometry)[, 1],
+    lat = st_coordinates(geometry)[, 2])
 
+ggcounty <- ggplot(mapcounty) +
+  geom_sf(aes(fill = Respondents), color = "black", size = 1) +
+ geom_text(
+    data = centroids_coords,
+    aes(x = lon, y = lat, label = ifelse(Respondents > 0, Respondents, "")),
+    size = 3, color = "grey40") +
+  scale_fill_distiller(
+    palette = "YlGnBu",  # switch to 'greys' for B/W 
+    direction = 1,
+    name = "Respondents",
+    breaks = range(mapcounty$Respondents, na.rm = TRUE),
+    labels = round(range(mapcounty$Respondents, na.rm = TRUE))) +
+  theme_minimal(base_size = 14) +
+  labs(title = "Survey Respondents by County") +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.title.position = "top",
+    legend.text = element_text(size = 10),
+    panel.grid.major = element_blank(),
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    plot.title = element_text(face = "bold"))
+ggcounty
+
+# Export ------
+ggsave(filename = "county_respondents.pdf",plot = ggcounty, path = oup, width = 8, 
+       height = 6,units = "in") # Vector PDF
+ggsave(filename = "county_respondents.tif",plot = ggcounty, path = oup, width = 8, 
+       height = 6,dpi = 600, units = "in") # TIFF
 ```
+
 
