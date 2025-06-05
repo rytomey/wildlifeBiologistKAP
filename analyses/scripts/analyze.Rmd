@@ -29,7 +29,7 @@ mainfont: "Times New Roman"
 geometry: margin=1in
 ---
 
-```{r}
+```{r include=FALSE}
 
 # Restart R / Clear Packages before running -----------------------
 #-----------------------------------------------------------------
@@ -452,7 +452,7 @@ binFUN(df, "SOURCE_TRUST_BIN", labels = c("Less Reliability", "More Reliability"
 ```
 
 # Chi-squared / Cramers V
-```{r}
+```{r include=FALSE}
 require(rcompanion)
 require(kableExtra)
 require(officer)
@@ -632,7 +632,7 @@ run_attitude_models_dual <- function(data, pairs) {
 }
 pairslm_result <- run_attitude_models_dual(df, attitude_knowledge_pairs)
 pairslm_result
-tidy(pairslm_result$accuracy_model)
+
 #--------------------------------------------------------------------------------
 df$KNOWLEDGE_SCORE_NORM <- scale(df$KNOWLEDGE_SCORE)
 df$CONFIDENCE_SCORE_NORM <- scale(df$CONFIDENCE_SCORE)
@@ -648,6 +648,7 @@ conf_lm <- lm(CONFIDENCE_SCORE_NORM ~ COURSE_GROUP + AFFILIATE_GROUP +
               PRACTICE_EXPOSURE_SCORE + ATT_CONCERN_SCORE +
               ATT_MISINFO_SCORE + INTEREST_BIN, data = df)
 summary(conf_lm)
+tidy(conf_lm)
 
 ```
 
@@ -665,7 +666,7 @@ interest_glm <- glm(INTEREST_BIN ~ COURSE_GROUP + AFFILIATE_GROUP +
                     data = df, family = binomial)
 summary(interest_glm)
 exp(coef(interest_glm))
-
+tidy(interest_glm)
 # PPE Use --------------------------
 ppe_glm <- glm(PPE_BIN ~ COURSE_GROUP + AFFILIATE_GROUP +
                DEMO_EDU_SCORE + DEMO_EXP_SCORE +
@@ -673,14 +674,14 @@ ppe_glm <- glm(PPE_BIN ~ COURSE_GROUP + AFFILIATE_GROUP +
                data = df, family = binomial)
 summary(ppe_glm)
 exp(coef(ppe_glm))
-
+tidy(ppe_glm)
 # Information Access
 access_glm <- glm(ACCESS_BIN ~ DEMO_EDU_SCORE + DEMO_EXP_SCORE +
                   KNOWLEDGE_SCORE + PRACTICE_EXPOSURE_SCORE,
                   data = df, family = binomial)
 summary(access_glm)
 exp(coef(access_glm))
-
+tidy(access_glm)
 ```
 
 #### Multinomial 
@@ -697,6 +698,7 @@ summary(course_mnom)
 exp(coef(course_mnom))
 z_course <- summary(course_mnom)$coefficients / summary(course_mnom)$standard.errors
 course_p <- 2 * (1 - pnorm(abs(z_course)))
+tidy(course_mnom)
 
 # Predicting Affiliate Group -----------------------
 affiliate_mnom <- multinom(AFFILIATE_GROUP ~ CONFIDENCE_SCORE + COURSE_GROUP +
@@ -707,7 +709,7 @@ summary(affiliate_mnom)
 exp(coef(affiliate_mnom))
 z_affil <- summary(affiliate_mnom)$coefficients / summary(affiliate_mnom)$standard.errors
 affil_p <- 2 * (1 - pnorm(abs(z_affil)))
-
+tidy(affiliate_mnom)
 ```
 #### Ordinal 
 ```{r}
@@ -725,8 +727,7 @@ for (item in likert_items) {
     filter(str_detect(term, "KNOWLEDGE_SCORE|CONFIDENCE_SCORE|DEMO_|GENDER_BIN|AGE_BIN")) %>%
     mutate(
       p.value = 2 * pnorm(abs(statistic), lower.tail = FALSE),
-      attitude_item = item
-    )
+      attitude_item = item)
   results_list[[item]] <- tidy_out
 }
 results_df <- bind_rows(results_list) %>%
@@ -734,6 +735,7 @@ results_df <- bind_rows(results_list) %>%
     significant = ifelse(p.value < 0.05, "*", ""),
     estimate = round(estimate, 3),
     p.value = round(p.value, 4))
+# Export -------------------------------
 knitr::kable(results_df, format = "pandoc", caption = "Ordinal Regression: Likert Attitude")
 write.csv(results_df, file.path(oup, "ordinalattitudes_results.csv"), row.names = FALSE)
 
@@ -781,32 +783,24 @@ plot(allEffects(ppe_glm), main = "Effect: PPE Use")
 plot(allEffects(access_glm), main = "Effect: Access to Information")
 
 # GGPREDICT: Predicted values with ggtitle() ---------------------------------
-
 # Logistic: Interest Model
 interestgp <- ggpredict(interest_glm, terms = c("COURSE_GROUP", "KNOWLEDGE_SCORE"))
 plot(interestgp) + ggtitle("Predicted Probability: Interest")
-
 # Linear: Knowledge Model
 knowgp <- ggpredict(know_lm, terms = c("INTEREST_BIN", "ATT_MISINFO_SCORE"))
 plot(knowgp) + ggtitle("Predicted Knowledge Score")
-
 # Linear: Confidence Model
 confgp <- ggpredict(conf_lm, terms = c("INTEREST_BIN", "PRACTICE_EXPOSURE_SCORE"))
 plot(confgp) + ggtitle("Predicted Confidence Score")
 
 
 # SJPlot: Visualize model coefficients ----------------------------------------
-
-# GLM: Interest Model Coefficient Plot
+# GLM: Interest Model Coefficient Plot 
 plot_model(interest_glm, type = "est", show.values = TRUE, value.offset = 0.3) +
   ggtitle("Interest Model Effects")
-
-# LM: Knowledge Model Coefficient Plot
+# LM: Knowledge Model Coefficient Plot 
 plot_model(know_lm, type = "est", show.values = TRUE, value.offset = 0.3) +
   ggtitle("Knowledge Model Effects")
-
-
-# Side-by-side table comparison
 tab_model(
   know_lm, conf_lm, interest_glm, ppe_glm, access_glm,
   show.ci = TRUE, show.se = TRUE, show.stat = TRUE,
@@ -815,7 +809,7 @@ tab_model(
 ```
 
 #### Export 
-```{r}
+```{r include=FALSE}
 
 modelsummary(
   list(
@@ -842,8 +836,6 @@ stargazer(
 
 #### References
 ```{r}
-
 # ----to display the packages within the .qmd without creating another .bib -----
 knitr::write_bib(sub("^package:", "", grep("package", search(), value=TRUE)), file='')
-
 ```
