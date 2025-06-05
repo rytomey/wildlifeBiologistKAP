@@ -42,6 +42,13 @@ require(ggplot2)
 require(RColorBrewer)
 ```
 
+**Ideas:**
+**-county of wildlife biologists/ handling vs county population/income vs respondent** 
+**county of respondents | Knowledge Individual/overall | Topics interested | Practices | CDC county prevalence/presence* 
+**county of wildlife biologists residence (note: not exactly where they work)**
+**county of wildlife handling in Alabama (this is the bigger one for me)**
+**county of where biologists handle wildlife ~ education (tiered heat map or something**
+**COUNTIES versus respondent distribution/count**
 
 ### Importing Data 
 ```{r include=FALSE}
@@ -59,7 +66,7 @@ names(df)
 
 ```
 
-# Zipcode -> County 
+# Converting ZIP
 ```{r}
 
 df <- df %>%
@@ -86,6 +93,7 @@ centroids_coords <- centroids %>%
     lon = st_coordinates(geometry)[, 1],
     lat = st_coordinates(geometry)[, 2])
 
+# MAP: Respondents / County ----------------------------------
 ggcounty <- ggplot(mapcounty) +
   geom_sf(aes(fill = Respondents), color = "black", size = 1) +
  geom_text(
@@ -116,6 +124,169 @@ ggsave(filename = "county_respondents.pdf",plot = ggcounty, path = oup, width = 
        height = 6,units = "in") # Vector PDF
 ggsave(filename = "county_respondents.tif",plot = ggcounty, path = oup, width = 8, 
        height = 6,dpi = 600, units = "in") # TIFF
+```
+
+# Census Data Import
+| **Survey Variable** | **ACS Equivalent** | **ACS Table(s)** | **Description** |
+|--------------|--------------|--------------|-------------------------------|
+| `DOB` | Age distribution | B01001, B01002 | Age is reported in bands; B01001 provides detailed breakdowns, B01002 gives median age by county. |
+| `RESIDENT`, `ZIPCODE` | Geographic identification | GEOID, NAME | GEOID and NAME provide standardized geographic identifiers at the county level; ZIP codes are not directly matched in ACS. |
+| `RACE` | Race categories | B02001 | Detailed breakdowns of self-identified race categories. |
+| `ETHNICITY` | Hispanic or Latino origin | B03003 | Captures ethnicity separate from race, as per Census classification. |
+| `GENDER` | Sex | B01001 | Provides male and female population counts. |
+| `INCOME` | Household income and poverty | B19013, B17001 | B19013 offers median household income; B17001 details poverty status by age and sex. |
+| `EDUCATION` | Educational attainment | B15003 | Comprehensive breakdown of highest level of education completed. |
+| `ATTITUDEbin` | Health insurance coverage | B27001 | Shows coverage status by age and sex, serving as a proxy for healthcare access. |
+```{r}
+require(tidycensus)
+#-----------------------------------------------------------------------------
+#--Copied this code from a different script-----------------------------------
+#--Will likely need some cleaning to work---------------------------------------
+#-----------------------------------------------------------------------------
+
+# Set Census API Key
+census_api_key("fc56686276a91cda05036e565b41bbb3a65010c8", install = TRUE, overwrite = TRUE)
+
+# List of relevant ACS tables
+acs_tables <- c("B01001", "B01002", "B02001", "B03003", "B19013", "B17001", "B15003", "B27001")
+
+# Retrieve 2022 5-year ACS data for all counties in Alabama
+acs_data <- lapply(acs_tables, function(table) {
+  get_acs(geography = "county", state = "AL", table = table, year = 2022, survey = "acs1", geometry = FALSE)
+})
+
+# Assign names to the list elements
+names(acs_data) <- acs_tables
+
+
+# Clean and prepare each table -----------------------
+
+sex_data <- acs_data[["B01001"]] %>%
+  filter(variable %in% c("B01001_002", "B01001_026")) %>%
+  mutate(sex = case_when(
+    variable == "B01001_002" ~ "Male",
+    variable == "B01001_026" ~ "Female"
+  )) %>%
+  select(GEOID, sex, estimate) %>%
+  pivot_wider(names_from = sex, values_from = estimate) %>%
+  mutate(total_sex_count = Male + Female)
+
+
+# Age distribution
+age_data <- acs_data[["B01001"]] %>%
+  group_by(GEOID, NAME) %>%
+  summarize(total_population = sum(estimate), .groups = "drop")
+
+# Median age
+median_age <- acs_data[["B01002"]] %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(median_age = estimate)
+
+# Race
+race_data <- acs_data[["B02001"]] %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+
+# Ethnicity
+ethnicity_data <- acs_data[["B03003"]] %>%
+  select(GEOID, NAME, variable, estimate) %>%
+  pivot_wider(names_from = variable, values_from = estimate)
+
+# Median household income
+income_data <- acs_data[["B19013"]] %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(median_household_income = estimate)
+
+# Poverty status
+poverty_data <- acs_data[["B17001"]] %>%
+  filter(variable == "B17001_002") %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(pop_below_poverty = estimate)
+
+# Education
+education_data <- acs_data[["B15003"]] %>%
+  filter(variable %in% c("B15003_022", "B15003_023", "B15003_024", "B15003_025")) %>%
+  group_by(GEOID, NAME) %>%
+  summarize(edu_bachelor_plus = sum(estimate), .groups = "drop")
+# Education: Bachelor's degree or higher
+# B15003_022: Bachelor's degree
+# B15003_023: Master's degree
+# B15003_024: Professional school degree
+# B15003_025: Doctorate degree
+
+# Health insurance
+insurance_data <- acs_data[["B27001"]] %>%
+  filter(variable == "B27001_001") %>%
+  select(GEOID, NAME, estimate) %>%
+  rename(total_insured = estimate)
+
+acs_combined <- age_data %>%
+  left_join(median_age, by = c("GEOID", "NAME")) %>%
+  left_join(race_data, by = c("GEOID", "NAME")) %>%
+  left_join(ethnicity_data, by = c("GEOID", "NAME")) %>%
+  left_join(income_data, by = c("GEOID", "NAME")) %>%
+  left_join(poverty_data, by = c("GEOID", "NAME")) %>%
+  left_join(education_data, by = c("GEOID", "NAME")) %>%
+  left_join(insurance_data, by = c("GEOID", "NAME")) %>%
+  left_join(sex_data, by = c("GEOID"))
+
+
+gsurv <- read.csv(file.path(oup, "processedsurv.csv"))  
+county <- st_read('/vsicurl/https://github.com/rytomey/geo4al/raw/main/boundaries/alabama/countyAlabama.shp')
+
+gsurv <- gsurv %>%
+  mutate(LOCATION = str_to_upper(str_trim(LOCATION)) %>%
+           str_remove_all(" COUNTY$"))
+acs_combined <- acs_combined %>%
+  mutate(LOCATION = str_to_upper(NAME) %>%
+           str_remove_all(", ALABAMA") %>%
+           str_remove_all(" COUNTY$")) # %>% 
+       #    str_trim()) %>%
+      #  group_by(LOCATION) %>%
+  #  summarize(across(everything(), first), .groups = "drop")
+county_clean <- county %>%
+  mutate(LOCATION = str_to_upper(str_trim(NAMELSAD)) %>%
+           str_remove_all(" COUNTY$"))
+
+gsurv$LOCATION
+acs_combined$LOCATION
+county_clean$LOCATION
+
+acs_geo <- county_clean %>%
+  st_join(acs_geo, by = "LOCATION")
+st_write(acs_geo, file.path(oup, "acs_combined.gpkg"), delete_layer = TRUE) 
+
+acs_combined <- acs_combined %>%
+  mutate(LOCATION = str_to_upper(NAME) %>%
+           str_remove_all(", ALABAMA") %>%
+           str_remove_all(" COUNTY$")  %>% 
+           str_trim()) %>%
+       group_by(LOCATION) %>%
+    summarize(across(everything(), first), .groups = "drop")
+acs_geo <- acs_combined %>%
+  left_join(county_clean, "geometry", by = "LOCATION")
+gsurv <- acs_geo %>%
+  left_join(gsurv, by = "LOCATION")
+gsurv
+st_write(gsurv, file.path(oup, "psurv_geo_data.gpkg"), delete_layer = TRUE)
+
+```
+
+# Disease Data 
+**Links to data aquisition sources**
+https://www.cdc.gov/lyme/data-research/facts-stats/lyme-disease-case-map.html?CDC
+https://www.cdc.gov/bird-flu/situation-summary/data-map-wild-birds.html
+https://www.cdc.gov/bird-flu/situation-summary/data-map-commercial.html
+https://www.sciencebase.gov/catalog/item/58068050e4b0824b2d1d415d
+```{r}
+
+cwdC <- read_csv(file.path(inp, "cwdCaptive 2024.csv"))
+cwdW <- read_csv(file.path(inp, "cwdWild2024.csv"))
+fluP <- read_csv(file.path(inp, "h5n1poultry2025.csv"))
+fluW <- read_csv(file.path(inp, 
+                           "h5n1wildbirds2025.csv"))
+lyme <- read_csv(file.path(inp, "lyme2023.csv"))
+
 ```
 
 
