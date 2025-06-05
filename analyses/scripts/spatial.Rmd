@@ -1,0 +1,69 @@
+---
+title: "Spatial Visualization and Exploration"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  word_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: true
+    highlight: zenburn
+    latex_engine: xelatex
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+    theme: readable
+    highlight: tango
+    code_folding: show
+    fig_caption: true
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+fontsize: 10pt
+mainfont: "Times New Roman"
+geometry: margin=1in
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+require(tidyverse)
+require(zipcodeR)
+require(ggmap)
+require(sf)
+require(knitr)
+```
+
+
+### Importing Data 
+```{r include=FALSE}
+
+# ---- Set Paths ----
+base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
+analyses <- file.path(base, "analyses")
+inp <- file.path(analyses, "inputs")
+oup <- file.path(analyses, "outputs")
+
+# ---- Load Raw Dataset ----
+df <- read_csv(file.path(oup, "recodeddata.csv"))
+nrow(df) # 140 responses ------
+names(df)
+
+```
+
+
+```{r}
+
+df <- readr::read_csv("path/to/recodeddata.csv") %>%
+  mutate(ZIPCODE = as.character(ZIPCODE)) %>%
+  left_join(zipcodeR::zip_code_db %>% select(zipcode, county, state),
+            by = c("ZIPCODE" = "zipcode")) %>%
+  rename(COUNTY = county, STATE_ABBR = state)
+df %>% count(COUNTY, sort = TRUE) %>% head(10)
+
+
+```
+

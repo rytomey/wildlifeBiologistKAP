@@ -41,7 +41,7 @@ require(lubridate)
 ```
 
 ### Importing Data 
-```{r}
+```{r include=FALSE}
 
 # ---- Set Paths ----
 base     <- normalizePath(file.path("..", ".."), mustWork = FALSE)
